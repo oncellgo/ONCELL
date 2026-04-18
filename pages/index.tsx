@@ -91,7 +91,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
       </Head>
 
       <div className={styles.page}>
-        <div style={{ padding: '0.75rem 0.75rem 0', maxWidth: 1040, margin: '0 auto', width: '100%' }}>
+        <div style={{ padding: isMobile ? '0.5rem 0.5rem 0' : '0.75rem 0.75rem 0', maxWidth: 1040, margin: '0 auto', width: '100%' }}>
           <TopNav profileId={profileId} displayName={displayName} nickname={nickname} email={email} systemAdminHref={systemAdminHref || undefined} />
         </div>
 

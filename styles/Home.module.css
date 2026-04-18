@@ -649,6 +649,122 @@
   }
 
   .trustRow {
-    gap: 1.25rem;
+    gap: 1rem;
+    margin-top: 1.75rem;
+    justify-content: space-around;
+    width: 100%;
+  }
+
+  .trustNumber {
+    font-size: 1.2rem;
+  }
+
+  .trustLabel {
+    font-size: 0.74rem;
+  }
+
+  .hero {
+    padding: 1.5rem 0.75rem 2rem;
+    gap: 1.75rem;
+  }
+
+  .title {
+    font-size: 1.85rem;
+    margin: 1rem 0 0.85rem;
+    line-height: 1.15;
+  }
+
+  .description {
+    font-size: 0.95rem;
+    margin: 0 0 1.25rem;
+    line-height: 1.6;
+  }
+
+  .menuGrid {
+    gap: 0.65rem;
+    margin-top: 0.25rem;
+  }
+
+  .menuCard {
+    padding: 1rem 0.6rem;
+    gap: 0.4rem;
+    border-radius: 14px;
+  }
+
+  .menuLabel {
+    font-size: 0.85rem;
+  }
+
+  .menuIcon svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .heroVisual {
+    padding: 1.25rem;
+    min-height: auto;
+    border-radius: 16px;
+  }
+
+  .dashboardCard {
+    padding: 0.85rem;
+  }
+
+  .dashboardRow {
+    padding: 0.55rem 0.7rem;
+  }
+
+  .dashboardRowLabel {
+    font-size: 0.78rem;
+  }
+
+  .dashboardRowMeta {
+    font-size: 0.72rem;
+  }
+
+  /* 절대 위치 floatCard는 좁은 화면에서 잘리거나 콘텐츠를 가림 → 숨김 */
+  .floatCard {
+    display: none;
+  }
+
+  .section {
+    padding: 3rem 0.75rem;
+  }
+
+  .ctaCard {
+    padding: 2rem 1.25rem;
+    border-radius: 18px;
+  }
+
+  .ctaSection {
+    padding: 0 0.75rem;
+    margin-bottom: 3rem;
+  }
+
+  .featureCard {
+    padding: 1.25rem;
+  }
+
+  .footer {
+    padding: 1.5rem 0.75rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    text-align: left;
+  }
+
+  .footerLinks {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .menuLabel {
+    font-size: 0.78rem;
+  }
+
+  .title {
+    font-size: 1.65rem;
   }
 }

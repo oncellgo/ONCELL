@@ -103,14 +103,14 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
             src="/images/kcis%20logo.png"
             alt="KCIS 로고"
             className="kcis-logo"
-            style={{ width: 28, height: 28, objectFit: 'contain', display: 'inline-block' }}
+            style={{ width: isMobile ? 24 : 28, height: isMobile ? 24 : 28, objectFit: 'contain', display: 'inline-block' }}
           />
-          <strong style={{ fontWeight: 800, letterSpacing: '0.02em' }}>
+          <strong style={{ fontWeight: 800, letterSpacing: '0.02em', fontSize: isMobile ? '0.95rem' : '1rem' }}>
             <span className="kcis-brand">KCIS</span>
           </strong>
         </a>
       </div>
-      <div style={{ display: 'inline-flex', alignItems: 'center', gap: isMobile ? '0.35rem' : '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: isMobile ? '0.3rem' : '0.5rem', flexWrap: 'nowrap', justifyContent: 'flex-end', flexShrink: 0 }}>
         {effProfileId && (
           <span style={{
             display: 'inline-flex',
@@ -123,17 +123,10 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
             color: '#182527',
             fontWeight: 700,
             fontSize: isMobile ? '0.74rem' : '0.82rem',
-            maxWidth: isMobile ? 200 : 'none',
+            maxWidth: isMobile ? 130 : 'none',
             overflow: 'hidden',
             whiteSpace: 'nowrap',
           }}>
-            <a
-              href={dashboardHref}
-              style={{ color: 'var(--color-primary-deep)', textDecoration: 'underline', fontWeight: 700 }}
-            >
-              {t('bottom.myCommunity')}
-            </a>
-            <span style={{ color: 'var(--color-gray)', fontWeight: 500, padding: '0 0.1rem' }}>|</span>
             {userLabel}
             {systemAdminHref && (
               <a href={systemAdminHref} aria-label={t('nav.sysSettings')} title={t('nav.sysSettings')} style={{
