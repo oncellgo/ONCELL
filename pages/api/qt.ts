@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { lookupPassage, formatVerses } from '../../lib/bible';
+import { kvGet, kvSet } from '../../lib/db';
 
 const SOURCE_URL = 'https://sum.su.or.kr:8888/bible/today';
 const AJAX_BIBLE_URL = 'https://sum.su.or.kr:8888/Ajax/Bible/BodyBible';
@@ -37,6 +38,27 @@ type QtResult = {
 let cache: { data: QtResult; at: number } | null = null;
 const dateCache = new Map<string, { data: QtResult; at: number }>();
 const CACHE_TTL_MS = 1000 * 60 * 30;
+
+// 영구 캐시(Supabase app_kv) — cold start에도 유지.
+// 성경 본문/구절은 날짜별로 확정되므로 무기한 캐시 가능.
+const kvKeyFor = (date: string) => `qt_${date}`;
+const getKvQt = async (date: string): Promise<QtResult | null> => {
+  try { return await kvGet<QtResult>(kvKeyFor(date)); } catch { return null; }
+};
+const setKvQt = async (date: string, data: QtResult): Promise<void> => {
+  try { await kvSet(kvKeyFor(date), data); } catch {}
+};
+
+// 오늘 날짜 YYYY-MM-DD (Asia/Seoul 기준 — 매일성경 서버 시각대와 일치)
+const todayKeySeoul = (): string => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(new Date());
+  const y = parts.find((p) => p.type === 'year')?.value || '';
+  const m = parts.find((p) => p.type === 'month')?.value || '';
+  const d = parts.find((p) => p.type === 'day')?.value || '';
+  return `${y}-${m}-${d}`;
+};
 
 const decodeEntities = (s: string) =>
   s
@@ -210,13 +232,24 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   // 날짜 지정 모드: ?date=YYYY-MM-DD
   const dateParam = typeof req.query.date === 'string' ? req.query.date : null;
   if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+    // 1) 메모리 캐시 (warm invocation)
     const cached = dateCache.get(dateParam);
     if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
       return res.status(200).json(cached.data);
     }
+    // 2) 영구 캐시 (Supabase app_kv)
+    const persisted = await getKvQt(dateParam);
+    if (persisted && persisted.passageText) {
+      dateCache.set(dateParam, { data: persisted, at: Date.now() });
+      return res.status(200).json(persisted);
+    }
+    // 3) upstream fetch + 캐시 저장
     try {
       const data = await fetchDateSpecific(dateParam);
-      if (data.passageText) dateCache.set(dateParam, { data, at: Date.now() });
+      if (data.passageText) {
+        dateCache.set(dateParam, { data, at: Date.now() });
+        await setKvQt(dateParam, data);
+      }
       return res.status(200).json(data);
     } catch (error: any) {
       console.error(`QT fetch (date=${dateParam}) failed:`, error?.message || error);
@@ -229,8 +262,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
   }
 
+  // today 모드: 메모리 캐시 → 영구 캐시(오늘 날짜 키) → upstream 순
   if (cache && Date.now() - cache.at < CACHE_TTL_MS) {
     return res.status(200).json(cache.data);
+  }
+  const todayKey = todayKeySeoul();
+  const persistedToday = await getKvQt(todayKey);
+  if (persistedToday && persistedToday.passageText) {
+    cache = { data: persistedToday, at: Date.now() };
+    return res.status(200).json(persistedToday);
   }
 
   try {
@@ -282,6 +322,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     // passageText 조회에 실패했으면 캐시하지 않는다 (번들 캐시 워밍 이후 재시도되도록).
     if (!reference || passageText) {
       cache = { data, at: Date.now() };
+      if (passageText) await setKvQt(todayKey, data);
     }
     return res.status(200).json(data);
   } catch (error: any) {
