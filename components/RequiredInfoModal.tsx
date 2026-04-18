@@ -55,8 +55,8 @@ const RequiredInfoModal = ({ profileId, missingFields, message, onComplete, onCa
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
-      <div style={{ width: '100%', maxWidth: 440, padding: '1.75rem', borderRadius: 16, background: '#fff', boxShadow: '0 20px 60px rgba(0,0,0,0.25)', display: 'grid', gap: '1rem' }}>
+    <div role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '0.5rem' }}>
+      <div className="modal-card" style={{ width: '100%', maxWidth: 440, padding: '1.25rem', borderRadius: 16, background: '#fff', boxShadow: '0 20px 60px rgba(0,0,0,0.25)', display: 'grid', gap: '0.85rem' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '2rem' }}>📝</div>
           <h2 style={{ margin: '0.4rem 0 0', fontSize: '1.15rem', color: '#3F6212' }}>필수정보 입력</h2>

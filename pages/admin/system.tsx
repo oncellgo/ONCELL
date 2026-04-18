@@ -14,6 +14,7 @@ import MembersCard from '../../components/MembersCard';
 import AdminTabBar from '../../components/AdminTabBar';
 import { expandOccurrences, EventRow as RawEventRow } from '../../lib/recurrence';
 import { getCommunities, getEvents, getWorshipServices, getProfiles, getUsers } from '../../lib/dataStore';
+import { useIsMobile } from '../../lib/useIsMobile';
 
 type Props = {
   profileId: string;
@@ -65,6 +66,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
   const router = useRouter();
   const { t } = useTranslation();
   const video = useVideo();
+  const isMobile = useIsMobile();
   const k = typeof router.query.k === 'string' ? router.query.k : '';
   const authQS = `profileId=${encodeURIComponent(profileId)}&k=${encodeURIComponent(k)}`;
   const authHeaders = { 'x-profile-id': profileId, 'x-admin-token': k };
@@ -332,7 +334,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
       <AppShell profileId={profileId} displayName={displayName} nickname={nickname} email={email} isAdmin adminAccent>
         <div className="admin-scope" style={{ display: 'grid', gap: '1rem' }}>
           {error && (
-            <div style={{ ...cardStyle, borderColor: '#fca5a5', background: '#fff1f2' }}>
+            <div style={{ ...cardStyle, padding: isMobile ? '0.85rem' : cardStyle.padding, borderColor: '#fca5a5', background: '#fff1f2' }}>
               <p style={{ margin: 0, color: '#b91c1c', fontWeight: 700 }}>{error}</p>
             </div>
           )}
@@ -352,7 +354,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
         )}
 
         {!sectionFilter && (
-        <section style={cardStyle}>
+        <section style={{ ...cardStyle, padding: isMobile ? '0.85rem' : cardStyle.padding }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
             <h2 style={titleStyle}>접속자 관리 ({filteredUsers.length}/{users.length})</h2>
             <div style={{ display: 'inline-flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -389,10 +391,10 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
         )}
 
         {!sectionFilter && (
-        <section style={cardStyle}>
+        <section style={{ ...cardStyle, padding: isMobile ? '0.85rem' : cardStyle.padding }}>
           <h2 style={titleStyle}>{t('admin.sectionSysAdmins')} ({admins.length})</h2>
           <p style={subtle}>이 목록에 포함된 profileId만 /admin/system 접근이 가능합니다.</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr auto', gap: '0.5rem' }}>
             <input
               type="text"
               value={newAdmin}
@@ -425,7 +427,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
         )}
 
         {sectionFilter === 'venue' && (
-          <section style={cardStyle}>
+          <section style={{ ...cardStyle, padding: isMobile ? '0.85rem' : cardStyle.padding }}>
             <h2 style={titleStyle}>장소관리</h2>
             <p style={subtle}>세로는 장소, 가로는 30분 단위 시간 그리드입니다. 셀을 클릭하면 해당 30분이 토글로 블럭됩니다. 장기 블럭은 우측 "장기블럭" 버튼으로 설정합니다.</p>
             <VenueManager profileId={profileId} k={k} />
@@ -437,7 +439,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
         )}
 
         {sectionFilter === 'bulletinTemplate' && (
-        <section className="wbe" style={cardStyle}>
+        <section className="wbe" style={{ ...cardStyle, padding: isMobile ? '0.85rem' : cardStyle.padding }}>
           <style>{`
             .wbe input::placeholder, .wbe textarea::placeholder { color: #b4c2c7; font-style: italic; font-weight: 400; opacity: 1; }
           `}</style>
@@ -480,8 +482,8 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
           </div>
 
           <div style={{
-            display: 'grid', gap: '0.5rem', padding: '0.5rem 1rem 0', borderRadius: 12,
-            width: 600, maxWidth: '100%', margin: '0 auto', boxSizing: 'border-box', overflow: 'visible', position: 'relative',
+            display: 'grid', gap: '0.5rem', padding: isMobile ? '0.5rem 0.5rem 0' : '0.5rem 1rem 0', borderRadius: 12,
+            width: isMobile ? '100%' : 600, maxWidth: '100%', margin: '0 auto', boxSizing: 'border-box', overflow: 'visible', position: 'relative',
             backgroundColor: '#ffffff',
             backgroundImage: worshipBackground?.type === 'default' && worshipBackground.value === 'default2'
               ? 'linear-gradient(rgba(255,255,255,0.55), rgba(255,255,255,0.55)), url(/images/bg2.png)'
@@ -512,10 +514,10 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
               onChange={(e) => setWorshipTheme(e.target.value)}
               onBlur={() => saveWorshipMeta({ theme: worshipTheme })}
               placeholder="네가 나를 사랑하느냐?"
-              style={{ padding: '0.4rem 0.9rem', borderRadius: 10, border: 'none', fontSize: '1.85rem', fontWeight: 800, color: '#1E293B', textAlign: 'center', width: 480, maxWidth: '100%', boxSizing: 'border-box', background: 'transparent', display: 'block', margin: '0 auto', letterSpacing: '-0.01em', lineHeight: 1.2, fontFamily: '"Pretendard", "Plus Jakarta Sans", "Noto Serif KR", serif' }}
+              style={{ padding: isMobile ? '0.3rem 0.5rem' : '0.4rem 0.9rem', borderRadius: 10, border: 'none', fontSize: isMobile ? '1.3rem' : '1.85rem', fontWeight: 800, color: '#1E293B', textAlign: 'center', width: isMobile ? '100%' : 480, maxWidth: '100%', boxSizing: 'border-box', background: 'transparent', display: 'block', margin: '0 auto', letterSpacing: '-0.01em', lineHeight: 1.2, fontFamily: '"Pretendard", "Plus Jakarta Sans", "Noto Serif KR", serif' }}
             />
             <div style={{ width: 80, height: 3, background: '#20CD8D', borderRadius: 999 }} />
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#64748B', fontWeight: 600, letterSpacing: '0.02em' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'center', fontSize: '0.85rem', color: '#64748B', fontWeight: 600, letterSpacing: '0.02em' }}>
               <input
                 type="text"
                 value={worshipBulletinName}
@@ -568,7 +570,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
                   reorderWorship(worshipItems[dragIndex].id, idx);
                   setDragIndex(null);
                 }}
-                style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'auto 1fr 1fr 1fr', alignItems: 'center', gap: '0.4rem', padding: '0.2rem 0.55rem', border: '1px solid #E7F3EE', borderRadius: 8, background: dragIndex === idx ? '#CCF4E5' : '#F9FCFB', opacity: dragIndex !== null && dragIndex !== idx ? 0.85 : 1, width: 500, maxWidth: '100%', margin: '0 auto' }}
+                style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'auto 1fr 1fr 1fr', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.45rem', border: '1px solid #E7F3EE', borderRadius: 8, background: dragIndex === idx ? '#CCF4E5' : '#F9FCFB', opacity: dragIndex !== null && dragIndex !== idx ? 0.85 : 1, width: isMobile ? '100%' : 500, maxWidth: '100%', margin: '0 auto' }}
               >
                 <button
                   disabled={busy}
@@ -628,7 +630,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
                 )}
               </li>
               {item.title.includes('찬양') && (
-                <li style={{ width: 500, maxWidth: '100%', margin: '0 auto', padding: '0.4rem 0.55rem', background: 'rgba(255,255,255,0.7)', border: '1px dashed #cbd5d0', borderRadius: 8, display: 'grid', gap: '0.4rem' }}>
+                <li style={{ width: isMobile ? '100%' : 500, maxWidth: '100%', margin: '0 auto', padding: '0.4rem 0.55rem', background: 'rgba(255,255,255,0.7)', border: '1px dashed #cbd5d0', borderRadius: 8, display: 'grid', gap: '0.4rem' }}>
                   {(item.songs || []).map((song, sIdx) => {
                     const vid = ytId(song.link);
                     return (
@@ -755,7 +757,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
             ))}
             {worshipItems.length === 0 && <li><p style={subtle}>등록된 항목이 없습니다.</p></li>}
           </ul>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '0.4rem', width: 500, maxWidth: '100%', margin: '0.5rem auto 0' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr auto', gap: '0.4rem', width: isMobile ? '100%' : 500, maxWidth: '100%', margin: '0.5rem auto 0' }}>
             <input
               type="text"
               value={newWorshipTitle}
@@ -807,7 +809,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
           </div>
           <div style={{ marginTop: '1rem', marginBottom: '0.85rem', display: 'grid', gap: '0.85rem', justifyItems: 'center' }}>
             {worshipAnnouncements.map((ann, i) => (ann as any).noTitle ? null : (
-              <div key={i} style={{ position: 'relative', width: 500, maxWidth: '100%', display: 'grid', gap: '0.3rem', justifyItems: 'center', padding: '0.75rem 1rem', border: '1px solid #cbd5d0', borderRadius: 14, background: 'rgba(255,255,255,0.55)' }}>
+              <div key={i} style={{ position: 'relative', width: isMobile ? '100%' : 500, maxWidth: '100%', display: 'grid', gap: '0.3rem', justifyItems: 'center', padding: isMobile ? '0.6rem 0.75rem' : '0.75rem 1rem', border: '1px solid #cbd5d0', borderRadius: 14, background: 'rgba(255,255,255,0.55)' }}>
                 <input
                   type="text"
                   value={ann.title}
@@ -863,7 +865,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
               + 타이틀항목 추가
             </button>
             {worshipAnnouncements.map((ann, i) => (ann as any).noTitle ? (
-              <div key={i} style={{ position: 'relative', width: 500, maxWidth: '100%', display: 'grid', gap: '0.3rem', justifyItems: 'center', padding: '0.5rem 1rem', border: '1px solid #cbd5d0', borderRadius: 14, background: 'rgba(255,255,255,0.55)' }}>
+              <div key={i} style={{ position: 'relative', width: isMobile ? '100%' : 500, maxWidth: '100%', display: 'grid', gap: '0.3rem', justifyItems: 'center', padding: isMobile ? '0.5rem 0.7rem' : '0.5rem 1rem', border: '1px solid #cbd5d0', borderRadius: 14, background: 'rgba(255,255,255,0.55)' }}>
                 <input
                   type="text"
                   value={ann.content}
@@ -915,8 +917,8 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
           const bugsUrl = `https://music.bugs.co.kr/search/track?q=${encodeURIComponent(lyricsQuery)}`;
           const naverUrl = `https://search.naver.com/search.naver?query=${encodeURIComponent(q)}`;
           return (
-            <div onClick={() => setLyricsQuery(null)} style={{ position: 'fixed', inset: 0, zIndex: 105, background: 'rgba(24, 37, 39, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-              <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 480, height: '85vh', background: '#fff', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div onClick={() => setLyricsQuery(null)} style={{ position: 'fixed', inset: 0, zIndex: 105, background: 'rgba(24, 37, 39, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.5rem' }}>
+              <div role="dialog" aria-modal="true" className="modal-card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 480, height: '85vh', background: '#fff', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--color-surface-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
                   <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#182527', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>🎵 {lyricsQuery} · 가사</h3>
                   <button type="button" onClick={() => setLyricsQuery(null)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
@@ -940,8 +942,8 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
         })()}
 
         {songSearch && (
-          <div onClick={() => setSongSearch(null)} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(24, 37, 39, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-            <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 560, background: '#fff', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', padding: '1.25rem', display: 'grid', gap: '0.75rem', maxHeight: '85vh', overflowY: 'auto' }}>
+          <div onClick={() => setSongSearch(null)} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(24, 37, 39, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.5rem' }}>
+            <div role="dialog" aria-modal="true" className="modal-card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 560, background: '#fff', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', padding: isMobile ? '0.85rem' : '1.25rem', display: 'grid', gap: '0.75rem', maxHeight: '85vh', overflowY: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#182527' }}>유튜브 검색</h3>
                 <button type="button" onClick={() => setSongSearch(null)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
@@ -992,8 +994,8 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
         )}
 
         {worshipPreviewOpen && (
-          <div onClick={() => setWorshipPreviewOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(24, 37, 39, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-            <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', position: 'relative', background: 'transparent' }}>
+          <div onClick={() => setWorshipPreviewOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(24, 37, 39, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.5rem' }}>
+            <div role="dialog" aria-modal="true" className="modal-card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', position: 'relative', background: 'transparent' }}>
               <button type="button" onClick={() => setWorshipPreviewOpen(false)} aria-label="닫기" style={{ position: 'absolute', top: 8, right: 12, background: 'rgba(255,255,255,0.85)', border: 'none', fontSize: '1.2rem', cursor: 'pointer', zIndex: 2, borderRadius: 999, width: 32, height: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }}>✕</button>
 
               <div style={{
@@ -1076,8 +1078,8 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
         )}
 
         {editingWorship && (
-          <div onClick={() => setEditingWorship(null)} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(24, 37, 39, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-            <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 540, background: '#fff', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', padding: '1.25rem', display: 'grid', gap: '0.65rem', maxHeight: '85vh', overflowY: 'auto' }}>
+          <div onClick={() => setEditingWorship(null)} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(24, 37, 39, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.5rem' }}>
+            <div role="dialog" aria-modal="true" className="modal-card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 540, background: '#fff', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', padding: isMobile ? '0.85rem' : '1.25rem', display: 'grid', gap: '0.65rem', maxHeight: '85vh', overflowY: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#182527' }}>예배 항목 편집</h3>
                 <button type="button" onClick={() => setEditingWorship(null)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>

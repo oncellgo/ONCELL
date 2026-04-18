@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
+import { useIsMobile } from '../lib/useIsMobile';
 
 type Community = {
   id: string;
@@ -19,6 +20,7 @@ export type CommunityBadgeProps = {
 const CommunityBadge = ({ profileId, communityId, joinedCommunities, preserveQuery }: CommunityBadgeProps) => {
   const router = useRouter();
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const active = joinedCommunities.find((c) => c.id === communityId) || null;
   if (!active) return null;
@@ -48,15 +50,16 @@ const CommunityBadge = ({ profileId, communityId, joinedCommunities, preserveQue
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '0.45rem',
-            padding: '0.45rem 0.95rem',
+            gap: isMobile ? '0.35rem' : '0.45rem',
+            padding: isMobile ? '0.35rem 0.65rem' : '0.45rem 0.95rem',
             borderRadius: 999,
             border: 'none',
             background: '#CCF4E5',
             color: '#3F6212',
             fontWeight: 800,
-            fontSize: '1.02rem',
+            fontSize: isMobile ? '0.88rem' : '1.02rem',
             cursor: 'pointer',
+            maxWidth: '100%',
             boxShadow: '0 2px 8px rgba(132, 204, 22, 0.25)',
           }}
         >
@@ -64,7 +67,7 @@ const CommunityBadge = ({ profileId, communityId, joinedCommunities, preserveQue
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
             <circle cx="12" cy="10" r="3" />
           </svg>
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>{active.name}</span>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: isMobile ? 130 : 220 }}>{active.name}</span>
           <span style={{ padding: '0.1rem 0.5rem', borderRadius: 999, background: '#ffffff', color: 'var(--color-ink)', fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.02em', border: '1px solid var(--color-gray)' }}>
             {active.isAdmin ? '관리자' : '일반회원'}
           </span>

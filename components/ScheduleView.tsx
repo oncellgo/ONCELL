@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useIsMobile } from '../lib/useIsMobile';
 
 export type Community = { id: string; name: string; timezone?: string };
 
@@ -34,6 +35,7 @@ type Props = {
 };
 
 const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId, showCommunitySelector = true, showIcsSubscription = true, addEventHref }: Props) => {
+  const isMobile = useIsMobile();
   const [calCommunityId, setCalCommunityId] = useState(defaultCommunityId);
   const [calView, setCalView] = useState<{ year: number; month: number } | null>(null);
   const [calSlideDir, setCalSlideDir] = useState<'left' | 'right' | null>(null);
@@ -182,7 +184,7 @@ const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId
   return (
     <div style={{ display: 'grid', gap: '1rem' }}>
       <section style={{
-        padding: '1.1rem 1.25rem',
+        padding: isMobile ? '0.85rem 0.9rem' : '1.1rem 1.25rem',
         borderRadius: 16,
         background: 'linear-gradient(135deg, #ECFCCB 0%, #D9F09E 100%)',
         border: '1px solid #D9F09E',
@@ -205,7 +207,7 @@ const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId
               const dateStr = `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}(${dow})`;
               const timeStr = d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
               return (
-                <li key={w.id + w.startAt} style={{ display: 'grid', gridTemplateColumns: '95px 70px 1fr', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.7rem', borderRadius: 10, background: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>
+                <li key={w.id + w.startAt} style={{ display: 'grid', gridTemplateColumns: isMobile ? '78px 56px 1fr' : '95px 70px 1fr', alignItems: 'center', gap: isMobile ? '0.35rem' : '0.5rem', padding: isMobile ? '0.45rem 0.55rem' : '0.5rem 0.7rem', borderRadius: 10, background: 'rgba(255,255,255,0.7)', fontSize: isMobile ? '0.82rem' : '0.9rem' }}>
                   <span style={{ color: '#3F6212', fontWeight: 800, whiteSpace: 'nowrap' }}>{dateStr}</span>
                   <span style={{ color: '#65A30D', fontWeight: 700, whiteSpace: 'nowrap' }}>{timeStr}</span>
                   <span style={{ color: 'var(--color-ink)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.title}</span>
@@ -245,7 +247,8 @@ const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId
               aria-selected={active}
               onClick={() => setScheduleTab(t.key)}
               style={{
-                padding: '0.7rem 1.4rem',
+                padding: isMobile ? '0.6rem 0.5rem' : '0.7rem 1.4rem',
+                flex: isMobile ? 1 : 'none',
                 borderTopLeftRadius: 12,
                 borderTopRightRadius: 12,
                 borderBottomLeftRadius: 0,
@@ -254,12 +257,13 @@ const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId
                 borderBottom: active ? '1px solid var(--color-surface)' : '1px solid var(--color-primary)',
                 background: active ? 'var(--color-surface)' : 'var(--color-primary)',
                 color: active ? 'var(--color-ink)' : '#fff',
-                fontSize: '0.95rem',
+                fontSize: isMobile ? '0.85rem' : '0.95rem',
                 fontWeight: active ? 800 : 600,
                 cursor: 'pointer',
                 letterSpacing: '-0.01em',
                 transition: 'background 0.15s ease, color 0.15s ease',
                 marginRight: 2,
+                minHeight: 40,
               }}
             >
               {t.label}
@@ -269,10 +273,10 @@ const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId
       </div>
 
       {scheduleTab === 'week' && (
-      <section style={{ padding: '1.5rem', borderTopLeftRadius: 0, borderTopRightRadius: 16, borderBottomLeftRadius: 16, borderBottomRightRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem', position: 'relative', zIndex: 1 }}>
+      <section style={{ padding: isMobile ? '0.9rem 0.85rem' : '1.5rem', borderTopLeftRadius: 0, borderTopRightRadius: 16, borderBottomLeftRadius: 16, borderBottomRightRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: isMobile ? '0.75rem' : '1rem', position: 'relative', zIndex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>주단위 일정</h2>
-          <span style={{ color: 'var(--color-ink)', fontSize: '0.92rem', fontWeight: 500 }}>{weekRangeLabel}</span>
+          <h2 style={{ margin: 0, fontSize: isMobile ? '1.05rem' : '1.2rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>주단위 일정</h2>
+          <span style={{ color: 'var(--color-ink)', fontSize: isMobile ? '0.8rem' : '0.92rem', fontWeight: 500 }}>{weekRangeLabel}</span>
         </div>
         {totalWeekEvents === 0 ? (
           <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.9rem' }}>이번 주에 등록된 일정이 없습니다.</p>
@@ -282,22 +286,22 @@ const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId
               const dow = ['일', '월', '화', '수', '목', '금', '토'][day.date.getDay()];
               const isToday = day.key === todayKey;
               return (
-                <div key={day.key} style={{ display: 'grid', gridTemplateColumns: '90px 1fr', gap: '0.75rem', padding: '0.6rem 0.75rem', borderRadius: 10, background: isToday ? 'var(--color-primary-tint)' : '#F9FCFB', border: `1px solid ${isToday ? 'var(--color-primary)' : 'var(--color-surface-border)'}` }}>
+                <div key={day.key} style={{ display: 'grid', gridTemplateColumns: isMobile ? '60px 1fr' : '90px 1fr', gap: isMobile ? '0.5rem' : '0.75rem', padding: isMobile ? '0.5rem 0.55rem' : '0.6rem 0.75rem', borderRadius: 10, background: isToday ? 'var(--color-primary-tint)' : '#F9FCFB', border: `1px solid ${isToday ? 'var(--color-primary)' : 'var(--color-surface-border)'}` }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: isToday ? 'var(--color-primary-deep)' : day.date.getDay() === 0 ? '#dc2626' : day.date.getDay() === 6 ? '#2563eb' : 'var(--color-ink-2)' }}>{dow}요일</span>
-                    <span style={{ fontSize: '1.15rem', fontWeight: 800, color: isToday ? 'var(--color-primary-deep)' : 'var(--color-ink)', lineHeight: 1 }}>{day.date.getMonth() + 1}.{day.date.getDate()}</span>
+                    <span style={{ fontSize: isMobile ? '0.66rem' : '0.72rem', fontWeight: 700, color: isToday ? 'var(--color-primary-deep)' : day.date.getDay() === 0 ? '#dc2626' : day.date.getDay() === 6 ? '#2563eb' : 'var(--color-ink-2)' }}>{dow}요일</span>
+                    <span style={{ fontSize: isMobile ? '1rem' : '1.15rem', fontWeight: 800, color: isToday ? 'var(--color-primary-deep)' : 'var(--color-ink)', lineHeight: 1 }}>{day.date.getMonth() + 1}.{day.date.getDate()}</span>
                     {isToday && <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'var(--color-primary-deep)' }}>오늘</span>}
                   </div>
-                  <div style={{ display: 'grid', gap: '0.3rem' }}>
+                  <div style={{ display: 'grid', gap: '0.3rem', minWidth: 0 }}>
                     {day.events.map((ev) => {
                       const scopeLabel = (ev as any).scope === 'worship' ? '⛪ 예배' : ev.scope === 'community' ? '' : '개인';
                       const scopeColor = (ev as any).scope === 'worship' ? '#20CD8D' : ev.scope === 'community' ? '#1E40AF' : '#92400E';
                       const timeLabel = new Date(ev.startAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
                       return (
-                        <div key={ev.id} style={{ display: 'grid', gridTemplateColumns: '60px 60px 1fr', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-                          <span style={{ color: scopeColor, fontWeight: 700, fontSize: '0.74rem', whiteSpace: 'nowrap' }}>{scopeLabel}</span>
-                          <span style={{ color: 'var(--color-ink-2)', fontWeight: 600, fontSize: '0.78rem', whiteSpace: 'nowrap' }}>{timeLabel}</span>
-                          <span style={{ fontWeight: 700, color: 'var(--color-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</span>
+                        <div key={ev.id} style={{ display: 'grid', gridTemplateColumns: isMobile ? '46px 50px 1fr' : '60px 60px 1fr', alignItems: 'center', gap: isMobile ? '0.35rem' : '0.5rem', fontSize: isMobile ? '0.8rem' : '0.85rem', minWidth: 0 }}>
+                          <span style={{ color: scopeColor, fontWeight: 700, fontSize: isMobile ? '0.68rem' : '0.74rem', whiteSpace: 'nowrap' }}>{scopeLabel}</span>
+                          <span style={{ color: 'var(--color-ink-2)', fontWeight: 600, fontSize: isMobile ? '0.72rem' : '0.78rem', whiteSpace: 'nowrap' }}>{timeLabel}</span>
+                          <span style={{ fontWeight: 700, color: 'var(--color-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{ev.title}</span>
                         </div>
                       );
                     })}
@@ -311,10 +315,10 @@ const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId
       )}
 
       {scheduleTab === 'month' && (
-      <section style={{ padding: '1.5rem', borderTopLeftRadius: 16, borderTopRightRadius: 16, borderBottomLeftRadius: 16, borderBottomRightRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem', position: 'relative', zIndex: 1 }}>
+      <section style={{ padding: isMobile ? '0.85rem 0.7rem' : '1.5rem', borderTopLeftRadius: 16, borderTopRightRadius: 16, borderBottomLeftRadius: 16, borderBottomRightRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: isMobile ? '0.75rem' : '1rem', position: 'relative', zIndex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-            <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>월단위 일정</h2>
+            <h2 style={{ margin: 0, fontSize: isMobile ? '1.05rem' : '1.2rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>월단위 일정</h2>
             {addEventHref && (
               <a
                 href={addEventHref}
@@ -324,16 +328,16 @@ const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId
               </a>
             )}
           </div>
-          <span style={{ color: 'var(--color-ink)', fontSize: '0.92rem', fontWeight: 500 }}>{panelKey.replace(/-/g, '.')} ({dowLabel}){panelKey === todayKey ? ' · 오늘' : ''}</span>
+          <span style={{ color: 'var(--color-ink)', fontSize: isMobile ? '0.8rem' : '0.92rem', fontWeight: 500 }}>{panelKey.replace(/-/g, '.')} ({dowLabel}){panelKey === todayKey ? ' · 오늘' : ''}</span>
         </div>
-        <div style={{ display: 'grid', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'stretch', gap: '0.5rem' }}>
+        <div style={{ display: 'grid', gap: isMobile ? '0.75rem' : '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'stretch', gap: isMobile ? '0.25rem' : '0.5rem' }}>
             <style>{`
               @keyframes calSlideLeft { from { transform: translateX(24px); opacity: 0.3; } to { transform: translateX(0); opacity: 1; } }
               @keyframes calSlideRight { from { transform: translateX(-24px); opacity: 0.3; } to { transform: translateX(0); opacity: 1; } }
             `}</style>
-            <button type="button" onClick={goPrev} aria-label="이전 달" style={{ flex: '0 0 auto', width: 40, borderRadius: 12, border: '1px solid var(--color-surface-border)', background: '#F9FCFB', color: 'var(--color-ink-2)', fontSize: '1.3rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>‹</button>
-            <div key={`${year}-${monthIdx}`} style={{ flex: 1, minWidth: 0, padding: '0.55rem 0.75rem', borderRadius: 12, background: 'linear-gradient(180deg, #F0FDF4 0%, #F9FCFB 100%)', border: '1px solid var(--color-surface-border)', display: 'grid', gap: '0.25rem', animation: calSlideDir === 'left' ? 'calSlideLeft 0.25s ease' : calSlideDir === 'right' ? 'calSlideRight 0.25s ease' : undefined }}>
+            <button type="button" onClick={goPrev} aria-label="이전 달" style={{ flex: '0 0 auto', width: isMobile ? 30 : 40, borderRadius: 12, border: '1px solid var(--color-surface-border)', background: '#F9FCFB', color: 'var(--color-ink-2)', fontSize: '1.3rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, minHeight: 40 }}>‹</button>
+            <div key={`${year}-${monthIdx}`} style={{ flex: 1, minWidth: 0, padding: isMobile ? '0.45rem 0.4rem' : '0.55rem 0.75rem', borderRadius: 12, background: 'linear-gradient(180deg, #F0FDF4 0%, #F9FCFB 100%)', border: '1px solid var(--color-surface-border)', display: 'grid', gap: '0.25rem', animation: calSlideDir === 'left' ? 'calSlideLeft 0.25s ease' : calSlideDir === 'right' ? 'calSlideRight 0.25s ease' : undefined }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.15rem' }}>
                 <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
                   <button type="button" onClick={() => setYearPickerOpen((v) => !v)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-ink)', fontSize: '0.82rem', fontWeight: 700, padding: '0.1rem 0.3rem' }}>{year}년 ▾</button>
@@ -357,12 +361,12 @@ const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId
                   <button type="button" onClick={goNext} style={{ background: 'transparent', border: 'none', color: 'var(--color-ink-2)', fontSize: '0.8rem', cursor: 'pointer', padding: '0.1rem 0.3rem', fontWeight: 600 }}>{nextMonth}월 ›</button>
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.3rem', padding: '0 0.35rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: isMobile ? '0.15rem' : '0.3rem', padding: isMobile ? '0 0.15rem' : '0 0.35rem' }}>
                 {['일', '월', '화', '수', '목', '금', '토'].map((w, i) => (
-                  <span key={w} style={{ textAlign: 'center', fontSize: '0.8rem', fontWeight: 700, padding: '0.3rem 0', color: i === 0 ? '#dc2626' : i === 6 ? '#2563eb' : 'var(--color-ink-2)' }}>{w}</span>
+                  <span key={w} style={{ textAlign: 'center', fontSize: isMobile ? '0.7rem' : '0.8rem', fontWeight: 700, padding: '0.3rem 0', color: i === 0 ? '#dc2626' : i === 6 ? '#2563eb' : 'var(--color-ink-2)' }}>{w}</span>
                 ))}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.3rem', padding: '0 0.35rem 0.35rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: isMobile ? '0.15rem' : '0.3rem', padding: isMobile ? '0 0.15rem 0.15rem' : '0 0.35rem 0.35rem' }}>
                 {cells.map((cell, idx) => {
                   if (!cell) return <span key={idx} />;
                   const d = cell.date;
@@ -376,9 +380,9 @@ const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId
                   const dow = d.getDay();
                   return (
                     <button key={idx} type="button" onClick={() => setSelectedCalDay(isSelected ? null : key)} title={hasEvent ? ds.map((e) => e.title).join(', ') : ''}
-                      style={{ minHeight: hasWorship ? 64 : 44, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: 8, background: isSelected ? 'var(--color-primary)' : hasWorship ? '#DBEAFE' : isToday ? 'var(--color-primary-tint)' : hasEvent ? '#f0fdf4' : 'transparent', border: isSelected ? '1px solid var(--color-primary)' : hasWorship ? '1.5px solid #2563eb' : isToday ? '1px solid var(--color-primary)' : hasEvent ? '1px solid #bbf7d0' : '1px solid transparent', fontSize: '0.74rem', color: isSelected ? '#ffffff' : hasWorship ? '#1E3A8A' : dow === 0 ? '#dc2626' : dow === 6 ? '#2563eb' : 'var(--color-ink)', fontWeight: isToday || isSelected || hasWorship ? 800 : 600, cursor: 'pointer', padding: '2px 0', overflow: 'hidden' }}>
+                      style={{ minHeight: isMobile ? (hasWorship ? 52 : 40) : (hasWorship ? 64 : 44), position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: 8, background: isSelected ? 'var(--color-primary)' : hasWorship ? '#DBEAFE' : isToday ? 'var(--color-primary-tint)' : hasEvent ? '#f0fdf4' : 'transparent', border: isSelected ? '1px solid var(--color-primary)' : hasWorship ? '1.5px solid #2563eb' : isToday ? '1px solid var(--color-primary)' : hasEvent ? '1px solid #bbf7d0' : '1px solid transparent', fontSize: isMobile ? '0.7rem' : '0.74rem', color: isSelected ? '#ffffff' : hasWorship ? '#1E3A8A' : dow === 0 ? '#dc2626' : dow === 6 ? '#2563eb' : 'var(--color-ink)', fontWeight: isToday || isSelected || hasWorship ? 800 : 600, cursor: 'pointer', padding: '2px 0', overflow: 'hidden' }}>
                       <span style={{ lineHeight: 1 }}>{d.getDate()}</span>
-                      {hasWorship && !isSelected && (<span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#1E40AF', lineHeight: 1, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '0 2px' }}>⛪ {worshipEvent!.title}</span>)}
+                      {hasWorship && !isSelected && (<span style={{ fontSize: isMobile ? '0.55rem' : '0.62rem', fontWeight: 700, color: '#1E40AF', lineHeight: 1, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '0 2px' }}>⛪ {worshipEvent!.title}</span>)}
                       {hasEvent && !hasWorship && !isSelected && <span style={{ width: 3, height: 3, borderRadius: 999, background: 'var(--color-primary)' }} />}
                     </button>
                   );
@@ -386,10 +390,10 @@ const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId
               </div>
               <div style={{ textAlign: 'right', marginTop: '0.2rem' }}><span style={{ fontSize: '0.6rem', color: 'var(--color-ink-2)', fontWeight: 500 }}>{communityTz}</span></div>
             </div>
-            <button type="button" onClick={goNext} aria-label="다음 달" style={{ flex: '0 0 auto', width: 40, borderRadius: 12, border: '1px solid var(--color-surface-border)', background: '#F9FCFB', color: 'var(--color-ink-2)', fontSize: '1.3rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>›</button>
+            <button type="button" onClick={goNext} aria-label="다음 달" style={{ flex: '0 0 auto', width: isMobile ? 30 : 40, borderRadius: 12, border: '1px solid var(--color-surface-border)', background: '#F9FCFB', color: 'var(--color-ink-2)', fontSize: '1.3rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, minHeight: 40 }}>›</button>
           </div>
-          <div style={{ padding: '0.75rem 1rem', borderRadius: 12, background: '#ffffff', border: '1px solid var(--color-surface-border)', display: 'grid', gap: '0.6rem' }}>
-            <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-ink)', paddingBottom: '0.4rem', borderBottom: '1px solid var(--color-surface-border)' }}>📅 {dateLabel}</div>
+          <div style={{ padding: isMobile ? '0.6rem 0.7rem' : '0.75rem 1rem', borderRadius: 12, background: '#ffffff', border: '1px solid var(--color-surface-border)', display: 'grid', gap: '0.6rem' }}>
+            <div style={{ fontSize: isMobile ? '0.82rem' : '0.88rem', fontWeight: 800, color: 'var(--color-ink)', paddingBottom: '0.4rem', borderBottom: '1px solid var(--color-surface-border)' }}>📅 {dateLabel}</div>
             {dayEvents.length === 0 ? (
               <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.85rem' }}>등록된 일정이 없습니다.</p>
             ) : (
@@ -399,10 +403,10 @@ const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId
                   const scopeColor = (ev as any).scope === 'worship' ? '#20CD8D' : ev.scope === 'community' ? '#1E40AF' : '#92400E';
                   const timeLabel = new Date(ev.startAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
                   return (
-                    <div key={ev.id} style={{ display: 'grid', gridTemplateColumns: '72px 60px 1fr', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.6rem', borderRadius: 8, background: '#F9FCFB', border: '1px solid var(--color-surface-border)', fontSize: '0.85rem' }}>
-                      <span style={{ color: scopeColor, fontWeight: 700, fontSize: '0.76rem', whiteSpace: 'nowrap' }}>{scopeLabel}</span>
-                      <span style={{ color: 'var(--color-ink-2)', fontWeight: 600, whiteSpace: 'nowrap' }}>{timeLabel}</span>
-                      <span style={{ fontWeight: 700, color: 'var(--color-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</span>
+                    <div key={ev.id} style={{ display: 'grid', gridTemplateColumns: isMobile ? '54px 48px 1fr' : '72px 60px 1fr', alignItems: 'center', gap: isMobile ? '0.4rem' : '0.6rem', padding: isMobile ? '0.4rem 0.5rem' : '0.5rem 0.6rem', borderRadius: 8, background: '#F9FCFB', border: '1px solid var(--color-surface-border)', fontSize: isMobile ? '0.8rem' : '0.85rem', minWidth: 0 }}>
+                      <span style={{ color: scopeColor, fontWeight: 700, fontSize: isMobile ? '0.7rem' : '0.76rem', whiteSpace: 'nowrap' }}>{scopeLabel}</span>
+                      <span style={{ color: 'var(--color-ink-2)', fontWeight: 600, whiteSpace: 'nowrap', fontSize: isMobile ? '0.74rem' : '0.85rem' }}>{timeLabel}</span>
+                      <span style={{ fontWeight: 700, color: 'var(--color-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{ev.title}</span>
                     </div>
                   );
                 })}
@@ -415,8 +419,8 @@ const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId
       </div>
 
       {showIcsSubscription && icsUrl && (
-        <section style={{ padding: '1.5rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
-          <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>Google 캘린더 구독</h2>
+        <section style={{ padding: isMobile ? '0.9rem 0.85rem' : '1.5rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
+          <h2 style={{ margin: 0, fontSize: isMobile ? '1.05rem' : '1.2rem', color: 'var(--color-ink)' }}>Google 캘린더 구독</h2>
           <a href={gcalUrl} target="_blank" rel="noreferrer" style={{ padding: '0.75rem 1rem', borderRadius: 10, background: 'var(--color-primary)', color: '#ffffff', fontWeight: 700, textDecoration: 'none', fontSize: '0.9rem', boxShadow: 'var(--shadow-button)', textAlign: 'center' }}>+ Google 캘린더에 추가</a>
           <div style={{ display: 'grid', gap: '0.4rem' }}>
             <label style={{ color: 'var(--color-ink)', fontWeight: 700, fontSize: '0.88rem' }}>구독 URL</label>

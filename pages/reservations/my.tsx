@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import SubHeader from '../../components/SubHeader';
 import { getSystemAdminHref } from '../../lib/adminGuard';
+import { useIsMobile } from '../../lib/useIsMobile';
 
 type Reservation = {
   id: string;
@@ -34,6 +35,7 @@ const fmtDateTime = (iso: string) => {
 };
 
 const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdminHref }: Props) => {
+  const isMobile = useIsMobile();
   const [effectiveProfileId, setEffectiveProfileId] = useState<string | null>(profileId);
   const [items, setItems] = useState<Reservation[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -87,8 +89,8 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
         systemAdminHref={systemAdminHref}
       />
 
-      <main style={{ maxWidth: 840, margin: '0 auto', padding: '1.5rem 1rem 5rem', display: 'grid', gap: '1.25rem' }}>
-        <section style={{ padding: '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
+      <main style={{ maxWidth: 840, margin: '0 auto', padding: isMobile ? '1rem 0.6rem 4rem' : '1.5rem 1rem 5rem', display: 'grid', gap: '1.25rem' }}>
+        <section style={{ padding: isMobile ? '0.85rem' : '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
             <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>나의 예약현황</h2>
             <Link
@@ -167,13 +169,17 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
                             background: '#F9FAFB',
                             border: '1px solid var(--color-gray)',
                             color: 'var(--color-ink-2)',
-                            fontSize: '0.85rem',
+                            fontSize: isMobile ? '0.8rem' : '0.85rem',
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: '0.4rem',
+                            alignItems: 'baseline',
                           }}
                         >
                           <span style={{ fontWeight: 700 }}>{s.mmdd} ({s.dow})</span>
-                          <span style={{ marginLeft: '0.5rem' }}>{s.hm}~{e.hm}</span>
-                          <span style={{ marginLeft: '0.5rem' }}>· {r.title}</span>
-                          {r.location && <span style={{ marginLeft: '0.5rem' }}>· {r.location}</span>}
+                          <span>{s.hm}~{e.hm}</span>
+                          <span>· {r.title}</span>
+                          {r.location && <span>· {r.location}</span>}
                         </li>
                       );
                     })}

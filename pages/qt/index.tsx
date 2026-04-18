@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import SubHeader from '../../components/SubHeader';
 import { getSystemAdminHref } from '../../lib/adminGuard';
 import { getProfiles, getUsers } from '../../lib/dataStore';
+import { useIsMobile } from '../../lib/useIsMobile';
 
 type Video = { videoId: string; title: string; publishedAt: string; dow: number };
 
@@ -23,6 +24,7 @@ const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
 const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickname, email, systemAdminHref }: Props) => {
   const router = useRouter();
+  const isMobile = useIsMobile();
   // 일요일 기준 dow별 실제 날짜 계산 (일=0..토=6). weekOffset은 주 단위 이동(일 단위).
   const [weekOffset, setWeekOffset] = useState<number>(0);
   const dateForDow = (dow: number): { m: number; d: number } => {
@@ -184,8 +186,8 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
         systemAdminHref={systemAdminHref}
       />
 
-      <main style={{ maxWidth: 1040, margin: '0 auto', padding: '1.5rem 1rem 5rem', display: 'grid', gap: '1.25rem' }}>
-        <section style={{ padding: '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
+      <main style={{ maxWidth: 1040, margin: '0 auto', padding: isMobile ? '1rem 0.6rem 4rem' : '1.5rem 1rem 5rem', display: 'grid', gap: isMobile ? '1rem' : '1.25rem' }}>
+        <section style={{ padding: isMobile ? '0.85rem' : '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: isMobile ? '0.75rem' : '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.5rem' }}>
             <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>오늘의 큐티말씀</h2>
             <span style={{ fontSize: '0.8rem', color: 'var(--color-ink-2)' }}>KoreanChurchInSingapore</span>
@@ -197,18 +199,19 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
             </div>
           ) : (
             <>
-              <div style={{ display: 'flex', alignItems: 'stretch', gap: '0.3rem' }}>
+              <div style={{ display: 'flex', alignItems: 'stretch', gap: isMobile ? '0.2rem' : '0.3rem' }}>
                 <button
                   type="button"
                   onClick={goPrev}
                   aria-label="이전 날짜"
                   style={{
-                    padding: '0 0.45rem', borderRadius: 8, border: '1px solid var(--color-gray)',
+                    padding: isMobile ? '0 0.35rem' : '0 0.45rem', borderRadius: 8, border: '1px solid var(--color-gray)',
                     background: '#fff', color: 'var(--color-ink-2)', cursor: 'pointer',
-                    fontSize: '0.9rem', fontWeight: 800, flexShrink: 0,
+                    fontSize: isMobile ? '1.05rem' : '0.9rem', fontWeight: 800, flexShrink: 0,
+                    minWidth: isMobile ? 32 : 'auto',
                   }}
                 >‹</button>
-                <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.25rem' }}>
+                <div style={{ flex: 1, minWidth: 0, display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: isMobile ? '0.15rem' : '0.25rem' }}>
                 {[0, 1, 2, 3, 4, 5, 6].map((dow) => {
                   const v = weekOffset === 0 ? videos.find((x) => x.dow === dow) : undefined;
                   const isToday = weekOffset === 0 && dow === todayDow;
@@ -222,7 +225,7 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                       onClick={() => setSelectedDow(dow)}
                       title={isLatest ? '최신영상' : undefined}
                       style={{
-                        padding: '0.3rem 0.2rem',
+                        padding: isMobile ? '0.25rem 0.05rem' : '0.3rem 0.2rem',
                         border: isSelected ? '2px solid #20CD8D' : isToday ? '1.5px solid #D9F09E' : '1px solid var(--color-gray)',
                         borderRadius: 8,
                         background: isToday ? '#ECFCCB' : '#fff',
@@ -231,9 +234,11 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                         textAlign: 'center',
                         boxShadow: isSelected ? '0 2px 6px rgba(32,205,141,0.2)' : 'none',
                         display: 'grid',
-                        gap: '0.15rem',
-                        minHeight: 48,
+                        gap: isMobile ? '0.1rem' : '0.15rem',
+                        minHeight: isMobile ? 44 : 48,
+                        minWidth: 0,
                         position: 'relative',
+                        overflow: 'hidden',
                       }}
                     >
                       {isLatest && (
@@ -243,21 +248,21 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                           boxShadow: '0 0 0 2px #fff',
                         }} aria-label="최신영상" />
                       )}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.2rem' }}>
-                        <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1 }}>
+                      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '0.05rem' : '0.2rem', lineHeight: 1 }}>
+                        <span style={{ fontSize: isMobile ? '0.7rem' : '0.82rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1 }}>
                           {m}/{d}
                         </span>
-                        <span style={{ fontSize: '0.64rem', fontWeight: 700, color: 'var(--color-ink-2)', lineHeight: 1 }}>
+                        <span style={{ fontSize: isMobile ? '0.58rem' : '0.64rem', fontWeight: 700, color: 'var(--color-ink-2)', lineHeight: 1 }}>
                           {DAY_LABELS[dow]}
                         </span>
                       </div>
                       {v ? (
-                        <svg viewBox="0 0 24 24" width="14" height="10" aria-label="YouTube" style={{ justifySelf: 'center' }}>
+                        <svg viewBox="0 0 24 24" width={isMobile ? 12 : 14} height={isMobile ? 9 : 10} aria-label="YouTube" style={{ justifySelf: 'center' }}>
                           <path fill="#FF0000" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31.3 31.3 0 0 0 0 12a31.3 31.3 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31.3 31.3 0 0 0 24 12a31.3 31.3 0 0 0-.5-5.8z"/>
                           <path fill="#fff" d="M9.6 15.6 15.8 12 9.6 8.4z"/>
                         </svg>
                       ) : (
-                        <span style={{ fontSize: '0.62rem', color: 'var(--color-ink-2)' }}>없음</span>
+                        <span style={{ fontSize: isMobile ? '0.55rem' : '0.62rem', color: 'var(--color-ink-2)' }}>없음</span>
                       )}
                     </button>
                   );
@@ -268,9 +273,10 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                   onClick={goNext}
                   aria-label="다음 날짜"
                   style={{
-                    padding: '0 0.45rem', borderRadius: 8, border: '1px solid var(--color-gray)',
+                    padding: isMobile ? '0 0.35rem' : '0 0.45rem', borderRadius: 8, border: '1px solid var(--color-gray)',
                     background: '#fff', color: 'var(--color-ink-2)', cursor: 'pointer',
-                    fontSize: '0.9rem', fontWeight: 800, flexShrink: 0,
+                    fontSize: isMobile ? '1.05rem' : '0.9rem', fontWeight: 800, flexShrink: 0,
+                    minWidth: isMobile ? 32 : 'auto',
                   }}
                 >›</button>
               </div>
@@ -297,8 +303,8 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
               )}
 
               <div style={{
-                display: 'grid', gap: '0.75rem',
-                padding: '1rem 1.1rem',
+                display: 'grid', gap: isMobile ? '0.6rem' : '0.75rem',
+                padding: isMobile ? '0.75rem 0.75rem' : '1rem 1.1rem',
                 borderRadius: 12,
                 background: '#ECFCCB',
                 border: '1px solid #D9F09E',
@@ -373,9 +379,9 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                     if (line.trim()) blocks.push({ text: line.trim() });
                   }
                   return (
-                    <div style={{ padding: '1.1rem 1.2rem', borderRadius: 10, background: '#fff', border: '1px solid #D9F09E' }}>
+                    <div style={{ padding: isMobile ? '0.85rem 0.85rem' : '1.1rem 1.2rem', borderRadius: 10, background: '#fff', border: '1px solid #D9F09E' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.75rem', paddingBottom: '0.6rem', borderBottom: '1px solid #ECFCCB', flexWrap: 'wrap' }}>
-                        <strong style={{ fontSize: '0.98rem', color: 'var(--color-ink)', fontWeight: 800 }}>{qtRef}</strong>
+                        <strong style={{ fontSize: isMobile ? '0.92rem' : '0.98rem', color: 'var(--color-ink)', fontWeight: 800 }}>{qtRef}</strong>
                         <span style={{
                           display: 'inline-flex',
                           alignItems: 'center',
@@ -391,7 +397,7 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                           개역한글 · 공공영역
                         </span>
                       </div>
-                      <div style={{ display: 'grid', gap: '0.5rem', color: 'var(--color-ink)', fontSize: '0.97rem', lineHeight: 1.85 }}>
+                      <div style={{ display: 'grid', gap: '0.5rem', color: 'var(--color-ink)', fontSize: isMobile ? '0.92rem' : '0.97rem', lineHeight: isMobile ? 1.75 : 1.85 }}>
                         {blocks.map((b, i) => {
                           if (b.chapter) {
                             return (
@@ -413,13 +419,13 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                           }
                           if (b.verse) {
                             return (
-                              <div key={i} style={{ display: 'grid', gridTemplateColumns: '2rem 1fr', columnGap: '0.4rem', alignItems: 'baseline' }}>
-                                <span style={{ fontSize: '0.75rem', color: '#65A30D', fontWeight: 700, textAlign: 'right' }}>{b.verse}</span>
+                              <div key={i} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1.5rem 1fr' : '2rem 1fr', columnGap: isMobile ? '0.3rem' : '0.4rem', alignItems: 'baseline' }}>
+                                <span style={{ fontSize: isMobile ? '0.7rem' : '0.75rem', color: '#65A30D', fontWeight: 700, textAlign: 'right' }}>{b.verse}</span>
                                 <p style={{ margin: 0 }}>{b.text}</p>
                               </div>
                             );
                           }
-                          return <p key={i} style={{ margin: 0, paddingLeft: '2.4rem' }}>{b.text}</p>;
+                          return <p key={i} style={{ margin: 0, paddingLeft: isMobile ? '1.8rem' : '2.4rem' }}>{b.text}</p>;
                         })}
                       </div>
                     </div>
@@ -448,15 +454,17 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
           style={{
             position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '1rem', zIndex: 1000,
+            padding: isMobile ? '0.5rem' : '1rem', zIndex: 1000,
           }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
+            className="modal-card"
             style={{
               width: '100%', maxWidth: 560, background: '#fff', borderRadius: 16,
-              padding: '1.5rem', boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
-              display: 'grid', gap: '0.9rem',
+              padding: isMobile ? '1rem' : '1.5rem', boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+              display: 'grid', gap: isMobile ? '0.7rem' : '0.9rem',
+              maxHeight: '92vh', overflowY: 'auto',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
@@ -464,7 +472,7 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
               <button
                 type="button"
                 onClick={() => setNoteOpen(false)}
-                style={{ border: 'none', background: 'transparent', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-ink-2)' }}
+                style={{ border: 'none', background: 'transparent', fontSize: '1.3rem', cursor: 'pointer', color: 'var(--color-ink-2)', minWidth: 40, minHeight: 40 }}
                 aria-label="닫기"
               >✕</button>
             </div>
@@ -502,23 +510,24 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
             {noteMsg && (
               <div style={{ fontSize: '0.82rem', color: noteMsg.includes('실패') ? '#B91C1C' : '#047857' }}>{noteMsg}</div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', flexWrap: 'wrap' }}>
               <button
                 type="button"
                 onClick={() => setNoteOpen(false)}
-                style={{ padding: '0.55rem 1rem', borderRadius: 8, border: '1px solid var(--color-gray)', background: '#fff', cursor: 'pointer', fontWeight: 700 }}
+                style={{ padding: isMobile ? '0.7rem 1.1rem' : '0.55rem 1rem', borderRadius: 8, border: '1px solid var(--color-gray)', background: '#fff', cursor: 'pointer', fontWeight: 700, minHeight: 40 }}
               >닫기</button>
               <button
                 type="button"
                 onClick={saveNote}
                 disabled={noteSaving || noteLoading || !hasNoteInput}
                 style={{
-                  padding: '0.55rem 1.2rem', borderRadius: 8, border: 'none',
+                  padding: isMobile ? '0.7rem 1.3rem' : '0.55rem 1.2rem', borderRadius: 8, border: 'none',
                   background: (!hasNoteInput || noteLoading) ? '#D1D5DB' : noteSaving ? '#86EFAC' : '#20CD8D',
                   color: '#fff',
                   cursor: (noteSaving || !hasNoteInput || noteLoading) ? 'not-allowed' : 'pointer',
                   fontWeight: 800,
                   opacity: (!hasNoteInput || noteLoading) ? 0.7 : 1,
+                  minHeight: 40,
                 }}
               >{noteSaving ? '저장 중…' : '저장'}</button>
             </div>

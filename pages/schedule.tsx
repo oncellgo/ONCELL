@@ -5,6 +5,7 @@ import ScheduleView, { Community, EventRow, WorshipService } from '../components
 import { getSystemAdminHref } from '../lib/adminGuard';
 import { expandOccurrences, EventRow as RawEventRow } from '../lib/recurrence';
 import { getCommunities, getEvents, getWorshipServices, getProfiles, getUsers } from '../lib/dataStore';
+import { useIsMobile } from '../lib/useIsMobile';
 
 type Props = {
   communities: Community[];
@@ -19,6 +20,7 @@ type Props = {
 };
 
 const SchedulePage = ({ communities, events, worshipServices, defaultCommunityId, profileId, displayName, nickname, email, systemAdminHref }: Props) => {
+  const isMobile = useIsMobile();
   return (
     <>
       <Head>
@@ -35,14 +37,14 @@ const SchedulePage = ({ communities, events, worshipServices, defaultCommunityId
         rightExtras={systemAdminHref ? (
           <a
             href={`/management?${new URLSearchParams({ ...(profileId ? { profileId } : {}), ...(nickname ? { nickname } : {}), ...(email ? { email } : {}), communityId: defaultCommunityId, isAdmin: '1', menu: '일정관리' }).toString()}`}
-            style={{ padding: '0.45rem 0.8rem', borderRadius: 10, background: 'var(--color-primary)', color: '#fff', fontSize: '0.85rem', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}
+            style={{ padding: isMobile ? '0.4rem 0.6rem' : '0.45rem 0.8rem', borderRadius: 10, background: 'var(--color-primary)', color: '#fff', fontSize: isMobile ? '0.78rem' : '0.85rem', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}
           >
-            ✏️ 일정 편집
+            {isMobile ? '✏️ 편집' : '✏️ 일정 편집'}
           </a>
         ) : null}
       />
 
-      <main style={{ maxWidth: 960, margin: '0 auto', padding: '1.5rem 1rem 5rem' }}>
+      <main style={{ maxWidth: 960, margin: '0 auto', padding: isMobile ? '1rem 0.6rem 4rem' : '1.5rem 1rem 5rem' }}>
         <ScheduleView
           communities={communities}
           events={events}

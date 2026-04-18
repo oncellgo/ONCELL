@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
+import { useIsMobile } from '../lib/useIsMobile';
 
 /**
  * 공통 상단 네비게이션. 모든 페이지(랜딩 포함)에서 동일한 디자인으로 사용됩니다.
@@ -20,6 +21,7 @@ export type TopNavProps = {
 
 const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdminHref, nickname, email, adminAccent }: TopNavProps) => {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const [lsProfileId, setLsProfileId] = useState<string | null>(null);
   const [lsNickname, setLsNickname] = useState<string | null>(null);
   const [lsEmail, setLsEmail] = useState<string | null>(null);
@@ -87,9 +89,9 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      gap: '0.5rem',
+      gap: isMobile ? '0.35rem' : '0.5rem',
       flexWrap: 'nowrap',
-      padding: '0.6rem 0.9rem',
+      padding: isMobile ? '0.5rem 0.65rem' : '0.6rem 0.9rem',
       borderRadius: 14,
       background: 'rgba(255, 255, 255, 0.9)',
       backdropFilter: 'saturate(180%) blur(10px)',
@@ -108,19 +110,22 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
           </strong>
         </a>
       </div>
-      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: isMobile ? '0.35rem' : '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
         {effProfileId && (
           <span style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.4rem',
-            padding: '0.35rem 0.7rem',
+            padding: isMobile ? '0.3rem 0.55rem' : '0.35rem 0.7rem',
             borderRadius: 999,
             background: 'var(--color-surface-muted)',
             border: '1px solid var(--color-surface-border)',
             color: '#182527',
             fontWeight: 700,
-            fontSize: '0.82rem',
+            fontSize: isMobile ? '0.74rem' : '0.82rem',
+            maxWidth: isMobile ? 200 : 'none',
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
           }}>
             <a
               href={dashboardHref}
@@ -162,13 +167,14 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '0.6rem 1.1rem',
+            padding: isMobile ? '0.5rem 0.85rem' : '0.6rem 1.1rem',
             borderRadius: 'var(--radius-md)',
             background: 'var(--color-primary)',
             color: '#ffffff',
             fontWeight: 700,
-            fontSize: '0.9rem',
+            fontSize: isMobile ? '0.82rem' : '0.9rem',
             textDecoration: 'none',
+            whiteSpace: 'nowrap',
           }}
         >
           {effProfileId ? t('nav.logout') : t('nav.login')}
@@ -177,12 +183,12 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
       </div>
     </section>
     {(badge || brandExtras) && (
-      <section style={{
+      <section className="nav-scroll" style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '0.6rem',
-        flexWrap: 'wrap',
-        padding: '0.45rem 0.9rem',
+        gap: isMobile ? '0.45rem' : '0.6rem',
+        flexWrap: isMobile ? 'nowrap' : 'wrap',
+        padding: isMobile ? '0.4rem 0.65rem' : '0.45rem 0.9rem',
         borderRadius: 14,
         background: adminAccent ? '#ECFCCB' : '#CCF4E5',
         border: `1px solid ${adminAccent ? '#D9F09E' : '#E7F3EE'}`,

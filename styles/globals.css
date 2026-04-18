@@ -37,3 +37,99 @@ body {
   min-height: 100vh;
   padding-bottom: 6.5rem;
 }
+
+/* ============================================================
+ * 반응형 (Responsive) — Mobile / Tablet 최적화
+ *   - sm:  ≤640px (휴대폰)
+ *   - md:  641-1024px (태블릿)
+ * ============================================================ */
+
+/* 1. 본문 컨테이너 padding 축소 */
+@media (max-width: 640px) {
+  main {
+    padding-left: 0.7rem !important;
+    padding-right: 0.7rem !important;
+  }
+}
+
+/* 2. 폰트 스케일 — 휴대폰에서 자연스럽게 작게 */
+@media (max-width: 640px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+/* 3. 표·그리드 가로 스크롤 헬퍼 */
+@media (max-width: 640px) {
+  .responsive-x-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  table {
+    max-width: 100%;
+  }
+}
+
+/* 4. 모달 / 다이얼로그 — 화면 전체 폭으로 확장 */
+@media (max-width: 640px) {
+  [role="dialog"],
+  .modal-card {
+    max-width: calc(100vw - 1rem) !important;
+    max-height: calc(100vh - 1rem) !important;
+    overflow-y: auto;
+  }
+}
+
+/* 5. 네비게이션 가로 스크롤 헬퍼 */
+@media (max-width: 640px) {
+  .nav-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .nav-scroll::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* 6. 폼 입력 요소 — iOS 자동 확대 방지 (16px 이상) */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* 7. 버튼 터치 타겟 최소 40px */
+@media (max-width: 640px) {
+  button:not([data-compact]),
+  a[role="button"]:not([data-compact]) {
+    min-height: 40px;
+  }
+}
+
+/* 8. body padding-bottom — BottomNav 공간 */
+@media (max-width: 640px) {
+  body {
+    padding-bottom: 5rem;
+  }
+}
+
+/* 9. 그리드 자동 stack 헬퍼 */
+@media (max-width: 640px) {
+  .stack-on-mobile {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* 10. 아주 좁은 화면 (≤380px) */
+@media (max-width: 380px) {
+  html {
+    font-size: 14px;
+  }
+  main {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+}

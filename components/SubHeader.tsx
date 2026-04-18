@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { ReactNode, useEffect, useState } from 'react';
+import { useIsMobile } from '../lib/useIsMobile';
 
 /**
  * 하위(서브) 페이지 공통 헤더.
@@ -18,17 +19,16 @@ export type SubHeaderProps = {
 };
 
 const NAV_ITEMS: Array<{ label: string; href: string; requireLogin?: boolean }> = [
-  { label: '홈', href: '/' },
-  { label: '주보', href: '#', requireLogin: true },
-  { label: '예배영상', href: '#' },
   { label: '장소예약', href: '/reservation', requireLogin: true },
-  { label: '일정', href: '/schedule', requireLogin: true },
   { label: '큐티', href: '/qt' },
+  { label: '예배', href: '#' },
+  { label: '일정', href: '/schedule', requireLogin: true },
 ];
 
 const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, systemAdminHref }: SubHeaderProps) => {
   const router = useRouter();
   const currentPath = router?.pathname || '';
+  const isMobile = useIsMobile();
 
   const [lsProfileId, setLsProfileId] = useState<string | null>(null);
   const [lsNickname, setLsNickname] = useState<string | null>(null);
@@ -86,8 +86,8 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '0.75rem',
-        padding: '0.7rem 1rem',
+        gap: isMobile ? '0.45rem' : '0.75rem',
+        padding: isMobile ? '0.55rem 0.65rem' : '0.7rem 1rem',
         background: 'rgba(255, 255, 255, 0.92)',
         backdropFilter: 'saturate(180%) blur(10px)',
         borderBottom: '1px solid var(--color-surface-border)',
@@ -115,13 +115,15 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
       </Link>
 
       <nav
+        className="nav-scroll"
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '0.25rem',
-          flex: '1 1 auto',
-          justifyContent: 'center',
-          flexWrap: 'wrap',
+          gap: isMobile ? '0.15rem' : '0.25rem',
+          flex: isMobile ? '1 1 100%' : '1 1 auto',
+          order: isMobile ? 3 : undefined,
+          justifyContent: isMobile ? 'flex-start' : 'center',
+          flexWrap: isMobile ? 'nowrap' : 'wrap',
           overflowX: 'auto',
         }}
       >
@@ -131,15 +133,17 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
             <Link
               key={item.label}
               href={withAuth(item.href)}
+              data-compact
               style={{
-                padding: '0.4rem 0.85rem',
+                padding: isMobile ? '0.35rem 0.65rem' : '0.4rem 0.85rem',
                 borderRadius: 999,
-                fontSize: '0.88rem',
+                fontSize: isMobile ? '0.82rem' : '0.88rem',
                 fontWeight: active ? 800 : 600,
                 color: active ? 'var(--color-primary-deep)' : 'var(--color-ink-2)',
                 background: active ? 'var(--color-primary-tint)' : 'transparent',
                 textDecoration: 'none',
                 whiteSpace: 'nowrap',
+                flexShrink: 0,
                 transition: 'background 0.15s ease, color 0.15s ease',
               }}
             >
@@ -163,7 +167,7 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
               color: 'var(--color-ink)',
               fontWeight: 700,
               fontSize: '0.82rem',
-              maxWidth: 200,
+              maxWidth: isMobile ? 120 : 200,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',

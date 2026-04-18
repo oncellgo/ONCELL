@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
+import { useIsMobile } from '../lib/useIsMobile';
 
 const BottomNav = () => {
   const router = useRouter();
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const profileId = typeof router.query.profileId === 'string' ? router.query.profileId : undefined;
   const communityId = typeof router.query.communityId === 'string' ? router.query.communityId : undefined;
   const nickname = typeof router.query.nickname === 'string' ? router.query.nickname : undefined;
@@ -51,8 +53,8 @@ const BottomNav = () => {
       ];
 
   return (
-    <nav style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 50, padding: '0.65rem 0.85rem 0.3rem', background: 'var(--color-ink)', boxShadow: '0 -16px 32px rgba(24, 37, 39, 0.18)', borderTop: '1px solid rgba(32, 205, 141, 0.2)', fontFamily: 'var(--font-sans)' }}>
-      <div style={{ width: '100%', maxWidth: 1040, margin: '0 auto', display: 'grid', gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))`, gap: '0.5rem' }}>
+    <nav style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 50, padding: isMobile ? '0.45rem 0.5rem 0.25rem' : '0.65rem 0.85rem 0.3rem', background: 'var(--color-ink)', boxShadow: '0 -16px 32px rgba(24, 37, 39, 0.18)', borderTop: '1px solid rgba(32, 205, 141, 0.2)', fontFamily: 'var(--font-sans)' }}>
+      <div style={{ width: '100%', maxWidth: 1040, margin: '0 auto', display: 'grid', gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))`, gap: isMobile ? '0.3rem' : '0.5rem' }}>
         {items.map((item) => {
           const itemPath = item.href.split('?')[0];
           const itemHash = item.href.includes('#') ? `#${item.href.split('#')[1]}` : '';
@@ -69,15 +71,21 @@ const BottomNav = () => {
                 display: 'inline-flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                padding: '0.8rem 0.4rem',
+                padding: isMobile ? '0.55rem 0.2rem' : '0.8rem 0.4rem',
                 borderRadius: 'var(--radius-md)',
                 background: isActive ? 'var(--color-primary)' : '#ffffff',
                 color: isActive ? '#ffffff' : 'var(--color-ink)',
                 border: isActive ? '1px solid var(--color-primary)' : '1px solid var(--color-gray)',
                 textDecoration: 'none',
                 fontWeight: isActive ? 800 : 700,
-                fontSize: '0.9rem',
+                fontSize: isMobile ? '0.74rem' : '0.9rem',
                 boxShadow: isActive ? '0 2px 8px rgba(32, 205, 141, 0.35)' : 'none',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                minWidth: 0,
+                lineHeight: 1.15,
+                textAlign: 'center',
               }}
             >
               {item.label}

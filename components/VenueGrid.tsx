@@ -1,4 +1,5 @@
 import React from 'react';
+import { useIsMobile } from '../lib/useIsMobile';
 
 export type Venue = {
   id: string;
@@ -111,6 +112,7 @@ type Props = {
 };
 
 const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate, slotMin = SLOT_MIN, availableStart = '06:00', availableEnd = '22:00', selectedSlots, onSlotClick, renderRowExtra, showActionColumn = false }: Props) => {
+  const isMobile = useIsMobile();
   const blockedByVenue = computeBlockedSlotsForDate(groups, selectedDate);
   const venues = [...venuesProp].sort((a, b) => {
     const fa = Number((a.floor.match(/(\d+)/) || [])[1] || 0);
@@ -131,21 +133,24 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
   const availableStartMin = toMin(availableStart);
   const availableEndMin = toMin(availableEnd);
 
-  const TIME_HOUR_W = 34;
-  const TIME_MIN_W = 32;
+  const TIME_HOUR_W = isMobile ? 28 : 34;
+  const TIME_MIN_W = isMobile ? 26 : 32;
+  const VENUE_MIN_W = isMobile ? 44 : 52;
+  // 모바일에서 장소가 많아 가로폭 부족 → 가로 스크롤이 자연스럽게 작동하도록 minWidth 적용
+  const tableMinWidth = isMobile ? TIME_HOUR_W + TIME_MIN_W + venues.length * VENUE_MIN_W : undefined;
   return (
-    <div style={{ overflowX: 'auto', border: '1px solid var(--color-surface-border)', borderRadius: 10, background: '#fff' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.72rem', tableLayout: 'fixed' }}>
+    <div className="responsive-x-scroll" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', border: '1px solid var(--color-surface-border)', borderRadius: 10, background: '#fff' }}>
+      <table style={{ width: '100%', minWidth: tableMinWidth, borderCollapse: 'collapse', fontSize: isMobile ? '0.68rem' : '0.72rem', tableLayout: 'fixed' }}>
         <colgroup>
           <col style={{ width: TIME_HOUR_W }} />
           <col style={{ width: TIME_MIN_W }} />
-          {venues.map((v) => <col key={v.id} />)}
+          {venues.map((v) => <col key={v.id} style={{ minWidth: VENUE_MIN_W }} />)}
         </colgroup>
         <thead>
           <tr style={{ background: '#ECFCCB' }}>
             <th colSpan={2} style={{ padding: '0.25rem 0.4rem', position: 'sticky', left: 0, background: '#ECFCCB', textAlign: 'center', borderRight: '1px solid #D9F09E', zIndex: 2, fontSize: '0.72rem', fontWeight: 800 }}>시간</th>
             {venues.map((v) => (
-              <th key={v.id} style={{ padding: '0.2rem 0.15rem', borderRight: '1px solid #F1F5F9', color: '#4D7C0F', fontWeight: 700, minWidth: 52, verticalAlign: 'bottom', lineHeight: 1.1 }}>
+              <th key={v.id} style={{ padding: '0.2rem 0.15rem', borderRight: '1px solid #F1F5F9', color: '#4D7C0F', fontWeight: 700, minWidth: VENUE_MIN_W, verticalAlign: 'bottom', lineHeight: 1.1 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.08rem' }}>
                   <span style={{ fontSize: '0.62rem', color: '#334155', fontWeight: 700 }}>{v.floor}</span>
                   <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-ink)', whiteSpace: 'nowrap' }}>{v.name}</span>
@@ -198,7 +203,7 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                   const color = isSelected ? '#fff' : (!inAvailable ? '#9CA3AF' : blocked ? '#F3F4F6' : '#4D7C0F');
                   const clickable = !!onSlotClick && inAvailable;
                   return (
-                    <td key={v.id} style={{ padding: 0, borderRight: '1px solid #F4F4F0', minWidth: 52 }}>
+                    <td key={v.id} style={{ padding: 0, borderRight: '1px solid #F4F4F0', minWidth: VENUE_MIN_W }}>
                       <button
                         type="button"
                         disabled={!clickable}

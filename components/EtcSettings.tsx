@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useIsMobile } from '../lib/useIsMobile';
 
 type Props = {
   profileId: string;
@@ -6,6 +7,7 @@ type Props = {
 };
 
 const EtcSettings = ({ profileId, k }: Props) => {
+  const isMobile = useIsMobile();
   const authQS = `profileId=${encodeURIComponent(profileId)}&k=${encodeURIComponent(k)}`;
   const authHeaders = { 'x-profile-id': profileId, 'x-admin-token': k };
 
@@ -105,14 +107,14 @@ const EtcSettings = ({ profileId, k }: Props) => {
   };
 
   return (
-    <section style={{ padding: '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
+    <section style={{ padding: isMobile ? '0.85rem' : '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: isMobile ? '0.7rem' : '1rem' }}>
       <h2 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--color-ink)' }}>기타설정</h2>
       {loading ? (
         <p style={{ margin: 0, color: 'var(--color-ink-2)' }}>불러오는 중...</p>
       ) : (
         <>
-          <div style={{ display: 'grid', gap: '0.85rem', padding: '0.85rem 1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'grid', gap: '0.85rem', padding: isMobile ? '0.7rem 0.75rem' : '0.85rem 1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
+            <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: '0.6rem', flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#3F6212' }}>장소예약 가능시간</div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--color-ink-2)', marginTop: '0.2rem' }}>예약 그리드에 표시되는 전체 시간 범위</div>
@@ -148,8 +150,8 @@ const EtcSettings = ({ profileId, k }: Props) => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gap: '0.85rem', padding: '0.85rem 1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'grid', gap: '0.85rem', padding: isMobile ? '0.7rem 0.75rem' : '0.85rem 1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
+            <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: '0.6rem', flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#3F6212' }}>장소예약 시간그리드 단위</div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--color-ink-2)', marginTop: '0.2rem' }}>예약 그리드의 시간 슬롯 한 칸 길이</div>
@@ -180,8 +182,8 @@ const EtcSettings = ({ profileId, k }: Props) => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gap: '0.85rem', padding: '0.85rem 1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'grid', gap: '0.85rem', padding: isMobile ? '0.7rem 0.75rem' : '0.85rem 1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
+            <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: '0.6rem', flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#3F6212' }}>신규 사용자 가입 승인</div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--color-ink-2)', marginTop: '0.2rem' }}>로그인 시 즉시 가입 처리 또는 관리자 승인 후 가입</div>
@@ -216,8 +218,8 @@ const EtcSettings = ({ profileId, k }: Props) => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gap: '0.85rem', padding: '0.85rem 1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'grid', gap: '0.85rem', padding: isMobile ? '0.7rem 0.75rem' : '0.85rem 1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
+            <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: '0.6rem', flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#3F6212' }}>가입시 필수정보</div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--color-ink-2)', marginTop: '0.2rem' }}>가입 시 사용자가 반드시 입력해야 하는 항목 선택</div>
@@ -263,8 +265,8 @@ const EtcSettings = ({ profileId, k }: Props) => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gap: '0.85rem', padding: '0.85rem 1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'grid', gap: '0.85rem', padding: isMobile ? '0.7rem 0.75rem' : '0.85rem 1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
+            <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: '0.6rem', flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#3F6212' }}>한 user당 예약제한</div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--color-ink-2)', marginTop: '0.2rem' }}>
@@ -325,7 +327,7 @@ const EtcSettings = ({ profileId, k }: Props) => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gap: '0.75rem', padding: '0.85rem 1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
+          <div style={{ display: 'grid', gap: '0.75rem', padding: isMobile ? '0.7rem 0.75rem' : '0.85rem 1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#3F6212' }}>일정 구분 관리</div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Venue, Block, SLOT_MIN, dateKey, toHHMM, toMin } from './VenueGrid';
+import { useIsMobile } from '../lib/useIsMobile';
 
 type BlockGroup = {
   id: string;
@@ -286,7 +287,7 @@ const VenueManager = ({ profileId, k }: Props) => {
 
 const Modal = ({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) => (
   <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(24, 37, 39, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-    <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 420, background: '#fff', borderRadius: 14, padding: '1.25rem', display: 'grid', gap: '0.75rem' }}>
+    <div role="dialog" className="modal-card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 420, background: '#fff', borderRadius: 14, padding: '1.25rem', display: 'grid', gap: '0.75rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--color-ink)' }}>{title}</h3>
         <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.1rem', cursor: 'pointer' }}>✕</button>
@@ -348,6 +349,7 @@ type WeeklyBlockCardProps = {
 };
 
 const WeeklyBlockCard = ({ venues, busy, slotMin, availableStart, availableEnd, onCreateBlocks, editingGroup, onUpdateGroup, onCancelEdit }: WeeklyBlockCardProps) => {
+  const isMobile = useIsMobile();
   const editingGroupId = editingGroup?.id || null;
   const [selectedVenueId, setSelectedVenueId] = useState<string>(venues[0]?.id || '');
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
@@ -505,8 +507,8 @@ const WeeklyBlockCard = ({ venues, busy, slotMin, availableStart, availableEnd, 
         </StepSection>
 
         <StepSection number={2} title="시간선택" subtitle={`가로는 요일, 세로는 ${slotMin === 60 ? '1시간' : '30분'} 단위. 셀을 클릭하여 블럭할 시간대를 선택하세요.`}>
-          <div style={{ overflowX: 'auto', border: '1px solid #D9F09E', borderRadius: 10, background: '#fff' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.72rem' }}>
+          <div className="responsive-x-scroll" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', border: '1px solid #D9F09E', borderRadius: 10, background: '#fff' }}>
+            <table style={{ width: '100%', minWidth: isMobile ? 360 : undefined, borderCollapse: 'collapse', fontSize: isMobile ? '0.68rem' : '0.72rem' }}>
               <thead>
                 <tr style={{ background: '#ECFCCB' }}>
                   <th style={{ padding: '0.4rem 0.5rem', position: 'sticky', left: 0, background: '#ECFCCB', borderRight: '1px solid #D9F09E', minWidth: 56, zIndex: 2 }}>시간</th>
@@ -622,17 +624,20 @@ const WeeklyBlockCard = ({ venues, busy, slotMin, availableStart, availableEnd, 
   );
 };
 
-const StepSection = ({ number, title, subtitle, children, inline }: { number: number; title: string; subtitle?: string; children: React.ReactNode; inline?: boolean }) => (
-  <div>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: inline ? 0 : '0.4rem', flexWrap: 'wrap' }}>
-      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 999, background: '#65A30D', color: '#fff', fontWeight: 800, fontSize: '0.8rem', flex: '0 0 auto' }}>{number}</span>
-      <strong style={{ fontSize: '0.95rem', color: '#3F6212', fontWeight: 800 }}>{title}</strong>
-      {subtitle && <span style={{ fontSize: '0.78rem', color: 'var(--color-ink-2)', fontWeight: 500 }}>{subtitle}</span>}
-      {inline && <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginLeft: '0.25rem' }}>{children}</div>}
+const StepSection = ({ number, title, subtitle, children, inline }: { number: number; title: string; subtitle?: string; children: React.ReactNode; inline?: boolean }) => {
+  const isMobile = useIsMobile();
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: inline ? 0 : '0.4rem', flexWrap: 'wrap' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 999, background: '#65A30D', color: '#fff', fontWeight: 800, fontSize: '0.8rem', flex: '0 0 auto' }}>{number}</span>
+        <strong style={{ fontSize: '0.95rem', color: '#3F6212', fontWeight: 800 }}>{title}</strong>
+        {subtitle && <span style={{ fontSize: '0.78rem', color: 'var(--color-ink-2)', fontWeight: 500 }}>{subtitle}</span>}
+        {inline && <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginLeft: '0.25rem' }}>{children}</div>}
+      </div>
+      {!inline && <div style={{ paddingLeft: isMobile ? 0 : '2rem' }}>{children}</div>}
     </div>
-    {!inline && <div style={{ paddingLeft: '2rem' }}>{children}</div>}
-  </div>
-);
+  );
+};
 
 const VenueFloorCard = ({ venues, floors: floorsProp, onAdd, onDelete, onAddFloor }: { venues: Venue[]; floors: string[]; onAdd: (floor: string) => void; onDelete: (id: string) => void; onAddFloor: (label: string) => Promise<void> | void }) => {
   const presentFloors = Array.from(new Set(venues.map((v) => v.floor)));
@@ -710,7 +715,9 @@ const formatMinAmPm = (min: number) => {
   return m === 0 ? `${h12}${ampm}` : `${h12}:${String(m).padStart(2, '0')}${ampm}`;
 };
 
-const BlockGroupsCard = ({ groups, venues, onEdit, onDelete }: { groups: BlockGroup[]; venues: Venue[]; onEdit: (g: BlockGroup) => void; onDelete: (id: string) => void }) => (
+const BlockGroupsCard = ({ groups, venues, onEdit, onDelete }: { groups: BlockGroup[]; venues: Venue[]; onEdit: (g: BlockGroup) => void; onDelete: (id: string) => void }) => {
+  const isMobile = useIsMobile();
+  return (
   <section style={{ padding: '1rem', borderRadius: 12, background: '#fff', border: '1px solid var(--color-surface-border)' }}>
     <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem', color: 'var(--color-ink)' }}>🔁 등록된 반복 블럭 ({groups.length})</h3>
     {groups.length === 0 ? (
@@ -725,7 +732,7 @@ const BlockGroupsCard = ({ groups, venues, onEdit, onDelete }: { groups: BlockGr
           const minStart = startMins.length ? Math.min(...startMins) : 0;
           const maxEnd = startMins.length ? Math.max(...startMins) + SLOT_MIN : 0;
           return (
-            <li key={g.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.75rem', border: '1.5px solid #DC2626', borderRadius: 10, background: '#FEF2F2', flexWrap: 'nowrap', overflow: 'hidden', boxShadow: '0 1px 3px rgba(220, 38, 38, 0.12)' }}>
+            <li key={g.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.75rem', border: '1.5px solid #DC2626', borderRadius: 10, background: '#FEF2F2', flexWrap: isMobile ? 'wrap' : 'nowrap', overflow: 'hidden', boxShadow: '0 1px 3px rgba(220, 38, 38, 0.12)' }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: 999, background: '#DC2626', color: '#fff', fontSize: '0.7rem', fontWeight: 800, flex: '0 0 auto' }}>⛔</span>
               <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#991B1B', whiteSpace: 'nowrap', flex: '0 0 auto' }}>
                 {v ? `${v.floor}·${v.name}` : g.venueId}
@@ -754,6 +761,7 @@ const BlockGroupsCard = ({ groups, venues, onEdit, onDelete }: { groups: BlockGr
       </ul>
     )}
   </section>
-);
+  );
+};
 
 export default VenueManager;

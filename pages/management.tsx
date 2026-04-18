@@ -8,6 +8,7 @@ import CommunityBadge from '../components/CommunityBadge';
 import DateTimePicker from '../components/DateTimePicker';
 import WorshipBulletinEditor, { WorshipBulletinPreview } from '../components/WorshipBulletinEditor';
 import { getSystemAdminHref } from '../lib/adminGuard';
+import { useIsMobile } from '../lib/useIsMobile';
 import { getCommunities, getUsers } from '../lib/dataStore';
 
 type Community = {
@@ -58,6 +59,7 @@ type CalendarEvent = {
 
 const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEntries, systemAdminHref }: ManagementProps) => {
   const mgmtRouter = useRouter();
+  const isMobile = useIsMobile();
   const mgmtCommunityId = typeof mgmtRouter.query.communityId === 'string' ? mgmtRouter.query.communityId : null;
   const scopedAdminCommunities = mgmtCommunityId
     ? adminCommunities.filter((c) => c.id === mgmtCommunityId)
@@ -883,8 +885,8 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
               const activeMembers = members.filter((m) => (m.membershipStatus || 'active') === 'active');
               const list = activeMembers;
               return (
-                <section style={{ padding: '1.5rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
-                  <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>구성원 관리 ({activeMembers.length})</h2>
+                <section style={{ padding: isMobile ? '1rem' : '1.5rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
+                  <h2 style={{ margin: 0, fontSize: isMobile ? '1.05rem' : '1.2rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>구성원 관리 ({activeMembers.length})</h2>
                   {!mgmtCommunityId ? (
                     <p style={{ margin: 0, color: 'var(--color-ink-2)' }}>공동체를 선택해주세요.</p>
                   ) : (
@@ -894,8 +896,8 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                       ) : list.length === 0 ? (
                         <p style={{ margin: 0, color: 'var(--color-ink-2)' }}>구성원이 없습니다.</p>
                       ) : (
-                        <div style={{ overflowX: 'auto' }}>
-                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+                        <div className="responsive-x-scroll" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                          <table style={{ width: '100%', minWidth: isMobile ? 520 : undefined, borderCollapse: 'collapse', fontSize: isMobile ? '0.82rem' : '0.88rem' }}>
                             <thead>
                               <tr style={{ background: '#f1f5f9', color: 'var(--color-ink-2)', textAlign: 'left' }}>
                                 <th style={{ padding: '0.6rem 0.75rem', fontWeight: 700, borderBottom: '1px solid var(--color-gray)', width: 40 }}>#</th>
@@ -1159,7 +1161,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                   </div>
                 </section>
 
-                <section style={{ padding: '1.5rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
+                <section style={{ padding: isMobile ? '1rem' : '1.5rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
                   {(() => {
                     const panelKey = selectedCalDay || todayKey;
                     const isAdmin = Boolean(community?.adminProfileId === profileId);
@@ -1385,7 +1387,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                                     : '일정');
                               const timeLabel = new Date(ev.startAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
                               return (
-                                <div key={ev.id} style={{ display: 'grid', gridTemplateColumns: 'auto 60px 1fr auto auto', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.6rem', borderRadius: 8, background: '#F9FCFB', border: '1px solid var(--color-surface-border)', fontSize: '0.85rem' }}>
+                                <div key={ev.id} style={isMobile ? { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.6rem', borderRadius: 8, background: '#F9FCFB', border: '1px solid var(--color-surface-border)', fontSize: '0.8rem' } : { display: 'grid', gridTemplateColumns: 'auto 60px 1fr auto auto', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.6rem', borderRadius: 8, background: '#F9FCFB', border: '1px solid var(--color-surface-border)', fontSize: '0.85rem' }}>
                                   <span style={{
                                     display: 'inline-block',
                                     padding: '0.15rem 0.55rem',
@@ -1480,7 +1482,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
               const isCurrentAdmin = Boolean(currentCommunity);
               return (
                 <div onClick={() => { setEventModalOpen(false); setEditingEventId(null); }} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(24, 37, 39, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-                  <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 520, background: '#fff', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', padding: '1.25rem', display: 'grid', gap: '0.75rem' }}>
+                  <div role="dialog" className="modal-card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 520, background: '#fff', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', padding: isMobile ? '1rem' : '1.25rem', display: 'grid', gap: '0.75rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-ink)' }}>{editingEventId ? '일정 수정' : '새 일정 등록'}</h3>
                       <button type="button" onClick={() => { setEventModalOpen(false); setEditingEventId(null); }} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-ink-2)' }}>✕</button>
@@ -1542,7 +1544,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                     />
                     {eventScope === 'worship' ? (
                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <DateTimePicker value={calForm.startAt} onChange={(v) => setCalForm({ ...calForm, startAt: v })} placeholder="예배일자" style={{ flex: '0 0 auto', minWidth: 0, width: 200 }} />
+                        <DateTimePicker value={calForm.startAt} onChange={(v) => setCalForm({ ...calForm, startAt: v })} placeholder="예배일자" style={isMobile ? { flex: '1 1 100%', minWidth: 0, width: '100%' } : { flex: '0 0 auto', minWidth: 0, width: 200 }} />
                         {locationMode === 'custom' ? (
                           <input
                             type="text"
@@ -1841,7 +1843,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
               const dateLabel = new Date(target.startAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
               return (
                 <div onClick={() => setDeleteModal(null)} style={{ position: 'fixed', inset: 0, zIndex: 110, background: 'rgba(24, 37, 39, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-                  <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 420, background: '#fff', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', padding: '1.25rem', display: 'grid', gap: '0.85rem' }}>
+                  <div role="dialog" className="modal-card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 420, background: '#fff', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', padding: '1.25rem', display: 'grid', gap: '0.85rem' }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem' }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 999, background: '#FEE2E2', color: 'var(--color-danger)', fontSize: '1.2rem', flexShrink: 0 }}>!</span>
                       <div style={{ flex: 1 }}>
@@ -1898,7 +1900,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
               const dateLabel = new Date(target.startAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
               return (
                 <div onClick={() => setEditChoiceModal(null)} style={{ position: 'fixed', inset: 0, zIndex: 110, background: 'rgba(24, 37, 39, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-                  <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 420, background: '#fff', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', padding: '1.25rem', display: 'grid', gap: '0.85rem' }}>
+                  <div role="dialog" className="modal-card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 420, background: '#fff', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', padding: '1.25rem', display: 'grid', gap: '0.85rem' }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem' }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 999, background: 'var(--color-primary-tint)', color: 'var(--color-primary-deep)', fontSize: '1.2rem', flexShrink: 0 }}>✎</span>
                       <div style={{ flex: 1 }}>
@@ -1950,8 +1952,8 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
             })()}
 
             {activeMenu === '예배관리' && (
-              <section style={{ padding: '1.5rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
-                <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>🎨 공동체 디자인 템플릿 설정</h2>
+              <section style={{ padding: isMobile ? '1rem' : '1.5rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
+                <h2 style={{ margin: 0, fontSize: isMobile ? '1.05rem' : '1.2rem', color: 'var(--color-ink)' }}>🎨 공동체 디자인 템플릿 설정</h2>
                 <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-ink-2)' }}>모든 예배 주보에 공통으로 적용되는 브랜딩입니다. 변경 시 이후 생성되는 예배에 반영되며, 기존 예배에도 일괄 적용할 수 있습니다.</p>
                 <div style={{ display: 'grid', gap: '0.85rem', padding: '1rem 1.1rem', borderRadius: 12, background: '#F9FCFB', border: '1px solid var(--color-surface-border)' }}>
                   <div style={{ display: 'grid', gap: '0.4rem' }}>
@@ -1996,8 +1998,8 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
             )}
 
             {activeMenu === '예배관리' && (
-              <section style={{ padding: '1.5rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
-                <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>주보관리</h2>
+              <section style={{ padding: isMobile ? '1rem' : '1.5rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
+                <h2 style={{ margin: 0, fontSize: isMobile ? '1.05rem' : '1.2rem', color: 'var(--color-ink)' }}>주보관리</h2>
                 <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-ink-2)' }}>예배일정 수정/삭제는 일정관리에서 가능합니다</p>
                 <div style={{ padding: '1rem 1.1rem', borderRadius: 14, background: '#F9FCFB', border: '1px solid var(--color-surface-border)', display: 'grid', gap: '0.65rem' }}>
                   {wsModalOpen && (
@@ -2007,7 +2009,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                         <button type="button" onClick={() => setWsModalOpen(false)} aria-label="닫기" style={{ background: 'none', border: 'none', fontSize: '1rem', cursor: 'pointer', color: 'var(--color-ink-2)' }}>✕</button>
                       </div>
                       <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                        <label style={{ display: 'grid', gap: '0.25rem', width: 120 }}>
+                        <label style={{ display: 'grid', gap: '0.25rem', width: isMobile ? '100%' : 120 }}>
                           <span style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 700 }}>예배이름</span>
                           {(() => {
                             const presets = ['주일예배', '수요예배', '금요예배', '새벽예배', '구역예배'];
@@ -2041,7 +2043,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                             );
                           })()}
                         </label>
-                        <div style={{ display: 'grid', gap: '0.25rem', width: 160 }}>
+                        <div style={{ display: 'grid', gap: '0.25rem', width: isMobile ? '100%' : 160 }}>
                           <span style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 700 }}>예배일자</span>
                           <DateTimePicker
                             value={wsForm.startAt}
@@ -2063,7 +2065,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                         {(() => {
                           const tpls = worshipServices.filter((s) => !!s.bulletin);
                           return (
-                            <div style={{ display: 'grid', gap: '0.25rem', width: 140 }}>
+                            <div style={{ display: 'grid', gap: '0.25rem', width: isMobile ? '100%' : 140 }}>
                               <span style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 700 }}>주보템플릿</span>
                               <select
                                 value={worshipTemplateId}
@@ -2258,7 +2260,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                         ) : (
                           <>
                             <div style={{ display: 'grid', gap: '0.4rem' }}>
-                              <div style={{ display: 'grid', gridTemplateColumns: '150px minmax(100px, 1fr) 110px 170px', alignItems: 'center', gap: '0.6rem', padding: '0.4rem 0.85rem', background: '#F1F5F9', borderRadius: 8, fontSize: '0.74rem', fontWeight: 700, color: 'var(--color-ink-2)' }}>
+                              <div style={{ display: isMobile ? 'none' : 'grid', gridTemplateColumns: '150px minmax(100px, 1fr) 110px 170px', alignItems: 'center', gap: '0.6rem', padding: '0.4rem 0.85rem', background: '#F1F5F9', borderRadius: 8, fontSize: '0.74rem', fontWeight: 700, color: 'var(--color-ink-2)' }}>
                                 <span>예배 날짜·시간</span>
                                 <span>예배 이름</span>
                                 <span>주보</span>
@@ -2271,7 +2273,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                                 const preview = s.bulletin ?? s.resolvedBulletin;
                                 const isDefault = (s as any).isDefault;
                                 return (
-                                  <div key={s.id} style={{ display: 'grid', gridTemplateColumns: '150px minmax(100px, 1fr) 110px 170px', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0.85rem', borderRadius: 10, background: '#fff', border: '1px solid var(--color-surface-border)' }}>
+                                  <div key={s.id} style={isMobile ? { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 0.85rem', borderRadius: 10, background: '#fff', border: '1px solid var(--color-surface-border)' } : { display: 'grid', gridTemplateColumns: '150px minmax(100px, 1fr) 110px 170px', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0.85rem', borderRadius: 10, background: '#fff', border: '1px solid var(--color-surface-border)' }}>
                                     <span style={{ fontSize: '0.8rem', color: 'var(--color-ink)', fontWeight: 600, whiteSpace: 'nowrap' }}>{when}</span>
                                     <span style={{ fontWeight: 700, color: 'var(--color-ink)', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
                                     <button
@@ -2329,7 +2331,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
 
             {duplicateSource && (
               <div onClick={() => { if (!duplicateSaving) { setDuplicateSource(null); setDuplicateName(''); } }} style={{ position: 'fixed', inset: 0, zIndex: 110, background: 'rgba(24, 37, 39, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-                <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 420, background: '#fff', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', padding: '1.25rem', display: 'grid', gap: '0.85rem' }}>
+                <div role="dialog" className="modal-card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 420, background: '#fff', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', padding: '1.25rem', display: 'grid', gap: '0.85rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <strong style={{ fontSize: '1rem', color: 'var(--color-primary-deep)' }}>템플릿 복제</strong>
                     <button type="button" onClick={() => { setDuplicateSource(null); setDuplicateName(''); }} style={{ background: 'none', border: 'none', fontSize: '1.1rem', cursor: 'pointer', color: 'var(--color-ink-2)' }}>✕</button>
@@ -2359,7 +2361,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
 
             {editingService && (
               <div onClick={() => { if (window.confirm('편집을 종료하시겠습니까? 저장하지 않은 변경사항은 사라집니다.')) { setEditingService(null); setEditingBulletin(null); } }} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(24, 37, 39, 0.55)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '1rem', overflowY: 'auto' }}>
-                <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 720, background: '#fff', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', padding: '1.25rem', display: 'grid', gap: '0.75rem' }}>
+                <div role="dialog" className="modal-card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 720, background: '#fff', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', padding: isMobile ? '1rem' : '1.25rem', display: 'grid', gap: '0.75rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-ink)' }}>주보 편집 · {editingService.name}</h3>
                     <button type="button" onClick={() => { setEditingService(null); setEditingBulletin(null); }} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
@@ -2417,8 +2419,8 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
             )}
 
             {activeMenu === '기타설정' && (
-            <section style={{ padding: '1.5rem', borderRadius: 28, background: '#ffffff', boxShadow: '0 12px 32px rgba(15, 23, 42, 0.08)', border: '1px solid rgba(148, 163, 184, 0.18)' }}>
-              <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#0f172a' }}>기타 설정</h2>
+            <section style={{ padding: isMobile ? '1rem' : '1.5rem', borderRadius: 28, background: '#ffffff', boxShadow: '0 12px 32px rgba(15, 23, 42, 0.08)', border: '1px solid rgba(148, 163, 184, 0.18)' }}>
+              <h2 style={{ margin: 0, fontSize: isMobile ? '1.15rem' : '1.5rem', color: '#0f172a' }}>기타 설정</h2>
 
               {profileId ? (
                 scopedAdminCommunities.length > 0 ? (

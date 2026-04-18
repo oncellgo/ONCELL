@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useVideo } from './VideoPlayer';
 import DateTimePicker from './DateTimePicker';
+import { useIsMobile } from '../lib/useIsMobile';
 
 export type BulletinItem = {
   id: string;
@@ -117,7 +118,7 @@ export const WorshipBulletinPreview = ({ value: rawValue, onClose }: { value: Bu
   const bgStyle = computeBgStyle(value.background);
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(24, 37, 39, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', position: 'relative', background: 'transparent' }}>
+      <div role="dialog" aria-modal="true" className="modal-card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', position: 'relative', background: 'transparent' }}>
         <button type="button" onClick={onClose} style={{ position: 'absolute', top: 8, right: 12, background: 'rgba(255,255,255,0.85)', border: 'none', fontSize: '1.2rem', cursor: 'pointer', zIndex: 2, borderRadius: 999, width: 32, height: 32 }}>✕</button>
         <div style={{ padding: '1rem 1rem 1rem', borderRadius: 16, backgroundColor: '#fff', backgroundImage: bgStyle, backgroundSize: 'cover', backgroundPosition: 'center', display: 'grid', gap: '0.5rem', position: 'relative' }}>
           {value.churchName && <div style={{ position: 'absolute', top: 10, right: 16, fontSize: '0.8rem', fontWeight: 700, color: '#20CD8D' }}>{value.churchName}</div>}
@@ -184,6 +185,7 @@ const ytId = (url: string): string | null => {
 
 const WorshipBulletinEditor = ({ value: rawValue, onChange, initialEditMode = false, onPublish, onUnpublish, isPublished, onApplyDesignToAll }: Props) => {
   const video = useVideo();
+  const isMobile = useIsMobile();
   const editMode = true;
   const [previewOpen, setPreviewOpen] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -266,7 +268,7 @@ const WorshipBulletinEditor = ({ value: rawValue, onChange, initialEditMode = fa
       </div>
 
       {/* 본문 컨테이너 */}
-      <div style={{ display: 'grid', gap: '0.5rem', padding: '0.5rem 1rem 0', borderRadius: 12, width: 600, maxWidth: '100%', margin: '0 auto', boxSizing: 'border-box', overflow: 'visible', position: 'relative', backgroundColor: '#fff', backgroundImage: bgStyle, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+      <div style={{ display: 'grid', gap: '0.5rem', padding: isMobile ? '0.5rem 0.5rem 0' : '0.5rem 1rem 0', borderRadius: 12, width: isMobile ? '100%' : 600, maxWidth: '100%', margin: '0 auto', boxSizing: 'border-box', overflow: 'visible', position: 'relative', backgroundColor: '#fff', backgroundImage: bgStyle, backgroundSize: 'cover', backgroundPosition: 'center' }}>
         <input
           type="text"
           value={value.churchName || ''}
@@ -293,10 +295,10 @@ const WorshipBulletinEditor = ({ value: rawValue, onChange, initialEditMode = fa
             value={value.theme || ''}
             onChange={(e) => update({ theme: e.target.value })}
             placeholder="네가 나를 사랑하느냐?"
-            style={{ padding: '0.4rem 0.9rem', borderRadius: 10, border: 'none', fontSize: '1.85rem', fontWeight: 800, color: '#1E293B', textAlign: 'center', width: 480, maxWidth: '100%', display: 'block', margin: '0 auto', background: 'transparent', letterSpacing: '-0.01em', lineHeight: 1.2, fontFamily: '"Pretendard", "Plus Jakarta Sans", "Noto Serif KR", serif' }}
+            style={{ padding: isMobile ? '0.3rem 0.5rem' : '0.4rem 0.9rem', borderRadius: 10, border: 'none', fontSize: isMobile ? '1.3rem' : '1.85rem', fontWeight: 800, color: '#1E293B', textAlign: 'center', width: isMobile ? '100%' : 480, maxWidth: '100%', display: 'block', margin: '0 auto', background: 'transparent', letterSpacing: '-0.01em', lineHeight: 1.2, fontFamily: '"Pretendard", "Plus Jakarta Sans", "Noto Serif KR", serif' }}
           />
           <div style={{ width: 80, height: 3, background: '#20CD8D', borderRadius: 999 }} />
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#64748B', fontWeight: 600, letterSpacing: '0.02em' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'center', fontSize: '0.85rem', color: '#64748B', fontWeight: 600, letterSpacing: '0.02em' }}>
             <input
               type="text"
               value={value.bulletinName || ''}
@@ -339,7 +341,7 @@ const WorshipBulletinEditor = ({ value: rawValue, onChange, initialEditMode = fa
                 <li
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => { e.preventDefault(); if (dragIndex === null || dragIndex === idx) { setDragIndex(null); return; } reorderItem(items[dragIndex].id, idx); setDragIndex(null); }}
-                  style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'auto 1fr 1fr 1fr', alignItems: 'center', gap: '0.4rem', padding: '0.2rem 0.55rem', border: '1px solid #E7F3EE', borderRadius: 8, background: dragIndex === idx ? '#CCF4E5' : '#F9FCFB', opacity: dragIndex !== null && dragIndex !== idx ? 0.85 : 1, width: 500, maxWidth: '100%', margin: '0 auto' }}
+                  style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'auto 1fr 1fr 1fr', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.45rem', border: '1px solid #E7F3EE', borderRadius: 8, background: dragIndex === idx ? '#CCF4E5' : '#F9FCFB', opacity: dragIndex !== null && dragIndex !== idx ? 0.85 : 1, width: isMobile ? '100%' : 500, maxWidth: '100%', margin: '0 auto' }}
                 >
                   <button type="button" onClick={() => { if (window.confirm(`'${item.title}' 항목을 삭제할까요?`)) removeItem(item.id); }} aria-label="삭제" style={{ position: 'absolute', right: 'calc(100% + 6px)', top: '50%', transform: 'translateY(-50%)', width: 20, height: 20, padding: 0, borderRadius: 999, border: 'none', background: 'transparent', color: '#b91c1c', fontSize: '1rem', fontWeight: 800, cursor: 'pointer', lineHeight: 1 }}>✕</button>
                   <span draggable onDragStart={() => setDragIndex(idx)} onDragEnd={() => setDragIndex(null)} style={{ color: '#94a3b8', fontSize: '0.95rem', cursor: 'grab', userSelect: 'none', padding: '0 0.2rem' }} title="드래그">⋮⋮</span>
@@ -358,7 +360,7 @@ const WorshipBulletinEditor = ({ value: rawValue, onChange, initialEditMode = fa
                   )}
                 </li>
                 {item.title.includes('찬양') && (
-                  <li style={{ width: 500, maxWidth: '100%', margin: '0 auto', padding: '0.4rem 0.55rem', background: 'rgba(255,255,255,0.7)', border: '1px dashed #cbd5d0', borderRadius: 8, display: 'grid', gap: '0.35rem' }}>
+                  <li style={{ width: isMobile ? '100%' : 500, maxWidth: '100%', margin: '0 auto', padding: '0.4rem 0.55rem', background: 'rgba(255,255,255,0.7)', border: '1px dashed #cbd5d0', borderRadius: 8, display: 'grid', gap: '0.35rem' }}>
                     {(item.songs || []).map((song, sIdx) => {
                       const vid = ytId(song.link);
                       return (
@@ -383,7 +385,7 @@ const WorshipBulletinEditor = ({ value: rawValue, onChange, initialEditMode = fa
           </ul>
 
           {/* 예배항목 추가 */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '0.4rem', width: 500, maxWidth: '100%', margin: '0.5rem auto 0' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr auto', gap: '0.4rem', width: isMobile ? '100%' : 500, maxWidth: '100%', margin: '0.5rem auto 0' }}>
             <input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="제목" style={{ padding: '0.45rem 0.7rem', borderRadius: 8, border: '1px solid #cbd5d0', fontSize: '0.85rem', textAlign: 'left', minWidth: 0 }} />
             <input type="text" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="설명" style={{ padding: '0.45rem 0.7rem', borderRadius: 8, border: '1px solid #cbd5d0', fontSize: '0.85rem', textAlign: 'center', minWidth: 0 }} />
             <input type="text" value={newPresenter} onChange={(e) => setNewPresenter(e.target.value)} placeholder="담당자" style={{ padding: '0.45rem 0.7rem', borderRadius: 8, border: '1px solid #cbd5d0', fontSize: '0.85rem', textAlign: 'right', minWidth: 0 }} />
@@ -393,7 +395,7 @@ const WorshipBulletinEditor = ({ value: rawValue, onChange, initialEditMode = fa
           {/* 광고 */}
           <div style={{ marginTop: '1rem', marginBottom: '0.85rem', display: 'grid', gap: '0.85rem', justifyItems: 'center' }}>
             {announcements.map((ann, i) => ann.noTitle ? null : (
-              <div key={i} style={{ position: 'relative', width: 500, maxWidth: '100%', display: 'grid', gap: '0.3rem', justifyItems: 'center', padding: '0.75rem 1rem', border: '1px solid #cbd5d0', borderRadius: 14, background: 'rgba(255,255,255,0.55)' }}>
+              <div key={i} style={{ position: 'relative', width: isMobile ? '100%' : 500, maxWidth: '100%', display: 'grid', gap: '0.3rem', justifyItems: 'center', padding: isMobile ? '0.6rem 0.75rem' : '0.75rem 1rem', border: '1px solid #cbd5d0', borderRadius: 14, background: 'rgba(255,255,255,0.55)' }}>
                 <input type="text" value={ann.title} onChange={(e) => updateAnnouncements(announcements.map((a, idx) => idx === i ? { ...a, title: e.target.value } : a))} placeholder="광고" style={{ width: '100%', fontSize: '1.05rem', fontWeight: 800, color: '#182527', textAlign: 'center', border: '1px dashed transparent', borderRadius: 6, padding: '0.1rem 0.4rem', background: 'transparent' }} />
                 <textarea value={ann.content} onChange={(e) => updateAnnouncements(announcements.map((a, idx) => idx === i ? { ...a, content: e.target.value } : a))} rows={3} placeholder="내용" style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 10, border: '1px solid #cbd5d0', fontSize: '0.9rem', background: 'rgba(255,255,255,0.85)', resize: 'vertical', boxSizing: 'border-box' }} />
                 {announcements.length > 1 && (
@@ -403,7 +405,7 @@ const WorshipBulletinEditor = ({ value: rawValue, onChange, initialEditMode = fa
             ))}
             <button type="button" onClick={() => { const last = [...announcements].reverse().find((a) => !a.noTitle)?.title || '광고'; updateAnnouncements([...announcements, { title: last, content: '' }]); }} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', padding: '0.3rem 0.75rem', borderRadius: 999, border: '1px solid var(--color-primary)', background: 'var(--color-primary-tint)', color: 'var(--color-primary-deep)', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>+ 타이틀항목 추가</button>
             {announcements.map((ann, i) => ann.noTitle ? (
-              <div key={i} style={{ position: 'relative', width: 500, maxWidth: '100%', display: 'grid', gap: '0.3rem', justifyItems: 'center', padding: '0.5rem 1rem', border: '1px solid #cbd5d0', borderRadius: 14, background: 'rgba(255,255,255,0.55)' }}>
+              <div key={i} style={{ position: 'relative', width: isMobile ? '100%' : 500, maxWidth: '100%', display: 'grid', gap: '0.3rem', justifyItems: 'center', padding: isMobile ? '0.5rem 0.7rem' : '0.5rem 1rem', border: '1px solid #cbd5d0', borderRadius: 14, background: 'rgba(255,255,255,0.55)' }}>
                 <input type="text" value={ann.content} onChange={(e) => updateAnnouncements(announcements.map((a, idx) => idx === i ? { ...a, content: e.target.value } : a))} placeholder="내용을 입력하세요" style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 10, border: '1px solid #cbd5d0', fontSize: '0.9rem', background: 'rgba(255,255,255,0.85)', boxSizing: 'border-box' }} />
                 <button type="button" onClick={() => updateAnnouncements(announcements.filter((_, idx) => idx !== i))} aria-label="삭제" style={{ position: 'absolute', right: 'calc(100% + 6px)', top: '50%', transform: 'translateY(-50%)', width: 20, height: 20, padding: 0, borderRadius: 999, border: 'none', background: 'transparent', color: '#b91c1c', fontSize: '1rem', fontWeight: 800, cursor: 'pointer', lineHeight: 1 }}>✕</button>
               </div>
@@ -415,7 +417,7 @@ const WorshipBulletinEditor = ({ value: rawValue, onChange, initialEditMode = fa
 
       {previewOpen && (
         <div onClick={() => setPreviewOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(24, 37, 39, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', position: 'relative', background: 'transparent' }}>
+          <div role="dialog" aria-modal="true" className="modal-card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', position: 'relative', background: 'transparent' }}>
             <button type="button" onClick={() => setPreviewOpen(false)} style={{ position: 'absolute', top: 8, right: 12, background: 'rgba(255,255,255,0.85)', border: 'none', fontSize: '1.2rem', cursor: 'pointer', zIndex: 2, borderRadius: 999, width: 32, height: 32 }}>✕</button>
             <div style={{ padding: '1rem 1rem 1rem', borderRadius: 16, backgroundColor: '#fff', backgroundImage: bgStyle, backgroundSize: 'cover', backgroundPosition: 'center', display: 'grid', gap: '0.5rem', position: 'relative' }}>
               {value.churchName && <div style={{ position: 'absolute', top: 10, right: 16, fontSize: '0.8rem', fontWeight: 700, color: '#20CD8D' }}>{value.churchName}</div>}

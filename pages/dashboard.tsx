@@ -7,6 +7,7 @@ import { useAudio } from '../components/AudioPlayer';
 import AppShell from '../components/AppShell';
 import { WorshipBulletinPreview } from '../components/WorshipBulletinEditor';
 import { getCommunities, getUsers, getProfiles, getSystemAdmins } from '../lib/dataStore';
+import { useIsMobile } from '../lib/useIsMobile';
 
 type Community = {
   id: string;
@@ -53,6 +54,7 @@ type DashboardProps = {
 const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, userEntries, storedProfile, systemAdminHref }: DashboardProps) => {
   const { t } = useTranslation();
   const audio = useAudio();
+  const isMobile = useIsMobile();
   const [profileDone, setProfileDone] = useState<boolean>(!!storedProfile);
   const [realName, setRealName] = useState<string>(storedProfile?.realName || nickname || '');
   const [countryCode, setCountryCode] = useState<string>('+65');
@@ -275,13 +277,13 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
   };
 
   const cardBase: React.CSSProperties = {
-    padding: '1.5rem',
+    padding: isMobile ? '1rem 1.1rem' : '1.5rem',
     borderRadius: 16,
     background: '#ffffff',
     boxShadow: '0 12px 32px rgba(24, 37, 39, 0.06)',
     border: '1px solid #E7F3EE',
   };
-  const sectionTitle: React.CSSProperties = { margin: 0, fontSize: '1.35rem', color: '#182527', fontWeight: 800, letterSpacing: '-0.01em' };
+  const sectionTitle: React.CSSProperties = { margin: 0, fontSize: isMobile ? '1.15rem' : '1.35rem', color: '#182527', fontWeight: 800, letterSpacing: '-0.01em' };
   const helperText: React.CSSProperties = { margin: 0, color: '#2D4048', lineHeight: 1.6 };
 
   return (
@@ -325,7 +327,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                 <circle cx="12" cy="10" r="3" />
               </svg>
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>{activeCommunity.name}</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: isMobile ? 140 : 220 }}>{activeCommunity.name}</span>
               <span style={{ padding: '0.1rem 0.5rem', borderRadius: 999, background: '#ffffff', color: 'var(--color-ink)', fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.02em', border: '1px solid var(--color-gray)' }}>
                 {activeCommunity.isAdmin ? '관리자' : '일반회원'}
               </span>
@@ -741,7 +743,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
           )}
 
           {profileId && !profileDone && !activeCommunity && (
-            <section style={{ padding: profileExpanded ? '1.5rem' : '1rem 1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', transition: 'padding 0.2s ease' }}>
+            <section style={{ padding: profileExpanded ? (isMobile ? '1.1rem' : '1.5rem') : '1rem 1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', transition: 'padding 0.2s ease' }}>
               <button
                 type="button"
                 onClick={() => setProfileExpanded((v) => !v)}
@@ -758,7 +760,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
               {profileExpanded && (
                 <div style={{ marginTop: '1.1rem' }}>
                   <p style={{ margin: '0 0 1rem', color: 'var(--color-ink-2)', fontSize: '0.92rem', lineHeight: 1.6 }}>실명과 연락처를 등록하면 소모임·공동체 관리자가 더 원활히 안내할 수 있어요.</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     <div style={{ display: 'grid', gap: '0.35rem' }}>
                       <label style={{ color: 'var(--color-ink)', fontWeight: 700, fontSize: '0.88rem' }}>실명</label>
                       <input
@@ -766,13 +768,13 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                         value={realName}
                         onChange={(e) => setRealName(e.target.value)}
                         placeholder="실명을 입력하세요"
-                        style={{ padding: '0.85rem 0.95rem', borderRadius: 12, border: '1px solid var(--color-gray)', background: 'var(--color-surface)', fontSize: '0.95rem', color: 'var(--color-ink)' }}
+                        style={{ padding: '0.85rem 0.95rem', borderRadius: 12, border: '1px solid var(--color-gray)', background: 'var(--color-surface)', fontSize: '0.95rem', color: 'var(--color-ink)', minHeight: 44 }}
                       />
                     </div>
                     <div style={{ display: 'grid', gap: '0.35rem' }}>
                       <label style={{ color: 'var(--color-ink)', fontWeight: 700, fontSize: '0.88rem' }}>연락처</label>
                       <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: '0.5rem' }}>
-                        <select value={countryCode} onChange={(e) => setCountryCode(e.target.value)} style={{ padding: '0.85rem 0.6rem', borderRadius: 12, border: '1px solid var(--color-gray)', background: 'var(--color-surface)', color: 'var(--color-ink)', appearance: 'none' }}>
+                        <select value={countryCode} onChange={(e) => setCountryCode(e.target.value)} style={{ padding: '0.85rem 0.6rem', borderRadius: 12, border: '1px solid var(--color-gray)', background: 'var(--color-surface)', color: 'var(--color-ink)', appearance: 'none', minHeight: 44 }}>
                           <option value="+65">🇸🇬 +65</option>
                           <option value="+82">🇰🇷 +82</option>
                           <option value="+1">🇺🇸 +1</option>
@@ -784,18 +786,18 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                           value={contact}
                           onChange={(e) => setContact(e.target.value)}
                           placeholder="1111-1111"
-                          style={{ padding: '0.85rem 0.95rem', borderRadius: 12, border: '1px solid var(--color-gray)', background: 'var(--color-surface)', fontSize: '0.95rem', color: 'var(--color-ink)' }}
+                          style={{ padding: '0.85rem 0.95rem', borderRadius: 12, border: '1px solid var(--color-gray)', background: 'var(--color-surface)', fontSize: '0.95rem', color: 'var(--color-ink)', minHeight: 44 }}
                         />
                       </div>
                     </div>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap' }}>
                     <span style={{ color: profileMsg?.includes('저장') ? 'var(--color-primary-deep)' : 'var(--color-danger)', fontSize: '0.88rem' }}>{profileMsg || ''}</span>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button type="button" onClick={() => setProfileDone(true)} style={{ padding: '0.7rem 1.1rem', borderRadius: 10, border: '1px solid var(--color-gray)', background: 'var(--color-surface)', color: 'var(--color-ink-2)', fontWeight: 700, cursor: 'pointer' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <button type="button" onClick={() => setProfileDone(true)} style={{ padding: '0.7rem 1.1rem', minHeight: 44, borderRadius: 10, border: '1px solid var(--color-gray)', background: 'var(--color-surface)', color: 'var(--color-ink-2)', fontWeight: 700, cursor: 'pointer' }}>
                         나중에
                       </button>
-                      <button type="button" onClick={saveProfile} disabled={savingProfile} style={{ padding: '0.7rem 1.2rem', borderRadius: 10, border: 'none', background: savingProfile ? 'rgba(32, 205, 141, 0.5)' : 'var(--color-primary)', color: '#ffffff', fontWeight: 800, cursor: savingProfile ? 'not-allowed' : 'pointer', boxShadow: 'var(--shadow-button)' }}>
+                      <button type="button" onClick={saveProfile} disabled={savingProfile} style={{ padding: '0.7rem 1.2rem', minHeight: 44, borderRadius: 10, border: 'none', background: savingProfile ? 'rgba(32, 205, 141, 0.5)' : 'var(--color-primary)', color: '#ffffff', fontWeight: 800, cursor: savingProfile ? 'not-allowed' : 'pointer', boxShadow: 'var(--shadow-button)' }}>
                         {savingProfile ? '저장 중...' : '저장'}
                       </button>
                     </div>

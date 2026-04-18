@@ -7,6 +7,7 @@ import VenueGrid, { Venue, Block, BlockGroup, dateKey, toHHMM, toMin as toMinLoc
 import RequiredInfoModal from '../components/RequiredInfoModal';
 import DateTimePicker from '../components/DateTimePicker';
 import { getSystemAdminHref } from '../lib/adminGuard';
+import { useIsMobile } from '../lib/useIsMobile';
 import { expandOccurrences, EventRow as RawEventRow } from '../lib/recurrence';
 import {
   getVenues,
@@ -34,6 +35,7 @@ type Props = {
 
 const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, availableEnd, profileId, displayName, nickname, email, systemAdminHref }: Props) => {
   const router = useRouter();
+  const isMobile = useIsMobile();
   const [selectedDate, setSelectedDate] = useState<string>(dateKey(new Date()));
   const [effectiveProfileId, setEffectiveProfileId] = useState<string | null>(profileId);
   const [missingFields, setMissingFields] = useState<Array<'realName' | 'contact'>>([]);
@@ -222,8 +224,8 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
         systemAdminHref={systemAdminHref}
       />
 
-      <main style={{ maxWidth: 1040, margin: '0 auto', padding: '1.5rem 1rem 5rem', display: 'grid', gap: '1rem' }}>
-        <section style={{ padding: '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
+      <main style={{ maxWidth: 1040, margin: '0 auto', padding: isMobile ? '1rem 0.6rem 4rem' : '1.5rem 1rem 5rem', display: 'grid', gap: '1rem' }}>
+        <section style={{ padding: isMobile ? '0.85rem' : '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
           <div style={{ display: 'grid', gap: '0.65rem' }}>
             <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>장소예약</h2>
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -325,7 +327,7 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
           onClick={(e) => { if (e.target === e.currentTarget) setPickerOpen(false); }}
           style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.55)', zIndex: 90, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
         >
-          <div style={{ width: '100%', maxWidth: 560, maxHeight: '90vh', background: '#fff', borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div role="dialog" className="modal-card" style={{ width: '100%', maxWidth: 560, maxHeight: '90vh', background: '#fff', borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--color-surface-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
               <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-ink)' }}>예약 가능 날짜·장소</h3>
               <button type="button" onClick={() => setPickerOpen(false)} aria-label="닫기" style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-ink-2)' }}>✕</button>
@@ -379,7 +381,7 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
                   const floorAllOn = floorIds.every((id) => pickerSelected.has(id));
                   const floorSomeOn = floorIds.some((id) => pickerSelected.has(id));
                   return (
-                    <div key={floor} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.45rem 0.6rem', border: '1px solid var(--color-surface-border)', borderRadius: 10, background: '#FAFAF7' }}>
+                    <div key={floor} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.45rem 0.6rem', border: '1px solid var(--color-surface-border)', borderRadius: 10, background: '#FAFAF7', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
                       <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.88rem', fontWeight: 800, color: '#3F6212', cursor: 'pointer', flex: '0 0 auto', paddingTop: '0.25rem' }}>
                         <input
                           type="checkbox"

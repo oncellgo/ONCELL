@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useIsMobile } from '../lib/useIsMobile';
 
 type Approval = {
   profileId: string;
@@ -39,6 +40,7 @@ const providerBadge = (p: string) => {
 };
 
 const SignupApprovalsCard = ({ profileId, k }: Props) => {
+  const isMobile = useIsMobile();
   const authQS = `profileId=${encodeURIComponent(profileId)}&k=${encodeURIComponent(k)}`;
   const authHeaders = { 'x-profile-id': profileId, 'x-admin-token': k };
 
@@ -82,7 +84,7 @@ const SignupApprovalsCard = ({ profileId, k }: Props) => {
   };
 
   return (
-    <section style={{ padding: '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '0.85rem' }}>
+    <section style={{ padding: isMobile ? '0.85rem' : '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '0.85rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
         <h2 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--color-ink)' }}>가입처리할 접속자 ({approvals.length})</h2>
         <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
@@ -95,8 +97,8 @@ const SignupApprovalsCard = ({ profileId, k }: Props) => {
       ) : approvals.length === 0 ? (
         <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.9rem' }}>승인 대기 중인 접속자가 없습니다.</p>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.86rem' }}>
+        <div className="responsive-x-scroll" style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: isMobile ? '0.78rem' : '0.86rem', minWidth: isMobile ? 600 : 'auto' }}>
             <thead>
               <tr style={{ background: '#F1F5F9', color: 'var(--color-ink-2)', textAlign: 'left' }}>
                 <th style={{ padding: '0.5rem 0.6rem', width: 32 }}>

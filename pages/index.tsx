@@ -8,6 +8,7 @@ import TopNav from '../components/TopNav';
 import RequiredInfoModal from '../components/RequiredInfoModal';
 import { getSystemAdminHref } from '../lib/adminGuard';
 import { getProfiles, getUsers } from '../lib/dataStore';
+import { useIsMobile } from '../lib/useIsMobile';
 
 type HomeProps = {
   profileId: string | null;
@@ -23,6 +24,7 @@ const featureKeys = [1, 2, 3, 4, 5, 6] as const;
 const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: HomeProps) => {
   const { t } = useTranslation();
   const router = useRouter();
+  const isMobile = useIsMobile();
   const loggedIn = Boolean(profileId);
 
   const [effectiveProfileId, setEffectiveProfileId] = useState<string | null>(profileId);
@@ -294,16 +296,16 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
 
       {showPendingModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
-          <div style={{ width: '100%', maxWidth: 420, padding: '2rem', borderRadius: 16, background: '#fff', boxShadow: '0 20px 60px rgba(0,0,0,0.25)', textAlign: 'center', display: 'grid', gap: '0.85rem' }}>
-            <div style={{ fontSize: '2.5rem' }}>⏳</div>
-            <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#3F6212' }}>승인 대기 중입니다</h2>
+          <div className="modal-card" style={{ width: '100%', maxWidth: 420, padding: isMobile ? '1.25rem' : '2rem', borderRadius: 16, background: '#fff', boxShadow: '0 20px 60px rgba(0,0,0,0.25)', textAlign: 'center', display: 'grid', gap: '0.85rem' }}>
+            <div style={{ fontSize: isMobile ? '2rem' : '2.5rem' }}>⏳</div>
+            <h2 style={{ margin: 0, fontSize: isMobile ? '1.1rem' : '1.2rem', color: '#3F6212' }}>승인 대기 중입니다</h2>
             <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.92rem', lineHeight: 1.6 }}>
               가입 필수정보 입력이 완료되었습니다.<br />관리자의 가입 승인이 필요합니다.<br />승인이 완료되면 장소예약을 이용하실 수 있습니다.
             </p>
             <button
               type="button"
               onClick={() => setShowPendingModal(false)}
-              style={{ marginTop: '0.5rem', padding: '0.65rem 1rem', borderRadius: 10, border: 'none', background: 'var(--color-primary)', color: '#fff', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer' }}
+              style={{ marginTop: '0.5rem', padding: '0.75rem 1rem', minHeight: 44, borderRadius: 10, border: 'none', background: 'var(--color-primary)', color: '#fff', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer' }}
             >
               확인
             </button>

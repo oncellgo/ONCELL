@@ -36,7 +36,7 @@ export const VideoProvider = ({ children }: { children: ReactNode }) => {
       {children}
       {vid && (
         minimized ? (
-          <div style={{ position: 'fixed', right: 16, bottom: 96, zIndex: 9998, width: 280, background: '#000', borderRadius: 12, overflow: 'hidden', boxShadow: '0 16px 32px rgba(0,0,0,0.4)' }}>
+          <div style={{ position: 'fixed', right: 16, bottom: 96, zIndex: 9998, width: 280, maxWidth: 'calc(100vw - 32px)', background: '#000', borderRadius: 12, overflow: 'hidden', boxShadow: '0 16px 32px rgba(0,0,0,0.4)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0.5rem', background: 'rgba(0,0,0,0.85)', color: '#fff' }}>
               <span style={{ fontSize: '0.72rem', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label || '재생 중'}</span>
               <span style={{ display: 'inline-flex', gap: '0.3rem' }}>
