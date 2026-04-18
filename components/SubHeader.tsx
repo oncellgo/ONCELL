@@ -86,12 +86,12 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: isMobile ? '0.45rem' : '0.75rem',
-        padding: isMobile ? '0.55rem 0.65rem' : '0.7rem 1rem',
+        gap: isMobile ? '0.4rem' : '0.75rem',
+        padding: isMobile ? '0.5rem 0.55rem' : '0.7rem 1rem',
         background: 'rgba(255, 255, 255, 0.92)',
         backdropFilter: 'saturate(180%) blur(10px)',
         borderBottom: '1px solid var(--color-surface-border)',
-        flexWrap: 'wrap',
+        flexWrap: 'nowrap',
       }}
     >
       <Link
@@ -109,9 +109,11 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
         <img
           src="/images/kcis%20logo.png"
           alt="KCIS"
-          style={{ width: 28, height: 28, objectFit: 'contain' }}
+          style={{ width: isMobile ? 24 : 28, height: isMobile ? 24 : 28, objectFit: 'contain' }}
         />
-        <strong style={{ fontWeight: 800, letterSpacing: '0.02em', fontSize: '1rem' }}>KCIS</strong>
+        {!isMobile && (
+          <strong style={{ fontWeight: 800, letterSpacing: '0.02em', fontSize: '1rem' }}>KCIS</strong>
+        )}
       </Link>
 
       <nav
@@ -119,11 +121,11 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: isMobile ? '0.15rem' : '0.25rem',
-          flex: isMobile ? '1 1 100%' : '1 1 auto',
-          order: isMobile ? 3 : undefined,
-          justifyContent: isMobile ? 'flex-start' : 'center',
-          flexWrap: isMobile ? 'nowrap' : 'wrap',
+          gap: isMobile ? '0.1rem' : '0.25rem',
+          flex: '1 1 auto',
+          minWidth: 0,
+          justifyContent: 'center',
+          flexWrap: 'nowrap',
           overflowX: 'auto',
         }}
       >
@@ -167,7 +169,7 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
               color: 'var(--color-ink)',
               fontWeight: 700,
               fontSize: '0.82rem',
-              maxWidth: isMobile ? 120 : 200,
+              maxWidth: isMobile ? 80 : 200,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
