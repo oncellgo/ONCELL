@@ -1,0 +1,39 @@
+/*
+ * 디자인 토큰은 styles/theme.ts 에서 관리합니다.
+ * _app.tsx가 :root CSS 변수를 런타임에 주입하므로, 여기서는 변수만 참조합니다.
+ */
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  background-color: var(--bg-base);
+  background-image:
+    linear-gradient(var(--bg-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bg-grid-line) 1px, transparent 1px);
+  background-size: var(--bg-grid-size) var(--bg-grid-size);
+  background-attachment: fixed;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+body {
+  min-height: 100vh;
+  padding-bottom: 6.5rem;
+}

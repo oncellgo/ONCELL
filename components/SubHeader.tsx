@@ -1,0 +1,205 @@
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+import { ReactNode, useEffect, useState } from 'react';
+
+/**
+ * 하위(서브) 페이지 공통 헤더.
+ * 랜딩 외 페이지에서 일관된 상단 바 + 네비게이션을 제공합니다.
+ * - SSR prop + localStorage fallback으로 로그인 상태 유지.
+ * - 네비 링크에 profileId/nickname/email 자동 부착.
+ */
+export type SubHeaderProps = {
+  rightExtras?: ReactNode;
+  profileId?: string | null;
+  displayName?: string | null;
+  nickname?: string | null;
+  email?: string | null;
+  systemAdminHref?: string | null;
+};
+
+const NAV_ITEMS: Array<{ label: string; href: string; requireLogin?: boolean }> = [
+  { label: '홈', href: '/' },
+  { label: '주보', href: '#', requireLogin: true },
+  { label: '예배영상', href: '#' },
+  { label: '장소예약', href: '/reservation', requireLogin: true },
+  { label: '일정', href: '/schedule', requireLogin: true },
+  { label: '큐티', href: '/qt' },
+];
+
+const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, systemAdminHref }: SubHeaderProps) => {
+  const router = useRouter();
+  const currentPath = router?.pathname || '';
+
+  const [lsProfileId, setLsProfileId] = useState<string | null>(null);
+  const [lsNickname, setLsNickname] = useState<string | null>(null);
+  const [lsEmail, setLsEmail] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      if (!profileId) {
+        const p = window.localStorage.getItem('kcisProfileId');
+        if (p) setLsProfileId(p);
+      }
+      if (!nickname) {
+        const n = window.localStorage.getItem('kcisNickname');
+        if (n) setLsNickname(n);
+      }
+      if (!email) {
+        const e = window.localStorage.getItem('kcisEmail');
+        if (e) setLsEmail(e);
+      }
+    } catch {}
+  }, [profileId, nickname, email]);
+
+  const effProfileId = profileId || lsProfileId;
+  const effNickname = nickname || lsNickname;
+  const effEmail = email || lsEmail;
+
+  const providerLabel = effProfileId?.startsWith('kakao-') ? '카카오 사용자' : effProfileId?.startsWith('google-') ? 'Google 사용자' : '사용자';
+  const userLabel = displayName || effNickname || (effEmail ? effEmail.split('@')[0] : providerLabel);
+
+  const authQs = effProfileId
+    ? new URLSearchParams({
+        profileId: effProfileId,
+        ...(effNickname ? { nickname: effNickname } : {}),
+        ...(effEmail ? { email: effEmail } : {}),
+      }).toString()
+    : '';
+
+  const withAuth = (href: string) => {
+    if (!authQs || href === '#' || href.startsWith('http')) return href;
+    const sep = href.includes('?') ? '&' : '?';
+    return `${href}${sep}${authQs}`;
+  };
+
+  const isActive = (href: string) => {
+    if (href === '#') return false;
+    if (href === '/') return currentPath === '/';
+    return currentPath === href || currentPath.startsWith(`${href}/`);
+  };
+
+  return (
+    <header
+      style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 20,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '0.75rem',
+        padding: '0.7rem 1rem',
+        background: 'rgba(255, 255, 255, 0.92)',
+        backdropFilter: 'saturate(180%) blur(10px)',
+        borderBottom: '1px solid var(--color-surface-border)',
+        flexWrap: 'wrap',
+      }}
+    >
+      <Link
+        href={withAuth('/')}
+        aria-label="홈으로"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.55rem',
+          textDecoration: 'none',
+          color: 'var(--color-ink)',
+          flex: '0 0 auto',
+        }}
+      >
+        <img
+          src="/images/kcis%20logo.png"
+          alt="KCIS"
+          style={{ width: 28, height: 28, objectFit: 'contain' }}
+        />
+        <strong style={{ fontWeight: 800, letterSpacing: '0.02em', fontSize: '1rem' }}>KCIS</strong>
+      </Link>
+
+      <nav
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.25rem',
+          flex: '1 1 auto',
+          justifyContent: 'center',
+          flexWrap: 'wrap',
+          overflowX: 'auto',
+        }}
+      >
+        {NAV_ITEMS.map((item) => {
+          const active = isActive(item.href);
+          return (
+            <Link
+              key={item.label}
+              href={withAuth(item.href)}
+              style={{
+                padding: '0.4rem 0.85rem',
+                borderRadius: 999,
+                fontSize: '0.88rem',
+                fontWeight: active ? 800 : 600,
+                color: active ? 'var(--color-primary-deep)' : 'var(--color-ink-2)',
+                background: active ? 'var(--color-primary-tint)' : 'transparent',
+                textDecoration: 'none',
+                whiteSpace: 'nowrap',
+                transition: 'background 0.15s ease, color 0.15s ease',
+              }}
+            >
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', flex: '0 0 auto' }}>
+        {effProfileId && (
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.35rem 0.7rem',
+              borderRadius: 999,
+              background: 'var(--color-surface-muted)',
+              border: '1px solid var(--color-surface-border)',
+              color: 'var(--color-ink)',
+              fontWeight: 700,
+              fontSize: '0.82rem',
+              maxWidth: 200,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {userLabel}
+            {systemAdminHref && (
+              <Link
+                href={systemAdminHref}
+                aria-label="시스템 설정"
+                title="시스템 설정"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 22,
+                  height: 22,
+                  borderRadius: 999,
+                  background: 'var(--color-primary-tint)',
+                  color: 'var(--color-primary-deep)',
+                  textDecoration: 'none',
+                  marginLeft: '0.1rem',
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+              </Link>
+            )}
+          </span>
+        )}
+        {rightExtras}
+      </div>
+    </header>
+  );
+};
+
+export default SubHeader;

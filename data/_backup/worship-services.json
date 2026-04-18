@@ -1,0 +1,487 @@
+[
+  {
+    "id": "ws-1776242713417-5907",
+    "communityId": "community-1776196066099",
+    "name": "주일예배",
+    "startAt": "2026-04-19T03:00:00.000Z",
+    "createdAt": "2026-04-15T08:45:13.417Z",
+    "bulletin": {
+      "design": {
+        "background": {
+          "type": "default",
+          "value": "default2"
+        },
+        "logo": null,
+        "churchName": "S교회 청년부",
+        "worshipLabel": "WORSHIP",
+        "homepage": "",
+        "footer": ""
+      },
+      "content": {
+        "bulletinName": "주일예배",
+        "theme": "네가 나를 사랑하느냐?",
+        "worshipDate": "",
+        "worshipTime": "오전 11:00",
+        "worshipLocation": "2층 대회의실",
+        "items": [
+          {
+            "id": "wt-1776162891853-365",
+            "title": "신앙고백",
+            "description": "",
+            "presenter": "다같이"
+          },
+          {
+            "id": "wt-2",
+            "title": "찬양",
+            "description": "",
+            "presenter": "다같이",
+            "songs": [
+              {
+                "title": "내마음다해",
+                "link": "https://www.youtube.com/watch?v=RltIZ0J6_yA"
+              },
+              {
+                "title": "온맘다해",
+                "link": "https://www.youtube.com/watch?v=24NE0fEj_I4"
+              },
+              {
+                "title": "주품에",
+                "link": "https://www.youtube.com/watch?v=NQELcpBoXZc"
+              }
+            ]
+          },
+          {
+            "id": "wt-3",
+            "title": "대표기도",
+            "description": "",
+            "presenter": "김사랑 형제"
+          },
+          {
+            "id": "wt-4",
+            "title": "성경봉독",
+            "description": "요한복음 21:1-17",
+            "passage": "요한복음 21:1-17"
+          },
+          {
+            "id": "wt-5",
+            "title": "설교",
+            "description": "네가 나를 사랑하느냐",
+            "passage": "",
+            "presenter": "청년부 목사님"
+          },
+          {
+            "id": "wt-6",
+            "title": "특송",
+            "description": "",
+            "presenter": "주의 자녀로 산다는 것은",
+            "prayerNote": "봉헌기도 : 최소망 자매\n봉헌위원 : 김믿음 형제 / 이은혜자매"
+          },
+          {
+            "id": "wt-8",
+            "title": "축도",
+            "description": "예배 마침",
+            "presenter": "청년부 목사님"
+          }
+        ],
+        "announcementTitle": "광고",
+        "announcements": [
+          {
+            "title": "",
+            "content": "1. 이번주 성경통독 범위 : 출애굽기 13-18장\n2. 4월 생일자 : 김사랑 박소망\n3. 수련회 일정이 확정되었습니다. \n   일시 : 4/20-23일\n     장소 : 교회 강당\n5. 큐티세미나 안내"
+          },
+          {
+            "title": "다음주 담당 ",
+            "content": "대표기도 : 이믿음\n봉헌기도 : 박소망\n안내 : 김사랑"
+          },
+          {
+            "title": "중보 기도",
+            "content": "1. 우리의 구원자되신 예수님을 더욱 사랑하는 공동체 되게 하소서\n2. 수련회를 앞두고 준비하는 모든 지체들의 마음을 정결하게 하시고 주안에서 은혜를 충만히 경험하는 시간되게 하소서."
+          },
+          {
+            "title": "",
+            "content": "자세한 소식과 모임정보는 인스타그램을 통해 확인하실 수 있습니다. ",
+            "noTitle": true
+          }
+        ]
+      }
+    },
+    "isDefault": true,
+    "published": true,
+    "publishedAt": "2026-04-15T09:17:17.380Z"
+  },
+  {
+    "id": "ws-1776242842315-5634",
+    "communityId": "community-1776196066099",
+    "name": "구역예배",
+    "startAt": "2026-04-18T08:00:00.000Z",
+    "createdAt": "2026-04-15T08:47:22.315Z",
+    "createdBy": "kakao-4841865666",
+    "bulletin": null,
+    "recurrenceId": "wrec-1776242842304-5357"
+  },
+  {
+    "id": "ws-1776242842341-5011",
+    "communityId": "community-1776196066099",
+    "name": "구역예배",
+    "startAt": "2026-04-25T08:00:00.000Z",
+    "createdAt": "2026-04-15T08:47:22.341Z",
+    "createdBy": "kakao-4841865666",
+    "bulletin": {
+      "design": {
+        "background": {
+          "type": "default",
+          "value": "default2"
+        },
+        "logo": null,
+        "churchName": "S교회 청년부",
+        "worshipLabel": "WORSHIP",
+        "homepage": "",
+        "footer": ""
+      },
+      "content": {
+        "bulletinName": "주일예배",
+        "theme": "네가 나를 사랑하느냐?",
+        "worshipDate": "",
+        "worshipTime": "오전 11:00",
+        "worshipLocation": "2층 대회의실",
+        "items": [
+          {
+            "id": "wt-1776162891853-365",
+            "title": "신앙고백",
+            "description": "",
+            "presenter": "다같이"
+          },
+          {
+            "id": "wt-2",
+            "title": "찬양",
+            "description": "",
+            "presenter": "다같이",
+            "songs": [
+              {
+                "title": "내마음다해",
+                "link": "https://www.youtube.com/watch?v=RltIZ0J6_yA"
+              },
+              {
+                "title": "온맘다해",
+                "link": "https://www.youtube.com/watch?v=24NE0fEj_I4"
+              },
+              {
+                "title": "주품에",
+                "link": "https://www.youtube.com/watch?v=NQELcpBoXZc"
+              }
+            ]
+          },
+          {
+            "id": "wt-3",
+            "title": "대표기도",
+            "description": "",
+            "presenter": "김사랑 형제"
+          },
+          {
+            "id": "wt-4",
+            "title": "성경봉독",
+            "description": "요한복음 21:1-17",
+            "passage": "요한복음 21:1-17"
+          },
+          {
+            "id": "wt-5",
+            "title": "설교",
+            "description": "네가 나를 사랑하느냐",
+            "passage": "",
+            "presenter": "청년부 목사님"
+          },
+          {
+            "id": "wt-6",
+            "title": "특송",
+            "description": "",
+            "presenter": "주의 자녀로 산다는 것은",
+            "prayerNote": "봉헌기도 : 최소망 자매\n봉헌위원 : 김믿음 형제 / 이은혜자매"
+          },
+          {
+            "id": "wt-8",
+            "title": "축도",
+            "description": "예배 마침",
+            "presenter": "청년부 목사님"
+          }
+        ],
+        "announcementTitle": "광고",
+        "announcements": [
+          {
+            "title": "",
+            "content": "1. 이번주 성경통독 범위 : 출애굽기 13-18장\n2. 4월 생일자 : 김사랑 박소망\n3. 수련회 일정이 확정되었습니다. \n   일시 : 4/20-23일\n     장소 : 교회 강당\n5. 큐티세미나 안내"
+          },
+          {
+            "title": "다음주 담당 ",
+            "content": "대표기도 : 이믿음\n봉헌기도 : 박소망\n안내 : 김사랑"
+          },
+          {
+            "title": "중보 기도",
+            "content": "1. 우리의 구원자되신 예수님을 더욱 사랑하는 공동체 되게 하소서\n2. 수련회를 앞두고 준비하는 모든 지체들의 마음을 정결하게 하시고 주안에서 은혜를 충만히 경험하는 시간되게 하소서."
+          },
+          {
+            "title": "",
+            "content": "자세한 소식과 모임정보는 인스타그램을 통해 확인하실 수 있습니다. ",
+            "noTitle": true
+          }
+        ]
+      }
+    },
+    "recurrenceId": "wrec-1776242842304-5357",
+    "editedAt": "2026-04-15T09:27:59.263Z"
+  },
+  {
+    "id": "ws-1776242842354-9791",
+    "communityId": "community-1776196066099",
+    "name": "구역예배",
+    "startAt": "2026-05-02T08:00:00.000Z",
+    "createdAt": "2026-04-15T08:47:22.354Z",
+    "createdBy": "kakao-4841865666",
+    "bulletin": null,
+    "recurrenceId": "wrec-1776242842304-5357"
+  },
+  {
+    "id": "ws-1776265715313-4286",
+    "communityId": "community-1776265715308",
+    "name": "주일예배",
+    "startAt": "2026-04-19T03:00:00.000Z",
+    "createdAt": "2026-04-15T15:08:35.313Z",
+    "bulletin": {
+      "design": {
+        "background": {
+          "type": "default",
+          "value": "default1"
+        },
+        "logo": null,
+        "churchName": "S교회 중등부",
+        "worshipLabel": "WORSHIP",
+        "homepage": "",
+        "footer": ""
+      },
+      "content": {
+        "bulletinName": "주일예배",
+        "theme": "네가 나를 사랑하느냐?",
+        "worshipDate": "",
+        "worshipTime": "오전 11:00",
+        "worshipLocation": "2층 대회의실",
+        "items": [
+          {
+            "id": "wt-1776162891853-365",
+            "title": "신앙고백",
+            "description": "",
+            "presenter": "다같이"
+          },
+          {
+            "id": "wt-2",
+            "title": "찬양",
+            "description": "",
+            "presenter": "다같이",
+            "songs": [
+              {
+                "title": "내마음다해",
+                "link": "https://www.youtube.com/watch?v=RltIZ0J6_yA"
+              },
+              {
+                "title": "온맘다해",
+                "link": "https://www.youtube.com/watch?v=24NE0fEj_I4"
+              },
+              {
+                "title": "주품에",
+                "link": "https://www.youtube.com/watch?v=NQELcpBoXZc"
+              },
+              {
+                "title": "주의자녀로",
+                "link": ""
+              }
+            ]
+          },
+          {
+            "id": "wt-3",
+            "title": "대표기도",
+            "description": "",
+            "presenter": "김사랑 형제"
+          },
+          {
+            "id": "wt-4",
+            "title": "성경봉독",
+            "description": "요한복음 21:1-17",
+            "passage": "요한복음 21:1-17"
+          },
+          {
+            "id": "wt-5",
+            "title": "설교",
+            "description": "네가 나를 사랑하느냐",
+            "passage": "",
+            "presenter": "청년부 목사님"
+          },
+          {
+            "id": "wt-6",
+            "title": "특송",
+            "description": "",
+            "presenter": "주의 자녀로 산다는 것은",
+            "prayerNote": "봉헌기도 : 최소망 자매\n봉헌위원 : 김믿음 형제 / 이은혜자매"
+          },
+          {
+            "id": "wt-8",
+            "title": "축도",
+            "description": "예배 마침",
+            "presenter": "청년부 목사님"
+          }
+        ],
+        "announcementTitle": "광고",
+        "announcements": [
+          {
+            "title": "",
+            "content": "1. 이번주 성경통독 범위 : 출애굽기 13-18장\n2. 4월 생일자 : 김사랑 박소망\n3. 수련회 일정이 확정되었습니다. \n   일시 : 4/20-23일\n     장소 : 교회 강당\n5. 큐티세미나 안내"
+          },
+          {
+            "title": "다음주 담당 ",
+            "content": "대표기도 : 이믿음\n봉헌기도 : 박소망\n안내 : 김사랑"
+          },
+          {
+            "title": "중보 기도",
+            "content": "1. 우리의 구원자되신 예수님을 더욱 사랑하는 공동체 되게 하소서\n2. 수련회를 앞두고 준비하는 모든 지체들의 마음을 정결하게 하시고 주안에서 은혜를 충만히 경험하는 시간되게 하소서."
+          },
+          {
+            "title": "",
+            "content": "자세한 소식과 모임정보는 인스타그램을 통해 확인하실 수 있습니다. ",
+            "noTitle": true
+          }
+        ]
+      }
+    },
+    "isDefault": true,
+    "editedAt": "2026-04-15T15:12:41.116Z",
+    "published": true,
+    "publishedAt": "2026-04-15T15:12:41.116Z"
+  },
+  {
+    "id": "ws-1776265810467-6159",
+    "communityId": "community-1776265715308",
+    "name": "구역예배",
+    "startAt": "2026-04-19T06:00:00.000Z",
+    "createdAt": "2026-04-15T15:10:10.467Z",
+    "createdBy": "kakao-4841830358",
+    "bulletin": null,
+    "bulletinTemplateId": "ws-1776265715313-4286",
+    "recurrenceId": "wrec-1776265810457-3090"
+  },
+  {
+    "id": "ws-1776265810488-2000",
+    "communityId": "community-1776265715308",
+    "name": "구역예배",
+    "startAt": "2026-04-26T06:00:00.000Z",
+    "createdAt": "2026-04-15T15:10:10.488Z",
+    "createdBy": "kakao-4841830358",
+    "bulletin": null,
+    "bulletinTemplateId": "ws-1776265715313-4286",
+    "recurrenceId": "wrec-1776265810457-3090"
+  },
+  {
+    "id": "ws-1776450956002-5605",
+    "communityId": "kcis",
+    "name": "주일예배",
+    "startAt": "2026-04-19T03:00:00.000Z",
+    "createdAt": "2026-04-17T18:35:56.002Z",
+    "bulletin": {
+      "design": {
+        "background": {
+          "type": "default",
+          "value": "default1"
+        },
+        "logo": null,
+        "churchName": "은혜교회 청년부",
+        "worshipLabel": "WORSHIP",
+        "homepage": "",
+        "footer": ""
+      },
+      "content": {
+        "bulletinName": "주일예배",
+        "theme": "네가 나를 사랑하느냐?",
+        "worshipDate": "",
+        "worshipTime": "오전 11:00",
+        "worshipLocation": "2층 대회의실",
+        "items": [
+          {
+            "id": "wt-1776162891853-365",
+            "title": "신앙고백",
+            "description": "",
+            "presenter": "다같이"
+          },
+          {
+            "id": "wt-2",
+            "title": "찬양",
+            "description": "",
+            "presenter": "다같이",
+            "songs": [
+              {
+                "title": "내마음다해",
+                "link": "https://www.youtube.com/watch?v=RltIZ0J6_yA"
+              },
+              {
+                "title": "온맘다해",
+                "link": "https://www.youtube.com/watch?v=24NE0fEj_I4"
+              },
+              {
+                "title": "주품에",
+                "link": "https://www.youtube.com/watch?v=NQELcpBoXZc"
+              }
+            ]
+          },
+          {
+            "id": "wt-3",
+            "title": "대표기도",
+            "description": "",
+            "presenter": "김사랑 형제"
+          },
+          {
+            "id": "wt-4",
+            "title": "성경봉독",
+            "description": "요한복음 21:1-17",
+            "passage": "요한복음 21:1-17"
+          },
+          {
+            "id": "wt-5",
+            "title": "설교",
+            "description": "네가 나를 사랑하느냐",
+            "passage": "",
+            "presenter": "청년부 목사님"
+          },
+          {
+            "id": "wt-6",
+            "title": "특송",
+            "description": "",
+            "presenter": "주의 자녀로 산다는 것은",
+            "prayerNote": "봉헌기도 : 최소망 자매\n봉헌위원 : 김믿음 형제 / 이은혜자매"
+          },
+          {
+            "id": "wt-8",
+            "title": "축도",
+            "description": "예배 마침",
+            "presenter": "청년부 목사님"
+          }
+        ],
+        "announcementTitle": "광고",
+        "announcements": [
+          {
+            "title": "",
+            "content": "1. 이번주 성경통독 범위 : 출애굽기 13-18장\n2. 4월 생일자 : 김사랑 박소망\n3. 수련회 일정이 확정되었습니다. \n   일시 : 4/20-23일\n     장소 : 교회 강당\n5. 큐티세미나 안내"
+          },
+          {
+            "title": "다음주 담당 ",
+            "content": "대표기도 : 이믿음\n봉헌기도 : 박소망\n안내 : 김사랑"
+          },
+          {
+            "title": "중보 기도",
+            "content": "1. 우리의 구원자되신 예수님을 더욱 사랑하는 공동체 되게 하소서\n2. 수련회를 앞두고 준비하는 모든 지체들의 마음을 정결하게 하시고 주안에서 은혜를 충만히 경험하는 시간되게 하소서."
+          },
+          {
+            "title": "",
+            "content": "자세한 소식과 모임정보는 인스타그램을 통해 확인하실 수 있습니다. ",
+            "noTitle": true
+          }
+        ]
+      }
+    },
+    "isDefault": true
+  }
+]
