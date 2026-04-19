@@ -163,11 +163,26 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
     return entries;
   })();
 
-  // 단일 선택: 클릭한 장소 하나만 활성. 같은 장소 다시 클릭 시 해제.
   const togglePickerVenue = (id: string) => setPickerSelected((prev) => {
-    if (prev.has(id) && prev.size === 1) return new Set();
-    return new Set([id]);
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
   });
+  const toggleFloor = (floor: string) => setPickerSelected((prev) => {
+    const next = new Set(prev);
+    const floorIds = venues.filter((v) => v.floor === floor).map((v) => v.id);
+    const allOn = floorIds.every((id) => next.has(id));
+    if (allOn) floorIds.forEach((id) => next.delete(id));
+    else floorIds.forEach((id) => next.add(id));
+    return next;
+  });
+  const selectAll = () => setPickerSelected(new Set(venues.map((v) => v.id)));
+  const clearAll = () => setPickerSelected(new Set());
+
+  // 시간 선택 (모달): 시작 시각(0~23시, 0/15/30/45분) + 지속시간(0.5~12시간)
+  const [pickerStartHour, setPickerStartHour] = useState<number>(10);
+  const [pickerStartMin, setPickerStartMin] = useState<number>(0);
+  const [pickerDurationHours, setPickerDurationHours] = useState<number>(1);
 
   const confirmPicker = () => {
     if (pickerSelected.size === 0) { alert('한 개 이상의 장소를 선택하세요.'); return; }
@@ -331,7 +346,7 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
                   value={`${pickerDate}T00:00`}
                   onChange={(v) => setPickerDate(v.slice(0, 10))}
                   placeholder="날짜 선택"
-                  style={{ flex: '0 1 260px' }}
+                  style={{ flex: '0 1 220px' }}
                   buttonStyle={{
                     background: '#fff',
                     border: '2px solid var(--color-primary)',
@@ -353,39 +368,80 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
                     <span style={{ color, fontWeight: 800, fontSize: '0.95rem' }}>{labels[dow]}요일</span>
                   );
                 })()}
+
+                {/* 시작 시각 + 지속 시간 (드롭다운) */}
+                <span title="시작 시각" aria-label="시간" style={{ fontSize: '1.1rem', flex: '0 0 auto', marginLeft: 'auto' }}>⏰</span>
+                <select
+                  value={pickerStartHour}
+                  onChange={(e) => setPickerStartHour(Number(e.target.value))}
+                  style={{ padding: '0.55rem 0.5rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.95rem', fontWeight: 700, background: '#fff' }}
+                >
+                  {Array.from({ length: 24 }, (_, h) => (
+                    <option key={h} value={h}>{String(h).padStart(2, '0')}시</option>
+                  ))}
+                </select>
+                <select
+                  value={pickerStartMin}
+                  onChange={(e) => setPickerStartMin(Number(e.target.value))}
+                  style={{ padding: '0.55rem 0.5rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.95rem', fontWeight: 700, background: '#fff' }}
+                >
+                  {[0, 15, 30, 45].map((mm) => (
+                    <option key={mm} value={mm}>{String(mm).padStart(2, '0')}분</option>
+                  ))}
+                </select>
+                <select
+                  value={pickerDurationHours}
+                  onChange={(e) => setPickerDurationHours(Number(e.target.value))}
+                  style={{ padding: '0.55rem 0.5rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.95rem', fontWeight: 700, background: '#fff' }}
+                >
+                  {[0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12].map((h) => (
+                    <option key={h} value={h}>{h}시간</option>
+                  ))}
+                </select>
               </div>
 
               <div style={{ display: 'grid', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <span title="장소 선택 (단일)" aria-label="장소" style={{ fontSize: '1.1rem' }}>📍</span>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--color-ink-2)', fontWeight: 600 }}>
-                    {pickerSelected.size === 0 ? '하나의 장소를 선택하세요' : '선택됨'}
-                  </span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span title="장소" aria-label="장소" style={{ fontSize: '1.1rem' }}>📍</span>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>{pickerSelected.size}/{venues.length} 선택</span>
+                  </div>
+                  <div style={{ display: 'inline-flex', gap: '0.3rem' }}>
+                    <button type="button" onClick={selectAll} style={{ padding: '0.3rem 0.65rem', borderRadius: 6, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', fontSize: '0.76rem', fontWeight: 700, cursor: 'pointer' }}>전체 선택</button>
+                    <button type="button" onClick={clearAll} style={{ padding: '0.3rem 0.65rem', borderRadius: 6, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', fontSize: '0.76rem', fontWeight: 700, cursor: 'pointer' }}>전체 해제</button>
+                  </div>
                 </div>
 
-                {venuesByFloor.map(([floor, list]) => (
-                  <div key={floor} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.45rem 0.6rem', border: '1px solid var(--color-surface-border)', borderRadius: 10, background: '#FAFAF7', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
-                    <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#3F6212', flex: '0 0 auto', paddingTop: '0.25rem' }}>{floor}</span>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', flex: 1, minWidth: 0 }}>
-                      {list.map((v) => {
-                        const on = pickerSelected.has(v.id);
-                        return (
-                          <label key={v.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.3rem 0.6rem', borderRadius: 8, background: on ? '#65A30D' : '#fff', border: on ? '1px solid #65A30D' : '1px solid var(--color-surface-border)', cursor: 'pointer', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
-                            <input
-                              type="radio"
-                              name="picker-venue"
-                              checked={on}
-                              onChange={() => togglePickerVenue(v.id)}
-                              style={{ display: 'none' }}
-                            />
-                            <span style={{ color: on ? '#fff' : 'var(--color-ink)', fontWeight: on ? 800 : 500 }}>{v.name}</span>
-                            <span style={{ color: on ? '#ECFCCB' : 'var(--color-ink-2)', fontFamily: 'monospace', fontSize: '0.72rem' }}>({v.code})</span>
-                          </label>
-                        );
-                      })}
+                {venuesByFloor.map(([floor, list]) => {
+                  const floorIds = list.map((v) => v.id);
+                  const floorAllOn = floorIds.every((id) => pickerSelected.has(id));
+                  const floorSomeOn = floorIds.some((id) => pickerSelected.has(id));
+                  return (
+                    <div key={floor} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.45rem 0.6rem', border: '1px solid var(--color-surface-border)', borderRadius: 10, background: '#FAFAF7', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.88rem', fontWeight: 800, color: '#3F6212', cursor: 'pointer', flex: '0 0 auto', paddingTop: '0.25rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={floorAllOn}
+                          ref={(el) => { if (el) el.indeterminate = !floorAllOn && floorSomeOn; }}
+                          onChange={() => toggleFloor(floor)}
+                        />
+                        {floor}
+                      </label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', flex: 1, minWidth: 0 }}>
+                        {list.map((v) => {
+                          const on = pickerSelected.has(v.id);
+                          return (
+                            <label key={v.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.3rem 0.55rem', borderRadius: 8, background: on ? '#F7FEE7' : '#fff', border: on ? '1px solid #65A30D' : '1px solid var(--color-surface-border)', cursor: 'pointer', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
+                              <input type="checkbox" checked={on} onChange={() => togglePickerVenue(v.id)} />
+                              <span style={{ color: 'var(--color-ink)', fontWeight: on ? 700 : 500 }}>{v.name}</span>
+                              <span style={{ color: 'var(--color-ink-2)', fontFamily: 'monospace', fontSize: '0.72rem' }}>({v.code})</span>
+                            </label>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
