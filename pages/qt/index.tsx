@@ -193,12 +193,7 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
             <span style={{ fontSize: '0.8rem', color: 'var(--color-ink-2)' }}>KoreanChurchInSingapore</span>
           </div>
 
-          {videos.length === 0 ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-ink-2)', fontSize: '0.95rem' }}>
-              이번주에 올라온 새벽기도 영상이 없습니다.
-            </div>
-          ) : (
-            <>
+          <>
               <div style={{ display: 'flex', alignItems: 'stretch', gap: isMobile ? '0.2rem' : '0.3rem' }}>
                 <button
                   type="button"
@@ -443,8 +438,7 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                   </div>
                 )}
               </div>
-            </>
-          )}
+          </>
         </section>
       </main>
 

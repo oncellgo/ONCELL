@@ -127,7 +127,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
                     <path d="M10 9.5v5l4.5-2.5z" fill="currentColor" stroke="none" />
                   </svg>
                 </span>
-                <span className={styles.menuLabel}>예배영상</span>
+                <span className={styles.menuLabel}>모임교안</span>
               </a>
               <a className={styles.menuCard} href="/reservation" onClick={handleReservationClick}>
                 <span className={styles.menuIcon} aria-hidden>
