@@ -260,14 +260,23 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                           {DAY_LABELS[dow]}
                         </span>
                       </div>
-                      {v ? (
+                      {isToday ? (
+                        <span style={{
+                          fontSize: isMobile ? '0.55rem' : '0.6rem',
+                          fontWeight: 800,
+                          color: '#fff',
+                          background: '#20CD8D',
+                          padding: '0.05rem 0.35rem',
+                          borderRadius: 999,
+                          letterSpacing: '0.02em',
+                          justifySelf: 'center',
+                        }}>오늘</span>
+                      ) : v ? (
                         <svg viewBox="0 0 24 24" width={isMobile ? 12 : 14} height={isMobile ? 9 : 10} aria-label="YouTube" style={{ justifySelf: 'center' }}>
                           <path fill="#FF0000" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31.3 31.3 0 0 0 0 12a31.3 31.3 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31.3 31.3 0 0 0 24 12a31.3 31.3 0 0 0-.5-5.8z"/>
                           <path fill="#fff" d="M9.6 15.6 15.8 12 9.6 8.4z"/>
                         </svg>
-                      ) : (
-                        <span style={{ fontSize: isMobile ? '0.55rem' : '0.62rem', color: 'var(--color-ink-2)' }}>없음</span>
-                      )}
+                      ) : null}
                     </button>
                   );
                 })}
