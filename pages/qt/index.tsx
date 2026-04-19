@@ -7,7 +7,7 @@ import { getSystemAdminHref } from '../../lib/adminGuard';
 import { getProfiles, getUsers } from '../../lib/dataStore';
 import { useIsMobile } from '../../lib/useIsMobile';
 
-type Video = { videoId: string; title: string; publishedAt: string; dow: number };
+type Video = { videoId: string; title: string; publishedAt: string; dow: number; dateKey: string };
 
 type Props = {
   videos: Video[];
@@ -33,6 +33,15 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
     target.setDate(target.getDate() + dow + weekOffset);
     return { m: target.getMonth() + 1, d: target.getDate() };
   };
+  const dateKeyForDow = (dow: number): string => {
+    const sunday = new Date(weekStartISO);
+    const target = new Date(sunday);
+    target.setDate(target.getDate() + dow + weekOffset);
+    const y = target.getFullYear();
+    const m = String(target.getMonth() + 1).padStart(2, '0');
+    const d = String(target.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
   const latestVideo = videos.length
     ? [...videos].sort((a, b) => (b.publishedAt || '').localeCompare(a.publishedAt || ''))[0]
     : null;
@@ -46,8 +55,8 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
       if (p) setResolvedProfileId(p);
     } catch {}
   }, [resolvedProfileId]);
-  // 영상은 이번 주(weekOffset === 0)에만 매칭
-  const selectedVideo = weekOffset === 0 ? (videos.find((v) => v.dow === selectedDow) || null) : null;
+  // 영상 매칭: weekOffset 반영한 실제 날짜(YYYY-MM-DD)와 일치하는 것
+  const selectedVideo = videos.find((v) => v.dateKey === dateKeyForDow(selectedDow)) || null;
   const selectedVideoId = selectedVideo?.videoId || null;
 
   const goPrev = () => {
@@ -208,7 +217,7 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                 >‹</button>
                 <div style={{ flex: 1, minWidth: 0, display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: isMobile ? '0.15rem' : '0.25rem' }}>
                 {[0, 1, 2, 3, 4, 5, 6].map((dow) => {
-                  const v = weekOffset === 0 ? videos.find((x) => x.dow === dow) : undefined;
+                  const v = videos.find((x) => x.dateKey === dateKeyForDow(dow));
                   const isToday = weekOffset === 0 && dow === todayDow;
                   const isSelected = dow === selectedDow;
                   const isLatest = !!(v && latestVideo && v.videoId === latestVideo.videoId);
@@ -589,27 +598,37 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
   const sunday = new Date(now);
   sunday.setDate(now.getDate() - todayDow);
   sunday.setHours(0, 0, 0, 0);
-  const nextSunday = new Date(sunday);
-  nextSunday.setDate(sunday.getDate() + 7);
 
   let videos: Video[] = [];
   const channelId = await resolveChannelId();
   if (channelId) {
     const all = await fetchChannelVideos(channelId);
-    const weekVids = all
-      .map((v) => ({ ...v, pub: new Date(v.publishedAt) }))
-      .filter((v) => v.pub >= sunday && v.pub < nextSunday)
-      // 큐티말씀 화면은 '새벽' 영상만 표시 (주일/수요/금요 등 일반 예배 영상 제외)
+    // 큐티말씀 화면은 '새벽' 영상만 표시 (주일/수요/금요 등 일반 예배 영상 제외)
+    // RSS는 보통 최근 15개를 반환 → 약 ±2주치 영상이 포함됨. 클라이언트에서 주 단위로 필터.
+    const allVids = all
       .filter((v) => /새벽/.test(v.title))
-      .map((v) => ({ videoId: v.videoId, title: v.title, publishedAt: v.publishedAt, dow: v.pub.getDay() }));
-    const byDow = new Map<number, Video>();
-    for (const v of weekVids) {
-      const existing = byDow.get(v.dow);
+      .map((v) => {
+        const pub = new Date(v.publishedAt);
+        const y = pub.getFullYear();
+        const m = String(pub.getMonth() + 1).padStart(2, '0');
+        const d = String(pub.getDate()).padStart(2, '0');
+        return {
+          videoId: v.videoId,
+          title: v.title,
+          publishedAt: v.publishedAt,
+          dow: pub.getDay(),
+          dateKey: `${y}-${m}-${d}`,
+        };
+      });
+    // 같은 dateKey에 여러 영상이면 최신 publishedAt 우선
+    const byDate = new Map<string, Video>();
+    for (const v of allVids) {
+      const existing = byDate.get(v.dateKey);
       if (!existing || new Date(v.publishedAt).getTime() > new Date(existing.publishedAt).getTime()) {
-        byDow.set(v.dow, v);
+        byDate.set(v.dateKey, v);
       }
     }
-    videos = Array.from(byDow.values()).sort((a, b) => a.dow - b.dow);
+    videos = Array.from(byDate.values()).sort((a, b) => a.dateKey.localeCompare(b.dateKey));
   }
 
   const profileId = typeof ctx.query.profileId === 'string' ? ctx.query.profileId : null;
