@@ -13,7 +13,7 @@ const AdminTabBar = ({ authQS, active = null, defaultCommunityId }: Props) => {
     { key: 'users', label: '사용자관리', href: `/admin/system?${authQS}` },
     { key: 'schedule', label: '일정관리', href: `/management?${authQS}${defaultCommunityId ? `&communityId=${encodeURIComponent(defaultCommunityId)}` : ''}&isAdmin=1&menu=${encodeURIComponent('일정관리')}` },
     { key: 'bulletinTemplate', label: '주보관리', href: `/admin/system?${authQS}&section=bulletinTemplate` },
-    { key: 'venue', label: '장소관리', href: `/admin/system?${authQS}&section=venue` },
+    { key: 'venue', label: '장소예약관리', href: `/admin/system?${authQS}&section=venue` },
     { key: 'etc', label: '기타설정', href: `/admin/system?${authQS}&section=etc` },
   ] as const;
 

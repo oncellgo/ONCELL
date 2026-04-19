@@ -8,6 +8,7 @@ import { useVideo } from '../../components/VideoPlayer';
 import { requireSystemAdminSSR } from '../../lib/adminGuard';
 import ScheduleView from '../../components/ScheduleView';
 import VenueManager from '../../components/VenueManager';
+import AdminReservationsView from '../../components/AdminReservationsView';
 import EtcSettings from '../../components/EtcSettings';
 import SignupApprovalsCard from '../../components/SignupApprovalsCard';
 import MembersCard from '../../components/MembersCard';
@@ -71,6 +72,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
   const authQS = `profileId=${encodeURIComponent(profileId)}&k=${encodeURIComponent(k)}`;
   const authHeaders = { 'x-profile-id': profileId, 'x-admin-token': k };
   const sectionFilter = typeof router.query.section === 'string' ? router.query.section : null;
+  const subFilter = typeof router.query.sub === 'string' ? router.query.sub : null;
 
   const [communities, setCommunities] = useState<AdminCommunity[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -426,12 +428,57 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
           />
         )}
 
-        {sectionFilter === 'venue' && (
+        {sectionFilter === 'venue' && !subFilter && (
           <section style={{ ...cardStyle, padding: isMobile ? '0.85rem' : cardStyle.padding }}>
-            <h2 style={titleStyle}>장소관리</h2>
+            <h2 style={titleStyle}>장소예약관리</h2>
+            <p style={subtle}>장소 설정과 예약 현황을 관리합니다.</p>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+              <a
+                href={`/admin/system?${authQS}&section=venue&sub=settings`}
+                style={{
+                  display: 'block', padding: '1.5rem', borderRadius: 14,
+                  background: '#ECFCCB', border: '1px solid #D9F09E', textDecoration: 'none',
+                  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                }}
+              >
+                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🏛️</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#3F6212', marginBottom: '0.35rem' }}>장소 설정</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>층/장소 추가·수정, 가용 시간, 단발/반복 블럭 설정</div>
+              </a>
+              <a
+                href={`/admin/system?${authQS}&section=venue&sub=reservations`}
+                style={{
+                  display: 'block', padding: '1.5rem', borderRadius: 14,
+                  background: '#DBEAFE', border: '1px solid #93C5FD', textDecoration: 'none',
+                  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                }}
+              >
+                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📋</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1E40AF', marginBottom: '0.35rem' }}>예약 상황</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>날짜·사용자별 예약 내역 조회</div>
+              </a>
+            </div>
+          </section>
+        )}
+
+        {sectionFilter === 'venue' && subFilter === 'settings' && (
+          <section style={{ ...cardStyle, padding: isMobile ? '0.85rem' : cardStyle.padding }}>
+            <h2 style={titleStyle}>장소 설정</h2>
             <p style={subtle}>세로는 장소, 가로는 30분 단위 시간 그리드입니다. 셀을 클릭하면 해당 30분이 토글로 블럭됩니다. 장기 블럭은 우측 "장기블럭" 버튼으로 설정합니다.</p>
             <VenueManager profileId={profileId} k={k} />
           </section>
+        )}
+
+        {sectionFilter === 'venue' && subFilter === 'reservations' && (
+          <AdminReservationsView
+            authQS={authQS}
+            authHeaders={authHeaders}
+            communityId={scheduleDefaultCommunityId || 'kcis'}
+            cardStyle={cardStyle}
+            titleStyle={titleStyle}
+            subtle={subtle}
+            isMobile={isMobile}
+          />
         )}
 
         {sectionFilter === 'etc' && (
