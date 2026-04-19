@@ -339,72 +339,87 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
             </div>
 
             <div style={{ padding: '1rem 1.25rem', overflowY: 'auto', display: 'grid', gap: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'wrap' }}>
-                <span title="예약날짜" aria-label="예약날짜" style={{ fontSize: '1.1rem', flex: '0 0 auto' }}>📅</span>
-                <DateTimePicker
-                  dateOnly
-                  value={`${pickerDate}T00:00`}
-                  onChange={(v) => setPickerDate(v.slice(0, 10))}
-                  placeholder="날짜 선택"
-                  style={{ flex: '0 1 220px' }}
-                  buttonStyle={{
-                    background: '#fff',
-                    border: '2px solid var(--color-primary)',
-                    color: 'var(--color-ink)',
-                    fontWeight: 800,
-                    fontSize: '1.05rem',
-                    padding: '0.7rem 1rem',
-                    textAlign: 'center',
-                    letterSpacing: '0.02em',
-                  }}
-                />
-                {(() => {
-                  const [y, m, d] = pickerDate.split('-').map(Number);
-                  if (!y || !m || !d) return null;
-                  const dow = new Date(y, m - 1, d).getDay();
-                  const labels = ['일', '월', '화', '수', '목', '금', '토'];
-                  const color = dow === 0 ? '#dc2626' : dow === 6 ? '#2563eb' : 'var(--color-ink-2)';
-                  return (
-                    <span style={{ color, fontWeight: 800, fontSize: '0.95rem' }}>{labels[dow]}요일</span>
-                  );
-                })()}
+              {/* === 섹션 1: 예약시간 선택 === */}
+              <div style={{ display: 'grid', gap: '0.6rem', padding: '0.85rem 1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span style={{ fontSize: '1rem' }}>⏰</span>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#3F6212' }}>예약시간 선택</span>
+                </div>
 
-                {/* 시작 시각 + 지속 시간 (드롭다운) */}
-                <span title="시작 시각" aria-label="시간" style={{ fontSize: '1.1rem', flex: '0 0 auto', marginLeft: 'auto' }}>⏰</span>
-                <select
-                  value={pickerStartHour}
-                  onChange={(e) => setPickerStartHour(Number(e.target.value))}
-                  style={{ padding: '0.55rem 0.5rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.95rem', fontWeight: 700, background: '#fff' }}
-                >
-                  {Array.from({ length: 24 }, (_, h) => (
-                    <option key={h} value={h}>{String(h).padStart(2, '0')}시</option>
-                  ))}
-                </select>
-                <select
-                  value={pickerStartMin}
-                  onChange={(e) => setPickerStartMin(Number(e.target.value))}
-                  style={{ padding: '0.55rem 0.5rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.95rem', fontWeight: 700, background: '#fff' }}
-                >
-                  {[0, 15, 30, 45].map((mm) => (
-                    <option key={mm} value={mm}>{String(mm).padStart(2, '0')}분</option>
-                  ))}
-                </select>
-                <select
-                  value={pickerDurationHours}
-                  onChange={(e) => setPickerDurationHours(Number(e.target.value))}
-                  style={{ padding: '0.55rem 0.5rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.95rem', fontWeight: 700, background: '#fff' }}
-                >
-                  {[0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12].map((h) => (
-                    <option key={h} value={h}>{h}시간</option>
-                  ))}
-                </select>
+                {/* 날짜 + 요일 */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-ink-2)', whiteSpace: 'nowrap' }}>날짜</span>
+                  <DateTimePicker
+                    dateOnly
+                    value={`${pickerDate}T00:00`}
+                    onChange={(v) => setPickerDate(v.slice(0, 10))}
+                    placeholder="날짜 선택"
+                    buttonStyle={{
+                      width: '100%',
+                      background: '#fff',
+                      border: '1.5px solid var(--color-primary)',
+                      color: 'var(--color-ink)',
+                      fontWeight: 800,
+                      fontSize: '1rem',
+                      padding: '0.55rem 0.75rem',
+                      textAlign: 'center',
+                    }}
+                  />
+                  {(() => {
+                    const [y, m, d] = pickerDate.split('-').map(Number);
+                    if (!y || !m || !d) return null;
+                    const dow = new Date(y, m - 1, d).getDay();
+                    const labels = ['일', '월', '화', '수', '목', '금', '토'];
+                    const color = dow === 0 ? '#dc2626' : dow === 6 ? '#2563eb' : 'var(--color-ink-2)';
+                    return (
+                      <span style={{ color, fontWeight: 800, fontSize: '0.92rem', minWidth: 36, textAlign: 'right' }}>{labels[dow]}요일</span>
+                    );
+                  })()}
+                </div>
+
+                {/* 시작 + 지속 */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr 1fr', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-ink-2)', whiteSpace: 'nowrap' }}>시작</span>
+                  <select
+                    value={pickerStartHour}
+                    onChange={(e) => setPickerStartHour(Number(e.target.value))}
+                    style={{ padding: '0.55rem 0.5rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.95rem', fontWeight: 700, background: '#fff' }}
+                  >
+                    {Array.from({ length: 24 }, (_, h) => (
+                      <option key={h} value={h}>{String(h).padStart(2, '0')}시</option>
+                    ))}
+                  </select>
+                  <select
+                    value={pickerStartMin}
+                    onChange={(e) => setPickerStartMin(Number(e.target.value))}
+                    style={{ padding: '0.55rem 0.5rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.95rem', fontWeight: 700, background: '#fff' }}
+                  >
+                    {[0, 15, 30, 45].map((mm) => (
+                      <option key={mm} value={mm}>{String(mm).padStart(2, '0')}분</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-ink-2)', whiteSpace: 'nowrap' }}>지속</span>
+                  <select
+                    value={pickerDurationHours}
+                    onChange={(e) => setPickerDurationHours(Number(e.target.value))}
+                    style={{ padding: '0.55rem 0.5rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.95rem', fontWeight: 700, background: '#fff' }}
+                  >
+                    {[0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12].map((h) => (
+                      <option key={h} value={h}>{h}시간</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              <div style={{ display: 'grid', gap: '0.5rem' }}>
+              {/* === 섹션 2: 장소 선택 === */}
+              <div style={{ display: 'grid', gap: '0.55rem', padding: '0.85rem 1rem', borderRadius: 12, background: '#F0F9FF', border: '1px solid #BAE6FD' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <span title="장소" aria-label="장소" style={{ fontSize: '1.1rem' }}>📍</span>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>{pickerSelected.size}/{venues.length} 선택</span>
+                    <span style={{ fontSize: '1rem' }}>📍</span>
+                    <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#075985' }}>장소 선택</span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>({pickerSelected.size}/{venues.length})</span>
                   </div>
                   <div style={{ display: 'inline-flex', gap: '0.3rem' }}>
                     <button type="button" onClick={selectAll} style={{ padding: '0.3rem 0.65rem', borderRadius: 6, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', fontSize: '0.76rem', fontWeight: 700, cursor: 'pointer' }}>전체 선택</button>
