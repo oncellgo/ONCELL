@@ -92,7 +92,7 @@ const CallbackPage = () => {
         }
 
         router.replace(
-          `/dashboard?profileId=${encodeURIComponent(profileId)}&nickname=${encodeURIComponent(nickname)}&email=${encodeURIComponent(email)}`,
+          `/?profileId=${encodeURIComponent(profileId)}&nickname=${encodeURIComponent(nickname)}&email=${encodeURIComponent(email)}`,
         );
       } catch (error) {
         console.error(error);

@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import type { GetServerSidePropsContext } from 'next';
 import { getSystemAdmins } from './dataStore';
+import { kvGet, kvSet } from './db';
 
 const loadAdmins = async (): Promise<string[]> => {
   try {
@@ -9,6 +10,21 @@ const loadAdmins = async (): Promise<string[]> => {
   } catch {
     return [];
   }
+};
+
+// 관리자 토큰은 우선 Supabase(app_kv:admin_access_token), 없으면 env로 폴백.
+// UI에서 회전(rotate)하면 DB에 저장되며 env보다 우선됨.
+export const getActiveAdminToken = async (): Promise<string | null> => {
+  try {
+    const fromDb = await kvGet<string>('admin_access_token');
+    if (fromDb && typeof fromDb === 'string') return fromDb;
+  } catch {}
+  const fromEnv = process.env.ADMIN_ACCESS_TOKEN;
+  return fromEnv && fromEnv.length > 0 ? fromEnv : null;
+};
+
+export const setActiveAdminToken = async (token: string): Promise<void> => {
+  await kvSet('admin_access_token', token);
 };
 
 const pickString = (v: unknown): string | null => (typeof v === 'string' && v.length > 0 ? v : null);
@@ -21,7 +37,7 @@ export const checkSystemAdmin = async (
 ): Promise<SystemAdminCheck> => {
   const profileId = pickString(profileIdRaw);
   const token = pickString(tokenRaw);
-  const expected = pickString(process.env.ADMIN_ACCESS_TOKEN);
+  const expected = await getActiveAdminToken();
 
   if (!expected || !profileId || !token) return { ok: false };
   if (token !== expected) return { ok: false };
@@ -42,7 +58,7 @@ export const getSystemAdminHref = async (
   extras?: { nickname?: string | null; email?: string | null },
 ): Promise<string | null> => {
   if (!profileId) return null;
-  const token = process.env.ADMIN_ACCESS_TOKEN;
+  const token = await getActiveAdminToken();
   if (!token) return null;
   const admins = await loadAdmins();
   if (!admins.includes(profileId)) return null;

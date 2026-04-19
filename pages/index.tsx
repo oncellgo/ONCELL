@@ -110,25 +110,6 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
             </p>
 
             <div className={styles.menuGrid}>
-              <a className={styles.menuCard} href="#">
-                <span className={styles.menuIcon} aria-hidden>
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M6 3h10l3 3v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
-                    <path d="M15 3v4h4" />
-                    <path d="M8 12h8M8 16h6" />
-                  </svg>
-                </span>
-                <span className={styles.menuLabel}>주보</span>
-              </a>
-              <a className={styles.menuCard} href="#">
-                <span className={styles.menuIcon} aria-hidden>
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="5" width="18" height="14" rx="2.5" />
-                    <path d="M10 9.5v5l4.5-2.5z" fill="currentColor" stroke="none" />
-                  </svg>
-                </span>
-                <span className={styles.menuLabel}>모임교안</span>
-              </a>
               <a className={styles.menuCard} href="/reservation" onClick={handleReservationClick}>
                 <span className={styles.menuIcon} aria-hidden>
                   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
@@ -146,7 +127,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
                     <path d="M8 3v4M16 3v4" />
                   </svg>
                 </span>
-                <span className={styles.menuLabel}>교회일정</span>
+                <span className={styles.menuLabel}>일정</span>
               </a>
               <a className={styles.menuCard} href="/qt">
                 <span className={styles.menuIcon} aria-hidden>
@@ -155,17 +136,16 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
                     <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5A1.5 1.5 0 0 0 20 17.5z" />
                   </svg>
                 </span>
-                <span className={styles.menuLabel}>오늘의 큐티</span>
+                <span className={styles.menuLabel}>큐티</span>
               </a>
-              <a className={styles.menuCard} href="/bible">
+              <a className={styles.menuCard} href="#">
                 <span className={styles.menuIcon} aria-hidden>
                   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H18a2 2 0 0 1 2 2v14a1.5 1.5 0 0 1-1.5 1.5H6a2 2 0 0 1-2-2z" />
-                    <path d="M8 3v15" />
-                    <path d="M11 8h5M11 11h5M11 14h3" />
+                    <rect x="3" y="5" width="18" height="14" rx="2.5" />
+                    <path d="M10 9.5v5l4.5-2.5z" fill="currentColor" stroke="none" />
                   </svg>
                 </span>
-                <span className={styles.menuLabel}>오늘의 성경통독</span>
+                <span className={styles.menuLabel}>모임교안</span>
               </a>
             </div>
 
