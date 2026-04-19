@@ -26,6 +26,8 @@ type Props = {
   slotMin: number;
   availableStart: string;
   availableEnd: string;
+  reservationLimitMode: 'unlimited' | 'perUser';
+  reservationLimitPerUser: number;
   profileId: string | null;
   displayName: string | null;
   nickname: string | null;
@@ -33,7 +35,7 @@ type Props = {
   systemAdminHref: string | null;
 };
 
-const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, availableEnd, profileId, displayName, nickname, email, systemAdminHref }: Props) => {
+const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, availableEnd, reservationLimitMode, reservationLimitPerUser, profileId, displayName, nickname, email, systemAdminHref }: Props) => {
   const router = useRouter();
   const isMobile = useIsMobile();
   const [selectedDate, setSelectedDate] = useState<string>(dateKey(new Date()));
@@ -345,6 +347,12 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
                   <span style={{ fontSize: '1rem' }}>⏰</span>
                   <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#3F6212' }}>예약시간 선택</span>
                 </div>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--color-ink-2)', lineHeight: 1.5 }}>
+                  시스템관리자가 설정한 <strong style={{ color: '#3F6212', fontWeight: 800 }}>{slotMin}분</strong> 단위로 예약 가능.
+                  {reservationLimitMode === 'perUser'
+                    ? <> 현재 시각 기준 인당 최대 <strong style={{ color: '#3F6212', fontWeight: 800 }}>{reservationLimitPerUser}건</strong>의 예약이 가능합니다.</>
+                    : <> 예약 건수 제한 없음.</>}
+                </p>
 
                 {/* 한 줄: 날짜 + 요일 + 시작시각 + 지속 */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -506,10 +514,12 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
     });
   }
   const blocks: Block[] = [...adhocBlocks, ...eventBlocks];
-  const settings = (settingsObj || {}) as { venueSlotMin?: number; venueAvailableStart?: string; venueAvailableEnd?: string };
+  const settings = (settingsObj || {}) as { venueSlotMin?: number; venueAvailableStart?: string; venueAvailableEnd?: string; reservationLimitMode?: string; reservationLimitPerUser?: number };
   const slotMin = settings.venueSlotMin === 60 ? 60 : 30;
   const availableStart = typeof settings.venueAvailableStart === 'string' && /^\d{2}:\d{2}$/.test(settings.venueAvailableStart) ? settings.venueAvailableStart : '06:00';
   const availableEnd = typeof settings.venueAvailableEnd === 'string' && /^\d{2}:\d{2}$/.test(settings.venueAvailableEnd) ? settings.venueAvailableEnd : '22:00';
+  const reservationLimitMode: 'unlimited' | 'perUser' = settings.reservationLimitMode === 'perUser' ? 'perUser' : 'unlimited';
+  const reservationLimitPerUser = Math.max(1, Math.min(10, Number(settings.reservationLimitPerUser) || 3));
 
   const profileId = typeof ctx.query.profileId === 'string' ? ctx.query.profileId : null;
   const nickname = typeof ctx.query.nickname === 'string' ? ctx.query.nickname : null;
@@ -530,7 +540,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
 
   const systemAdminHref = await getSystemAdminHref(profileId, { nickname, email });
 
-  return { props: { venues, blocks, groups, slotMin, availableStart, availableEnd, profileId, displayName, nickname, email, systemAdminHref } };
+  return { props: { venues, blocks, groups, slotMin, availableStart, availableEnd, reservationLimitMode, reservationLimitPerUser, profileId, displayName, nickname, email, systemAdminHref } };
 };
 
 export default ReservationPage;
