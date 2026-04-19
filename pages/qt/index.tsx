@@ -599,8 +599,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
     const weekVids = all
       .map((v) => ({ ...v, pub: new Date(v.publishedAt) }))
       .filter((v) => v.pub >= sunday && v.pub < nextSunday)
-      // 새벽기도 영상만 포함 (주일예배, 수요예배 등은 제외)
-      .filter((v) => /새벽/.test(v.title))
+      // 모든 예배·기도회 영상 포함 (새벽기도/주일예배/수요예배/금요기도회 등)
       .map((v) => ({ videoId: v.videoId, title: v.title, publishedAt: v.publishedAt, dow: v.pub.getDay() }));
     const byDow = new Map<number, Video>();
     for (const v of weekVids) {
