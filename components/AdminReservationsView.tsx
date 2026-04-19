@@ -39,7 +39,10 @@ const AdminReservationsView = ({ authQS, authHeaders, communityId = 'kcis', card
   const [items, setItems] = useState<Reservation[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [filterText, setFilterText] = useState('');
-  const [showPast, setShowPast] = useState(false);
+  const [venueFilter, setVenueFilter] = useState<string>(''); // '' = 전체
+  const [userFilter, setUserFilter] = useState<string>('');   // '' = 전체
+  const [dateMode, setDateMode] = useState<'future' | 'past' | 'custom'>('future');
+  const [customDate, setCustomDate] = useState<string>('');
   const [editTarget, setEditTarget] = useState<Reservation | null>(null);
   const [editForm, setEditForm] = useState<{ title: string; date: string; startTime: string; endTime: string; location: string }>({ title: '', date: '', startTime: '', endTime: '', location: '' });
   const [editSaving, setEditSaving] = useState(false);
@@ -114,10 +117,37 @@ const AdminReservationsView = ({ authQS, authHeaders, communityId = 'kcis', card
     }
   };
 
+  // 드롭다운 옵션 자동 생성
+  const venueOptions = useMemo(() => {
+    const set = new Set<string>();
+    (items || []).forEach((r) => { if (r.location) set.add(r.location); });
+    return Array.from(set).sort();
+  }, [items]);
+  const userOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    (items || []).forEach((r) => {
+      const label = r.createdByName ? `${r.createdByName} (${r.createdBy})` : r.createdBy;
+      map.set(r.createdBy, label);
+    });
+    return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [items]);
+
   const filtered = useMemo(() => {
     const now = Date.now();
     let arr = (items || []).slice();
-    if (!showPast) arr = arr.filter((r) => new Date(r.endAt).getTime() >= now);
+
+    // 날짜 모드
+    if (dateMode === 'future') {
+      arr = arr.filter((r) => new Date(r.endAt).getTime() >= now);
+    } else if (dateMode === 'past') {
+      arr = arr.filter((r) => new Date(r.endAt).getTime() < now);
+    } else if (dateMode === 'custom' && customDate) {
+      arr = arr.filter((r) => fmt(r.startAt).dateKey === customDate);
+    }
+
+    if (venueFilter) arr = arr.filter((r) => (r.location || '') === venueFilter);
+    if (userFilter) arr = arr.filter((r) => r.createdBy === userFilter);
+
     if (filterText.trim()) {
       const q = filterText.trim().toLowerCase();
       arr = arr.filter((r) =>
@@ -127,28 +157,62 @@ const AdminReservationsView = ({ authQS, authHeaders, communityId = 'kcis', card
         (r.createdByName || '').toLowerCase().includes(q)
       );
     }
-    arr.sort((a, b) => a.startAt.localeCompare(b.startAt));
+
+    arr.sort((a, b) => dateMode === 'past' ? b.startAt.localeCompare(a.startAt) : a.startAt.localeCompare(b.startAt));
     return arr;
-  }, [items, filterText, showPast]);
+  }, [items, filterText, venueFilter, userFilter, dateMode, customDate]);
 
   return (
     <section style={{ ...cardStyle, padding: isMob ? '0.85rem' : cardStyle.padding }}>
       <h2 style={titleStyle}>예약 상황</h2>
-      <p style={subtle}>모든 사용자의 장소 예약 내역. 오늘 이후 예약을 시간순으로 표시합니다.</p>
+      <p style={subtle}>모든 사용자의 장소 예약 내역. 장소·사용자·날짜 별로 검색할 수 있습니다.</p>
 
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', margin: '0.75rem 0 1rem' }}>
+      <div style={{ display: 'grid', gap: '0.55rem', margin: '0.75rem 0 1rem' }}>
+        {/* 1행: 3개 드롭다운 */}
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <select
+            value={venueFilter}
+            onChange={(e) => setVenueFilter(e.target.value)}
+            style={{ padding: '0.45rem 0.7rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.88rem', background: '#fff', flex: '1 1 180px', maxWidth: 280 }}
+          >
+            <option value="">📍 장소 (전체)</option>
+            {venueOptions.map((v) => <option key={v} value={v}>{v}</option>)}
+          </select>
+          <select
+            value={userFilter}
+            onChange={(e) => setUserFilter(e.target.value)}
+            style={{ padding: '0.45rem 0.7rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.88rem', background: '#fff', flex: '1 1 180px', maxWidth: 280 }}
+          >
+            <option value="">👤 사용자 (전체)</option>
+            {userOptions.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+          </select>
+          <select
+            value={dateMode}
+            onChange={(e) => setDateMode(e.target.value as 'future' | 'past' | 'custom')}
+            style={{ padding: '0.45rem 0.7rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.88rem', background: '#fff', flex: '0 1 180px' }}
+          >
+            <option value="future">📅 오늘 이후 전체</option>
+            <option value="past">⏮️ 어제까지</option>
+            <option value="custom">🎯 직접 입력</option>
+          </select>
+          {dateMode === 'custom' && (
+            <input
+              type="date"
+              value={customDate}
+              onChange={(e) => setCustomDate(e.target.value)}
+              style={{ padding: '0.45rem 0.7rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.88rem', flex: '0 1 160px' }}
+            />
+          )}
+          <span style={{ marginLeft: 'auto', fontSize: '0.82rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>총 {filtered.length}건</span>
+        </div>
+        {/* 2행: 통합 텍스트 검색 */}
         <input
           type="text"
           value={filterText}
           onChange={(e) => setFilterText(e.target.value)}
-          placeholder="제목/장소/이름/ID 검색"
-          style={{ flex: '1 1 200px', padding: '0.5rem 0.75rem', borderRadius: 10, border: '1px solid var(--color-gray)', fontSize: '0.88rem' }}
+          placeholder="제목/장소/이름/ID 통합 검색"
+          style={{ padding: '0.5rem 0.75rem', borderRadius: 10, border: '1px solid var(--color-gray)', fontSize: '0.88rem' }}
         />
-        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-ink-2)', cursor: 'pointer', flexShrink: 0 }}>
-          <input type="checkbox" checked={showPast} onChange={(e) => setShowPast(e.target.checked)} />
-          지난 예약 포함
-        </label>
-        <span style={{ marginLeft: 'auto', fontSize: '0.82rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>총 {filtered.length}건</span>
       </div>
 
       {loading ? (
