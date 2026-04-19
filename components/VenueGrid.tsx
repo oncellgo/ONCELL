@@ -114,6 +114,35 @@ type Props = {
 const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate, slotMin = SLOT_MIN, availableStart = '06:00', availableEnd = '22:00', selectedSlots, onSlotClick, renderRowExtra, showActionColumn = false }: Props) => {
   const isMobile = useIsMobile();
   const blockedByVenue = computeBlockedSlotsForDate(groups, selectedDate);
+
+  // 그룹 블럭의 reason까지 함께 (venueId → slotMin → reason)
+  const groupReasonByVenue = (() => {
+    const map = new Map<string, Map<number, string>>();
+    const [y, mo, dd] = selectedDate.split('-').map(Number);
+    const dateObj = new Date(y, mo - 1, dd);
+    const ts = dateObj.getTime();
+    const dow = dateObj.getDay();
+    for (const g of groups) {
+      if (g.endDate) {
+        const endTs = new Date(`${g.endDate}T23:59:59`).getTime();
+        if (ts > endTs) continue;
+      }
+      const slots: Array<{ dow: number; startMin: number }> = [];
+      // expandGroupToSlots is internal; replicate inline
+      for (const sg of g.slots) {
+        const targets = sg.dow === -1 ? [0,1,2,3,4,5,6] : [sg.dow];
+        for (const dw of targets) {
+          for (let m = sg.startMin; m < sg.endMin; m += SLOT_MIN) slots.push({ dow: dw, startMin: m });
+        }
+      }
+      for (const s of slots) {
+        if (s.dow !== dow) continue;
+        if (!map.has(g.venueId)) map.set(g.venueId, new Map());
+        map.get(g.venueId)!.set(s.startMin, g.reason || '블럭');
+      }
+    }
+    return map;
+  })();
   const venues = [...venuesProp].sort((a, b) => {
     const fa = Number((a.floor.match(/(\d+)/) || [])[1] || 0);
     const fb = Number((b.floor.match(/(\d+)/) || [])[1] || 0);
@@ -161,7 +190,43 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
           </tr>
         </thead>
         <tbody>
-          {slotMins.map((m, rowIdx) => {
+          {(() => {
+            // 각 venue별 슬롯 정보 사전계산: 연속된 같은 reason의 블럭은 첫 행에서 rowSpan으로 묶음
+            type SlotInfo = { blocked: boolean; reason: string; isStart: boolean; span: number };
+            const venueSlotInfos = new Map<string, SlotInfo[]>();
+            for (const v of venues) {
+              const infos: SlotInfo[] = slotMins.map((mm) => {
+                const ss = new Date(y, mo - 1, d, Math.floor(mm / 60), mm % 60);
+                const se = new Date(ss.getTime() + slotMin * 60 * 1000);
+                const groupSlot = blockedByVenue.get(v.id)?.has(mm) || (slotMin === 60 ? blockedByVenue.get(v.id)?.has(mm + 30) : false) || false;
+                const groupReason = groupReasonByVenue.get(v.id)?.get(mm) || (slotMin === 60 ? groupReasonByVenue.get(v.id)?.get(mm + 30) : undefined);
+                let blocked = groupSlot;
+                let reason = groupReason || '';
+                for (const b of blocks) {
+                  if (b.venueId !== v.id) continue;
+                  const bs = new Date(b.startAt).getTime();
+                  const be = b.endAt ? new Date(b.endAt).getTime() : Number.POSITIVE_INFINITY;
+                  if (bs < se.getTime() && be > ss.getTime()) {
+                    blocked = true;
+                    if (b.reason) reason = b.reason;
+                    break;
+                  }
+                }
+                return { blocked, reason, isStart: false, span: 1 };
+              });
+              for (let i = 0; i < infos.length; i++) {
+                if (!infos[i].blocked) continue;
+                if (i === 0 || !infos[i - 1].blocked || infos[i - 1].reason !== infos[i].reason) {
+                  infos[i].isStart = true;
+                  let span = 1;
+                  while (i + span < infos.length && infos[i + span].blocked && infos[i + span].reason === infos[i].reason) span++;
+                  infos[i].span = span;
+                }
+              }
+              venueSlotInfos.set(v.id, infos);
+            }
+
+            return slotMins.map((m, rowIdx) => {
             const slotStart = new Date(y, mo - 1, d, Math.floor(m / 60), m % 60);
             const slotEnd = new Date(slotStart.getTime() + slotMin * 60 * 1000);
             const isHourStart = m % 60 === 0;
@@ -193,32 +258,36 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                 )}
                 <td style={{ padding: '0 0.3rem', position: 'sticky', left: TIME_HOUR_W, background: '#FFFFFF', borderRight: '1.5px solid #D9F09E', color: '#4D7C0F', fontWeight: 400, fontSize: '0.68rem', whiteSpace: 'nowrap', textAlign: 'right', zIndex: 1, opacity: 0.85 }}>:{String(minPart).padStart(2, '0')}</td>
                 {venues.map((v) => {
+                  const info = venueSlotInfos.get(v.id)?.[rowIdx];
+                  // 블럭 연속 영역의 첫 행 외에는 위 행이 rowSpan으로 덮으므로 td 자체를 생략
+                  if (info && info.blocked && !info.isStart) return null;
                   const isAvailableDay = v.availableDays.includes(selectedDow);
                   const inAvailable = isAvailableDay && m >= availableStartMin && m < availableEndMin;
-                  const groupBlocked = blockedByVenue.get(v.id)?.has(m) || (slotMin === 60 ? blockedByVenue.get(v.id)?.has(m + 30) : false) || false;
-                  const adhocBlocked = blocks.length > 0 && isBlocked(blocks, v.id, slotStart, slotEnd);
-                  const blocked = groupBlocked || adhocBlocked;
+                  const blocked = info?.blocked || false;
+                  const reason = info?.reason || '';
+                  const span = info?.span || 1;
                   const isSelected = !!selectedSlots?.get(v.id)?.has(m);
                   const bg = isSelected ? '#20CD8D' : (!inAvailable ? '#E5E7EB' : blocked ? '#6B7280' : '#F7FEE7');
                   const color = isSelected ? '#fff' : (!inAvailable ? '#9CA3AF' : blocked ? '#F3F4F6' : '#4D7C0F');
                   const clickable = !!onSlotClick && inAvailable;
                   return (
-                    <td key={v.id} style={{ padding: 0, borderRight: '1px solid #F4F4F0', minWidth: VENUE_MIN_W }}>
+                    <td key={v.id} rowSpan={blocked ? span : 1} style={{ padding: 0, borderRight: '1px solid #F4F4F0', minWidth: VENUE_MIN_W }}>
                       <button
                         type="button"
                         disabled={!clickable}
                         onClick={() => onSlotClick && onSlotClick(v, m, blocked)}
-                        title={`${v.floor} ${v.name} ${toHHMM(m)} ${!inAvailable ? '예약 불가 시간대' : blocked ? '블럭됨' : '예약 가능'}`}
-                        style={{ width: '100%', height: 20, border: 'none', background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: '0.6rem', fontWeight: 700, lineHeight: 1 }}
+                        title={`${v.floor} ${v.name} ${toHHMM(m)} ${!inAvailable ? '예약 불가 시간대' : blocked ? `블럭: ${reason}` : '예약 가능'}`}
+                        style={{ width: '100%', height: blocked ? span * 20 : 20, border: 'none', background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: '0.6rem', fontWeight: 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle' }}
                       >
-                        {isSelected ? '●' : (blocked ? '✕' : '')}
+                        {isSelected ? '●' : (blocked ? (reason || '블럭') : '')}
                       </button>
                     </td>
                   );
                 })}
               </tr>
             );
-          })}
+          });
+          })()}
           {venues.length === 0 && (
             <tr><td colSpan={1} style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--color-ink-2)' }}>등록된 장소가 없습니다.</td></tr>
           )}

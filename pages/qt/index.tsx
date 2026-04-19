@@ -295,7 +295,7 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
               </div>
 
               {selectedVideoId ? (
-                <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', background: '#000' }}>
+                <div style={{ position: 'relative', width: '50%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', background: '#000', margin: '0 auto' }}>
                   <iframe
                     src={`https://www.youtube.com/embed/${selectedVideoId}`}
                     title="새벽기도 영상"
@@ -306,10 +306,11 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                 </div>
               ) : (
                 <div style={{
-                  position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 12,
+                  position: 'relative', width: '50%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12,
                   background: '#F3F4F6', border: '1px dashed var(--color-gray)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: 'var(--color-ink-2)', fontSize: '1rem', fontWeight: 700,
+                  margin: '0 auto',
                 }}>
                   영상 없음
                 </div>

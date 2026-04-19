@@ -163,21 +163,11 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
     return entries;
   })();
 
+  // 단일 선택: 클릭한 장소 하나만 활성. 같은 장소 다시 클릭 시 해제.
   const togglePickerVenue = (id: string) => setPickerSelected((prev) => {
-    const next = new Set(prev);
-    if (next.has(id)) next.delete(id); else next.add(id);
-    return next;
+    if (prev.has(id) && prev.size === 1) return new Set();
+    return new Set([id]);
   });
-  const toggleFloor = (floor: string) => setPickerSelected((prev) => {
-    const next = new Set(prev);
-    const floorIds = venues.filter((v) => v.floor === floor).map((v) => v.id);
-    const allOn = floorIds.every((id) => next.has(id));
-    if (allOn) floorIds.forEach((id) => next.delete(id));
-    else floorIds.forEach((id) => next.add(id));
-    return next;
-  });
-  const selectAll = () => setPickerSelected(new Set(venues.map((v) => v.id)));
-  const clearAll = () => setPickerSelected(new Set());
 
   const confirmPicker = () => {
     if (pickerSelected.size === 0) { alert('한 개 이상의 장소를 선택하세요.'); return; }
@@ -329,13 +319,13 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
         >
           <div role="dialog" className="modal-card" style={{ width: '100%', maxWidth: 560, maxHeight: '90vh', background: '#fff', borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--color-surface-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-ink)' }}>예약 가능 날짜·장소</h3>
+              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-ink)' }}>예약시간/장소 선택</h3>
               <button type="button" onClick={() => setPickerOpen(false)} aria-label="닫기" style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-ink-2)' }}>✕</button>
             </div>
 
             <div style={{ padding: '1rem 1.25rem', overflowY: 'auto', display: 'grid', gap: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-ink)', flex: '0 0 auto' }}>예약날짜</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'wrap' }}>
+                <span title="예약날짜" aria-label="예약날짜" style={{ fontSize: '1.1rem', flex: '0 0 auto' }}>📅</span>
                 <DateTimePicker
                   dateOnly
                   value={`${pickerDate}T00:00`}
@@ -343,15 +333,14 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
                   placeholder="날짜 선택"
                   style={{ flex: '0 1 260px' }}
                   buttonStyle={{
-                    background: 'var(--color-primary)',
-                    border: 'none',
-                    color: '#fff',
+                    background: '#fff',
+                    border: '2px solid var(--color-primary)',
+                    color: 'var(--color-ink)',
                     fontWeight: 800,
-                    fontSize: '1.1rem',
-                    padding: '0.75rem 1rem',
+                    fontSize: '1.05rem',
+                    padding: '0.7rem 1rem',
                     textAlign: 'center',
                     letterSpacing: '0.02em',
-                    boxShadow: '0 3px 10px rgba(32, 205, 141, 0.3)',
                   }}
                 />
                 {(() => {
@@ -360,52 +349,43 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
                   const dow = new Date(y, m - 1, d).getDay();
                   const labels = ['일', '월', '화', '수', '목', '금', '토'];
                   const color = dow === 0 ? '#dc2626' : dow === 6 ? '#2563eb' : 'var(--color-ink-2)';
-                  const bg = dow === 0 ? '#FEE2E2' : dow === 6 ? '#DBEAFE' : '#F1F5F9';
                   return (
-                    <span style={{ padding: '0.25rem 0.7rem', borderRadius: 999, background: bg, color, fontWeight: 800, fontSize: '0.85rem' }}>{labels[dow]}요일</span>
+                    <span style={{ color, fontWeight: 800, fontSize: '0.95rem' }}>{labels[dow]}요일</span>
                   );
                 })()}
               </div>
 
               <div style={{ display: 'grid', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-ink)' }}>장소 ({pickerSelected.size}/{venues.length})</span>
-                  <div style={{ display: 'inline-flex', gap: '0.3rem' }}>
-                    <button type="button" onClick={selectAll} style={{ padding: '0.3rem 0.65rem', borderRadius: 6, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', fontSize: '0.76rem', fontWeight: 700, cursor: 'pointer' }}>전체 선택</button>
-                    <button type="button" onClick={clearAll} style={{ padding: '0.3rem 0.65rem', borderRadius: 6, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', fontSize: '0.76rem', fontWeight: 700, cursor: 'pointer' }}>전체 해제</button>
-                  </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span title="장소 선택 (단일)" aria-label="장소" style={{ fontSize: '1.1rem' }}>📍</span>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--color-ink-2)', fontWeight: 600 }}>
+                    {pickerSelected.size === 0 ? '하나의 장소를 선택하세요' : '선택됨'}
+                  </span>
                 </div>
 
-                {venuesByFloor.map(([floor, list]) => {
-                  const floorIds = list.map((v) => v.id);
-                  const floorAllOn = floorIds.every((id) => pickerSelected.has(id));
-                  const floorSomeOn = floorIds.some((id) => pickerSelected.has(id));
-                  return (
-                    <div key={floor} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.45rem 0.6rem', border: '1px solid var(--color-surface-border)', borderRadius: 10, background: '#FAFAF7', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
-                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.88rem', fontWeight: 800, color: '#3F6212', cursor: 'pointer', flex: '0 0 auto', paddingTop: '0.25rem' }}>
-                        <input
-                          type="checkbox"
-                          checked={floorAllOn}
-                          ref={(el) => { if (el) el.indeterminate = !floorAllOn && floorSomeOn; }}
-                          onChange={() => toggleFloor(floor)}
-                        />
-                        {floor}
-                      </label>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', flex: 1, minWidth: 0 }}>
-                        {list.map((v) => {
-                          const on = pickerSelected.has(v.id);
-                          return (
-                            <label key={v.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.3rem 0.55rem', borderRadius: 8, background: on ? '#F7FEE7' : '#fff', border: on ? '1px solid #65A30D' : '1px solid var(--color-surface-border)', cursor: 'pointer', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
-                              <input type="checkbox" checked={on} onChange={() => togglePickerVenue(v.id)} />
-                              <span style={{ color: 'var(--color-ink)', fontWeight: on ? 700 : 500 }}>{v.name}</span>
-                              <span style={{ color: 'var(--color-ink-2)', fontFamily: 'monospace', fontSize: '0.72rem' }}>({v.code})</span>
-                            </label>
-                          );
-                        })}
-                      </div>
+                {venuesByFloor.map(([floor, list]) => (
+                  <div key={floor} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.45rem 0.6rem', border: '1px solid var(--color-surface-border)', borderRadius: 10, background: '#FAFAF7', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
+                    <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#3F6212', flex: '0 0 auto', paddingTop: '0.25rem' }}>{floor}</span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', flex: 1, minWidth: 0 }}>
+                      {list.map((v) => {
+                        const on = pickerSelected.has(v.id);
+                        return (
+                          <label key={v.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.3rem 0.6rem', borderRadius: 8, background: on ? '#65A30D' : '#fff', border: on ? '1px solid #65A30D' : '1px solid var(--color-surface-border)', cursor: 'pointer', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
+                            <input
+                              type="radio"
+                              name="picker-venue"
+                              checked={on}
+                              onChange={() => togglePickerVenue(v.id)}
+                              style={{ display: 'none' }}
+                            />
+                            <span style={{ color: on ? '#fff' : 'var(--color-ink)', fontWeight: on ? 800 : 500 }}>{v.name}</span>
+                            <span style={{ color: on ? '#ECFCCB' : 'var(--color-ink-2)', fontFamily: 'monospace', fontSize: '0.72rem' }}>({v.code})</span>
+                          </label>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </div>
 
