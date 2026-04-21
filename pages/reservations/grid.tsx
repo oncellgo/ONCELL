@@ -1,5 +1,6 @@
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { useEffect, useMemo, useState } from 'react';
 import SubHeader from '../../components/SubHeader';
 import VenueGrid, { Venue, Block, BlockGroup, dateKey } from '../../components/VenueGrid';
@@ -27,6 +28,7 @@ type Props = {
   availableEnd: string;
   profileId: string | null;
   displayName: string | null;
+  contact: string | null;
   nickname: string | null;
   email: string | null;
   systemAdminHref: string | null;
@@ -34,9 +36,23 @@ type Props = {
 
 const WEEK_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
-const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, availableEnd, profileId, displayName, nickname, email, systemAdminHref }: Props) => {
+const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, availableEnd, profileId, displayName, contact, nickname, email, systemAdminHref }: Props) => {
   const isMobile = useIsMobile();
+  const router = useRouter();
   useRequireLogin(profileId);
+
+  // 예약 확인 모달 + 제출 상태
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [description, setDescription] = useState('');
+  const [cMember, setCMember] = useState(false);
+  const [cInfo, setCInfo] = useState(false);
+  const [cCancel, setCCancel] = useState(false);
+  const allConfirmed = cMember && cInfo && cCancel;
+  const [shakeDesc, setShakeDesc] = useState(false);
+  const [shakeConfirm, setShakeConfirm] = useState(false);
+  const shake = (setter: (v: boolean) => void) => { setter(true); setTimeout(() => setter(false), 650); };
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // 두 선택 모두 필수 — date 은 기본 오늘로 프리셋, venue 는 미선택 시작
   const todayKey = dateKey(new Date());
@@ -112,32 +128,81 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
   const totalSelectedSlots = activeSlots.size;
   const clearSelectedSlots = () => { setActiveVenueId(null); setActiveSlots(new Set()); };
 
-  // 선택을 '장소예약' 페이지로 넘기는 deep-link
-  const reservationDeepLink = (() => {
+  // 선택된 장소·시간 범위 파생값
+  const selection = useMemo(() => {
     if (!activeVenueId || totalSelectedSlots === 0) return null;
-    const sortedMins = Array.from(activeSlots).sort((a, b) => a - b);
-    const startMin = sortedMins[0];
-    const endMin = sortedMins[sortedMins.length - 1] + slotMin;
-    const qs = new URLSearchParams();
-    if (profileId) qs.set('profileId', profileId);
-    qs.set('date', selectedDate);
-    qs.set('venueId', activeVenueId);
-    qs.set('start', String(startMin));
-    qs.set('end', String(endMin));
-    return `/reservation?${qs.toString()}`;
-  })();
-
-  // 선택 구간 텍스트 요약 (예: "17:00~18:30")
-  const selectionLabel = (() => {
-    if (totalSelectedSlots === 0 || !activeVenueId) return null;
     const v = venues.find((x) => x.id === activeVenueId);
+    if (!v) return null;
     const sorted = Array.from(activeSlots).sort((a, b) => a - b);
     const startMin = sorted[0];
     const endMin = sorted[sorted.length - 1] + slotMin;
     const pad = (n: number) => String(n).padStart(2, '0');
     const hhmm = (m: number) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
-    return v ? `${v.floor} ${v.name} · ${hhmm(startMin)}~${hhmm(endMin)}` : `${hhmm(startMin)}~${hhmm(endMin)}`;
-  })();
+    const totalMinutes = endMin - startMin;
+    const hh = Math.floor(totalMinutes / 60);
+    const mm = totalMinutes % 60;
+    const totalLabel = hh === 0 ? `${mm}분` : mm === 0 ? `${hh}시간` : `${hh}시간 ${mm}분`;
+    return { venue: v, startMin, endMin, startLabel: hhmm(startMin), endLabel: hhmm(endMin), totalLabel };
+  }, [activeVenueId, activeSlots, totalSelectedSlots, venues, slotMin]);
+
+  const openConfirmModal = () => {
+    if (!selection) return;
+    setSubmitError(null);
+    setConfirmOpen(true);
+  };
+
+  const submitReservation = async () => {
+    if (!selection || !profileId) return;
+    // 유효성
+    let ok = true;
+    if (!description.trim()) { shake(setShakeDesc); ok = false; }
+    if (!allConfirmed) { shake(setShakeConfirm); ok = false; }
+    if (!ok) return;
+    // 이름/연락처 누락 방지
+    if (!displayName?.trim() || !contact?.trim()) {
+      setSubmitError('예약자 이름과 연락처를 먼저 등록해주세요. 대시보드에서 내 정보를 확인하세요.');
+      return;
+    }
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const [y, mo, d] = selectedDate.split('-').map(Number);
+      const startAt = new Date(y, mo - 1, d, Math.floor(selection.startMin / 60), selection.startMin % 60).toISOString();
+      const endAt = new Date(y, mo - 1, d, Math.floor(selection.endMin / 60), selection.endMin % 60).toISOString();
+      const v = selection.venue;
+      const res = await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          communityId: 'kcis',
+          profileId,
+          title: description.trim(),
+          description: description.trim(),
+          startAt, endAt,
+          venueId: v.id,
+          location: `${v.floor} ${v.name}(${v.code})`,
+          scope: 'personal',
+          type: 'reservation',
+          createdByName: displayName || nickname || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({} as any));
+        setSubmitError(j?.error || '예약 실패');
+        setSubmitting(false);
+        return;
+      }
+      alert(`예약이 완료되었습니다.\n\n${selectedDate} ${selection.startLabel}~${selection.endLabel}\n${v.floor} ${v.name}\n\n나의 장소예약 페이지로 이동합니다.`);
+      const qs = new URLSearchParams();
+      if (profileId) qs.set('profileId', profileId);
+      if (displayName) qs.set('nickname', displayName);
+      if (email) qs.set('email', email);
+      router.push(`/reservations/my${qs.toString() ? `?${qs.toString()}` : ''}`);
+    } catch (e: any) {
+      setSubmitError(e?.message || '예약 중 오류가 발생했습니다.');
+      setSubmitting(false);
+    }
+  };
 
   const selDow = useMemo(() => {
     const [y, m, d] = selectedDate.split('-').map(Number);
@@ -329,14 +394,14 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
               />
 
               {/* 선택 요약 + 예약하기 바로가기 */}
-              {totalSelectedSlots > 0 ? (
+              {selection ? (
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'wrap',
                   padding: '0.7rem 0.9rem', borderRadius: 12,
                   background: '#ECFDF5', border: '1px solid #20CD8D',
                 }}>
                   <span style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-primary-deep)' }}>
-                    ✓ {selectionLabel}
+                    ✓ {selection.venue.floor} {selection.venue.name} · {selection.startLabel}~{selection.endLabel} ({selection.totalLabel})
                   </span>
                   <div style={{ marginLeft: 'auto', display: 'inline-flex', gap: '0.35rem' }}>
                     <button
@@ -344,12 +409,11 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                       onClick={clearSelectedSlots}
                       style={{ padding: '0.45rem 0.85rem', minHeight: 40, borderRadius: 999, border: '1px solid #6B7280', background: '#fff', color: '#374151', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
                     >선택 해제</button>
-                    {reservationDeepLink && (
-                      <a
-                        href={reservationDeepLink}
-                        style={{ padding: '0.45rem 0.9rem', minHeight: 40, display: 'inline-flex', alignItems: 'center', borderRadius: 999, border: 'none', background: 'var(--color-primary)', color: '#fff', fontSize: '0.82rem', fontWeight: 800, textDecoration: 'none' }}
-                      >📍 이 시간으로 예약</a>
-                    )}
+                    <button
+                      type="button"
+                      onClick={openConfirmModal}
+                      style={{ padding: '0.45rem 0.95rem', minHeight: 40, display: 'inline-flex', alignItems: 'center', borderRadius: 999, border: 'none', background: 'var(--color-primary)', color: '#fff', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer' }}
+                    >✓ 예약하기</button>
                   </div>
                 </div>
               ) : (
@@ -470,6 +534,138 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
           </div>
         </div>
       )}
+
+      {/* 예약전 정보확인 모달 */}
+      {confirmOpen && selection && (
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget && !submitting) setConfirmOpen(false); }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', zIndex: 95, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', padding: isMobile ? 0 : '1rem' }}
+        >
+          <style>{`@keyframes kcisShake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }`}</style>
+          <div role="dialog" aria-modal="true" style={{
+            width: '100%', maxWidth: 520, maxHeight: isMobile ? '92vh' : '90vh',
+            background: '#fff',
+            borderRadius: isMobile ? '18px 18px 0 0' : 16,
+            boxShadow: '0 -8px 40px rgba(0,0,0,0.18)',
+            display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          }}>
+            <div style={{ padding: '0.9rem 1rem', borderBottom: '1px solid var(--color-surface-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--color-ink)' }}>📍 예약전 정보확인</h3>
+              <button type="button" onClick={() => !submitting && setConfirmOpen(false)} aria-label="닫기" style={{ background: 'none', border: 'none', fontSize: '1.3rem', cursor: submitting ? 'not-allowed' : 'pointer', color: 'var(--color-ink-2)', minWidth: 40, minHeight: 40, opacity: submitting ? 0.5 : 1 }}>✕</button>
+            </div>
+
+            <div style={{ padding: '1rem', overflowY: 'auto', display: 'grid', gap: '0.85rem' }}>
+              {/* 예약자 정보 */}
+              <div style={{ padding: '0.75rem 0.9rem', borderRadius: 12, background: '#FFF7ED', border: '1px solid #FED7AA', display: 'grid', gap: '0.4rem' }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#9A3412', letterSpacing: '0.02em' }}>👤 예약자 정보</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr', gap: '0.4rem', fontSize: '0.92rem' }}>
+                  <span style={{ color: '#9A3412', fontWeight: 800 }}>이름</span>
+                  <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>{displayName || '(미등록)'}</span>
+                  <span style={{ color: '#9A3412', fontWeight: 800 }}>연락처</span>
+                  <span style={{ color: 'var(--color-ink)', fontWeight: 700, fontFamily: 'monospace' }}>{contact || '(미등록)'}</span>
+                </div>
+              </div>
+
+              {/* 일시·장소 */}
+              <div style={{ padding: '0.75rem 0.9rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E', display: 'grid', gap: '0.4rem' }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#3F6212', letterSpacing: '0.02em' }}>📅 예약 일시 · 장소</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr', gap: '0.4rem', fontSize: '0.92rem' }}>
+                  <span style={{ color: '#3F6212', fontWeight: 800 }}>날짜</span>
+                  <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>{selectedDate} ({WEEK_LABELS[selDow]})</span>
+                  <span style={{ color: '#3F6212', fontWeight: 800 }}>시간</span>
+                  <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>
+                    {selection.startLabel}~{selection.endLabel}
+                    <span style={{ marginLeft: '0.35rem', color: 'var(--color-ink-2)', fontWeight: 600 }}>({selection.totalLabel})</span>
+                  </span>
+                  <span style={{ color: '#3F6212', fontWeight: 800 }}>장소</span>
+                  <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>{selection.venue.floor} {selection.venue.name}</span>
+                </div>
+              </div>
+
+              {/* 예약 설명 */}
+              <div style={{ display: 'grid', gap: '0.35rem' }}>
+                <label style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--color-ink)' }}>
+                  예약 설명 <span style={{ color: '#DC2626' }}>*</span>
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="예: 청년부 주중모임, 3구역 구역예배, 새가족 환영식 등"
+                  rows={isMobile ? 3 : 4}
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    borderRadius: 10,
+                    border: shakeDesc ? '2px solid #DC2626' : '1px solid var(--color-gray)',
+                    fontSize: '0.92rem',
+                    fontFamily: 'inherit',
+                    resize: 'vertical',
+                    background: '#fff',
+                    boxSizing: 'border-box',
+                    animation: shakeDesc ? 'kcisShake 0.55s cubic-bezier(0.36,0.07,0.19,0.97) both' : undefined,
+                    transition: 'border-color 0.2s ease',
+                  }}
+                />
+              </div>
+
+              {/* 확인 체크리스트 */}
+              <div style={{
+                padding: '0.75rem 0.9rem', borderRadius: 12,
+                background: '#FEF3C7',
+                border: shakeConfirm ? '2px solid #DC2626' : '1px solid #FBBF24',
+                display: 'grid', gap: '0.4rem',
+                animation: shakeConfirm ? 'kcisShake 0.55s cubic-bezier(0.36,0.07,0.19,0.97) both' : undefined,
+                transition: 'border-color 0.2s ease',
+              }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#92400E', letterSpacing: '0.02em' }}>⚠️ 예약전 확인사항</div>
+                {[
+                  { checked: cMember, setter: setCMember, label: '싱가폴한인교회 등록교인입니다.' },
+                  { checked: cInfo, setter: setCInfo, label: '실명과 연락가능한 번호를 올바르게 입력했습니다.' },
+                  { checked: cCancel, setter: setCCancel, label: '잘못된 정보를 입력할 경우, 사전통보 없이 예약이 취소될 수 있음을 인지했습니다.' },
+                ].map((item, i) => (
+                  <label key={i} style={{
+                    display: 'flex', alignItems: 'flex-start', gap: '0.55rem',
+                    padding: '0.3rem 0',
+                    fontSize: '0.85rem',
+                    color: '#78350F', fontWeight: 700, lineHeight: 1.5, cursor: 'pointer',
+                  }}>
+                    <input type="checkbox" checked={item.checked} onChange={(e) => item.setter(e.target.checked)} style={{ marginTop: '0.2rem', accentColor: '#D97706', flexShrink: 0, width: 18, height: 18 }} />
+                    <span>{item.label}</span>
+                  </label>
+                ))}
+              </div>
+
+              {submitError && (
+                <p style={{ margin: 0, padding: '0.5rem 0.7rem', borderRadius: 8, background: '#FEE2E2', color: '#B91C1C', fontSize: '0.84rem', fontWeight: 700 }}>⚠ {submitError}</p>
+              )}
+            </div>
+
+            <div style={{ padding: '0.85rem 1rem', borderTop: '1px solid var(--color-surface-border)', display: 'grid', gap: '0.4rem' }}>
+              <button
+                type="button"
+                onClick={submitReservation}
+                disabled={submitting}
+                style={{
+                  width: '100%',
+                  padding: '0.85rem 1rem', minHeight: 52,
+                  borderRadius: 12, border: 'none',
+                  background: submitting ? '#9CA3AF' : 'var(--color-primary)',
+                  color: '#fff', fontWeight: 800, fontSize: '1rem',
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 4px 12px rgba(32,205,141,0.25)',
+                }}
+              >{submitting ? '저장 중...' : '✓ 예약 진행하기'}</button>
+              {!submitting && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmOpen(false)}
+                  style={{ width: '100%', padding: '0.55rem 1rem', minHeight: 40, borderRadius: 10, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer' }}
+                >취소</button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
@@ -542,16 +738,18 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
   const email = typeof ctx.query.email === 'string' ? ctx.query.email : null;
 
   let displayName: string | null = nickname;
+  let contact: string | null = null;
   if (profileId) {
     try {
       const p = (profilesArr as Array<any>).find((x) => x.profileId === profileId);
       displayName = p?.realName || nickname || null;
+      contact = p?.contact || null;
     } catch {}
   }
 
   const systemAdminHref = await getSystemAdminHref(profileId, { nickname, email });
 
-  return { props: { venues, blocks, groups, slotMin, availableStart, availableEnd, profileId, displayName, nickname, email, systemAdminHref } };
+  return { props: { venues, blocks, groups, slotMin, availableStart, availableEnd, profileId, displayName, contact, nickname, email, systemAdminHref } };
 };
 
 export default ReservationGridPage;
