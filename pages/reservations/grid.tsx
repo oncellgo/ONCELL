@@ -354,7 +354,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                 </div>
               ) : (
                 <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-ink-2)', lineHeight: 1.55 }}>
-                  💡 <strong>팁:</strong> 빈 시간(연라임)을 클릭해서 연속 선택하세요. 떨어진 셀을 클릭하면 이전 선택은 해제되고 그 셀부터 새로 시작합니다.
+                  💡 <strong>팁:</strong> 빈 시간(연라임)을 클릭해서 토글 선택할 수 있어요. 예약을 원하는 시간대의 연결된 블럭들을 순서대로 선택하세요.
                 </p>
               )}
               <p style={{ margin: 0, fontSize: '0.76rem', color: 'var(--color-ink-2)' }}>
