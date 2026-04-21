@@ -356,7 +356,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
   return (
     <>
       <Head>
-        <title>KCIS | 예약현황표</title>
+        <title>KCIS | 예약현황</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
@@ -380,7 +380,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
             gap: isMobile ? '0.85rem' : '1rem',
           }}
         >
-          <h1 style={{ margin: 0, fontSize: isMobile ? '1.15rem' : '1.3rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>📊 예약현황표</h1>
+          <h1 style={{ margin: 0, fontSize: isMobile ? '1.15rem' : '1.3rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>📊 예약현황</h1>
 
           {/* 상단: 날짜 선택(달력 직접) + 장소 선택 버튼 (나란히) */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? '0.5rem' : '0.75rem' }}>
