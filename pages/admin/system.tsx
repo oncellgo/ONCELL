@@ -375,7 +375,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
 
         {!sectionFilter && (
         <section style={{ ...cardStyle, padding: isMobile ? '0.85rem' : cardStyle.padding }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
             <h2 style={titleStyle}>접속자 관리 {(() => {
               const cutoff = Date.now() - activeDays * 24 * 60 * 60 * 1000;
               const activeCount = users.filter((u) => {
@@ -385,18 +385,18 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
               }).length;
               return <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#2D4048' }}>(최근 {activeDays}일 <strong style={{ color: '#20CD8D' }}>{activeCount}</strong>명 / 전체 {users.length}명)</span>;
             })()}</h2>
-            <div style={{ display: 'inline-flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <select value={activeDays} onChange={(e) => setActiveDays(Number(e.target.value))} style={{ padding: '0.4rem 0.6rem', borderRadius: 8, border: '1px solid #cbd5d0', fontSize: '0.85rem' }}>
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
+              <select aria-label="기간 필터" value={activeDays} onChange={(e) => setActiveDays(Number(e.target.value))} style={{ flex: isMobile ? '1 1 auto' : 'none', minHeight: 40, padding: '0 0.6rem', borderRadius: 8, border: '1px solid #cbd5d0', fontSize: '0.85rem' }}>
                 <option value={7}>최근 7일</option>
                 <option value={30}>최근 30일</option>
                 <option value={90}>최근 90일</option>
                 <option value={365}>최근 1년</option>
               </select>
-              <select value={userFilter} onChange={(e) => setUserFilter(e.target.value as 'all' | 'admin')} style={{ padding: '0.4rem 0.6rem', borderRadius: 8, border: '1px solid #cbd5d0', fontSize: '0.85rem' }}>
+              <select aria-label="역할 필터" value={userFilter} onChange={(e) => setUserFilter(e.target.value as 'all' | 'admin')} style={{ flex: isMobile ? '1 1 auto' : 'none', minHeight: 40, padding: '0 0.6rem', borderRadius: 8, border: '1px solid #cbd5d0', fontSize: '0.85rem' }}>
                 <option value="all">{t('admin.filterAll')}</option>
                 <option value="admin">{t('admin.filterAdmin')}</option>
               </select>
-              <select value={userSort} onChange={(e) => setUserSort(e.target.value as 'recent' | 'name')} style={{ padding: '0.4rem 0.6rem', borderRadius: 8, border: '1px solid #cbd5d0', fontSize: '0.85rem' }}>
+              <select aria-label="정렬 기준" value={userSort} onChange={(e) => setUserSort(e.target.value as 'recent' | 'name')} style={{ flex: isMobile ? '1 1 auto' : 'none', minHeight: 40, padding: '0 0.6rem', borderRadius: 8, border: '1px solid #cbd5d0', fontSize: '0.85rem' }}>
                 <option value="recent">{t('admin.sortRecent')}</option>
                 <option value="name">{t('admin.sortName')}</option>
               </select>
@@ -434,9 +434,10 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
               value={newAdmin}
               onChange={(e) => setNewAdmin(e.target.value)}
               placeholder="profileId(예: google-12345) 또는 email"
-              style={{ padding: '0.65rem 0.8rem', borderRadius: 10, border: '1px solid #cbd5d0', fontSize: '0.9rem' }}
+              aria-label="시스템 관리자 profileId 또는 email"
+              style={{ padding: '0.65rem 0.8rem', borderRadius: 10, border: '1px solid #cbd5d0', fontSize: '0.9rem', minHeight: 44 }}
             />
-            <button disabled={busy || !newAdmin.trim()} onClick={addAdmin} style={{ ...btn, background: '#20CD8D', color: '#fff' }}>{t('admin.add')}</button>
+            <button disabled={busy || !newAdmin.trim()} onClick={addAdmin} style={{ ...btn, background: '#20CD8D', color: '#fff', minHeight: 44 }}>{t('admin.add')}</button>
           </div>
           <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: '0.35rem' }}>
             {admins.map((id) => (
@@ -445,7 +446,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
                   <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#20CD8D', color: '#fff', fontSize: '0.68rem', fontWeight: 800, flexShrink: 0 }}>ID</span>
                   <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#182527', overflow: 'hidden', textOverflow: 'ellipsis' }}>{id}{id === profileId ? ` (${t('admin.me')})` : ''}</span>
                 </span>
-                <button disabled={busy || id === profileId} onClick={() => removeAdmin(id, 'profileId')} style={{ ...btn, background: id === profileId ? '#e5e7eb' : '#b91c1c', color: id === profileId ? '#6b7280' : '#fff', cursor: id === profileId ? 'not-allowed' : 'pointer' }}>{t('admin.remove')}</button>
+                <button disabled={busy || id === profileId} onClick={() => removeAdmin(id, 'profileId')} style={{ ...btn, minHeight: 40, background: id === profileId ? '#e5e7eb' : '#b91c1c', color: id === profileId ? '#6b7280' : '#fff', cursor: id === profileId ? 'not-allowed' : 'pointer' }}>{t('admin.remove')}</button>
               </li>
             ))}
             {adminEmails.map((em) => {
@@ -457,7 +458,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
                     <span style={{ fontSize: '0.85rem', color: '#182527', overflow: 'hidden', textOverflow: 'ellipsis' }}>{em}</span>
                     {isMine && <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#F59E0B', color: '#fff', fontSize: '0.68rem', fontWeight: 800, flexShrink: 0 }}>⚠️ 나</span>}
                   </span>
-                  <button disabled={busy} onClick={() => removeAdmin(em, 'email')} style={{ ...btn, background: '#b91c1c', color: '#fff' }}>{t('admin.remove')}</button>
+                  <button disabled={busy} onClick={() => removeAdmin(em, 'email')} style={{ ...btn, minHeight: 40, background: '#b91c1c', color: '#fff' }}>{t('admin.remove')}</button>
                 </li>
               );
             })}

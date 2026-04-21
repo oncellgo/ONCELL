@@ -92,7 +92,7 @@ const DateTimePicker = ({ value, onChange, placeholder, style, buttonStyle, date
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        style={{ width: '100%', padding: '0.7rem 0.85rem', borderRadius: 10, border: '1px solid var(--color-gray)', background: '#fff', color: display ? 'var(--color-ink)' : 'var(--color-ink-2)', fontSize: '0.9rem', textAlign: 'left', cursor: 'pointer', ...buttonStyle }}
+        style={{ width: '100%', padding: '0.7rem 0.85rem', borderRadius: 10, border: '1px solid var(--color-gray)', background: '#fff', color: display ? 'var(--color-ink)' : 'var(--color-ink-2)', fontSize: '0.9rem', textAlign: 'left', cursor: 'pointer', minHeight: 40, ...buttonStyle }}
       >
         {display || placeholder || '날짜·시간 선택'}
       </button>
@@ -101,7 +101,7 @@ const DateTimePicker = ({ value, onChange, placeholder, style, buttonStyle, date
           onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
           style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.55)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
         >
-          <div style={{ width: '100%', maxWidth: 420, margin: '0 0.5rem 0.5rem', padding: '0.85rem 0.9rem', background: '#fff', borderRadius: 16, boxShadow: '0 -8px 24px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div style={{ width: '100%', maxWidth: 420, margin: '0', padding: '1.1rem 1rem 2rem', background: '#fff', borderRadius: '18px 18px 0 0', boxShadow: '0 -8px 24px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div style={{ display: 'grid', gap: '0.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <button type="button" onClick={() => { if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); } else { setViewMonth(viewMonth - 1); } }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-ink-2)', fontSize: '1.1rem', padding: '0.35rem 0.6rem' }}>‹</button>
@@ -146,20 +146,20 @@ const DateTimePicker = ({ value, onChange, placeholder, style, buttonStyle, date
               </div>
             </div>
             {dateOnly ? (
-              <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--color-surface-border)', paddingTop: '0.65rem' }}>
-                <button type="button" onClick={() => setOpen(false)} style={{ padding: '0.55rem 0.9rem', borderRadius: 8, border: 'none', background: 'var(--color-primary)', color: '#fff', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer' }}>완료</button>
+              <div style={{ display: 'flex', justifyContent: 'stretch', borderTop: '1px solid var(--color-surface-border)', paddingTop: '0.75rem' }}>
+                <button type="button" onClick={() => setOpen(false)} style={{ flex: 1, minHeight: 48, borderRadius: 12, border: 'none', background: 'var(--color-primary)', color: '#fff', fontWeight: 800, fontSize: '1rem', cursor: 'pointer' }}>완료</button>
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderTop: '1px solid var(--color-surface-border)', paddingTop: '0.65rem' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-ink-2)' }}>시간</span>
-                <select value={cur?.hh ?? 9} onChange={(e) => setHour(Number(e.target.value))} style={{ flex: 1, padding: '0.5rem 0.5rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.9rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderTop: '1px solid var(--color-surface-border)', paddingTop: '0.75rem' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-ink-2)', flexShrink: 0 }}>시간</span>
+                <select value={cur?.hh ?? 9} onChange={(e) => setHour(Number(e.target.value))} style={{ flex: 1, padding: '0.6rem 0.5rem', borderRadius: 10, border: '1px solid var(--color-gray)', fontSize: '1rem', minHeight: 44 }}>
                   {Array.from({ length: 24 }, (_, i) => i).map((h) => <option key={h} value={h}>{pad(h)}</option>)}
                 </select>
-                <span style={{ color: 'var(--color-ink-2)' }}>:</span>
-                <select value={cur?.mm ?? 0} onChange={(e) => setMinute(Number(e.target.value))} style={{ flex: 1, padding: '0.5rem 0.5rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.9rem' }}>
+                <span style={{ color: 'var(--color-ink-2)', fontWeight: 700 }}>:</span>
+                <select value={cur?.mm ?? 0} onChange={(e) => setMinute(Number(e.target.value))} style={{ flex: 1, padding: '0.6rem 0.5rem', borderRadius: 10, border: '1px solid var(--color-gray)', fontSize: '1rem', minHeight: 44 }}>
                   {Array.from({ length: 12 }, (_, i) => i * 5).map((m) => <option key={m} value={m}>{pad(m)}</option>)}
                 </select>
-                <button type="button" onClick={() => setOpen(false)} style={{ padding: '0.55rem 0.9rem', borderRadius: 8, border: 'none', background: 'var(--color-primary)', color: '#fff', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer' }}>완료</button>
+                <button type="button" onClick={() => setOpen(false)} style={{ minHeight: 44, padding: '0 1rem', borderRadius: 10, border: 'none', background: 'var(--color-primary)', color: '#fff', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer' }}>완료</button>
               </div>
             )}
           </div>

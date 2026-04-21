@@ -20,8 +20,25 @@ const AdminTabBar = ({ authQS, active = null, defaultCommunityId }: Props) => {
   ] as const;
 
   return (
-    <section className="nav-scroll" style={{ position: 'sticky', top: 0, zIndex: 15, display: 'flex', gap: isMobile ? '0.3rem' : '0.4rem', flexWrap: isMobile ? 'nowrap' : 'wrap', padding: isMobile ? '0.45rem 0.55rem' : '0.55rem 0.75rem', borderRadius: 12, background: 'rgba(236, 252, 203, 0.92)', backdropFilter: 'saturate(180%) blur(10px)', border: '1px solid #D9F09E', alignItems: 'center' }}>
-      <span style={{ padding: isMobile ? '0.25rem 0.55rem' : '0.3rem 0.75rem', borderRadius: 999, background: '#BEF264', color: '#3F6212', fontWeight: 800, fontSize: isMobile ? '0.78rem' : '0.85rem', flexShrink: 0, whiteSpace: 'nowrap' }}>시스템 관리</span>
+    <section
+      className="nav-scroll"
+      style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 15,
+        display: 'flex',
+        gap: isMobile ? '0.3rem' : '0.4rem',
+        flexWrap: isMobile ? 'nowrap' : 'wrap',
+        padding: isMobile ? '0.45rem 0.55rem' : '0.55rem 0.75rem',
+        borderRadius: 12,
+        background: 'rgba(236, 252, 203, 0.92)',
+        backdropFilter: 'saturate(180%) blur(10px)',
+        border: '1px solid #D9F09E',
+        alignItems: 'center',
+        /* 스크롤바 숨김은 globals.css .nav-scroll 클래스에서 처리 */
+      }}
+    >
+      <span style={{ padding: isMobile ? '0.28rem 0.55rem' : '0.3rem 0.75rem', minHeight: 40, display: 'inline-flex', alignItems: 'center', borderRadius: 999, background: '#BEF264', color: '#3F6212', fontWeight: 800, fontSize: isMobile ? '0.78rem' : '0.85rem', flexShrink: 0, whiteSpace: 'nowrap' }}>시스템 관리</span>
       {tabs.map((item) => {
         const isActive = item.key === active;
         return (
@@ -29,8 +46,12 @@ const AdminTabBar = ({ authQS, active = null, defaultCommunityId }: Props) => {
             key={item.key}
             href={item.href}
             data-compact
+            aria-current={isActive ? 'page' : undefined}
             style={{
-              padding: isMobile ? '0.4rem 0.75rem' : '0.5rem 1.05rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              minHeight: 40,
+              padding: isMobile ? '0 0.75rem' : '0 1.05rem',
               borderRadius: 999,
               background: isActive ? '#65A30D' : '#ECFCCB',
               color: isActive ? '#F7FEE7' : '#4D7C0F',

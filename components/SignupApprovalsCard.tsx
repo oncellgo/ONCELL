@@ -87,11 +87,39 @@ const SignupApprovalsCard = ({ profileId, k }: Props) => {
 
   return (
     <section style={{ padding: isMobile ? '0.85rem' : '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '0.85rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'center', gap: '0.6rem' }}>
         <h2 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--color-ink)' }}>가입처리할 접속자 ({approvals.length})</h2>
-        <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
-          <button type="button" disabled={busy || selected.size === 0} onClick={() => act('approve')} style={{ padding: '0.45rem 0.9rem', borderRadius: 8, border: 'none', background: selected.size === 0 ? '#E5E7EB' : '#65A30D', color: selected.size === 0 ? '#9CA3AF' : '#fff', fontWeight: 800, fontSize: '0.85rem', cursor: selected.size === 0 || busy ? 'not-allowed' : 'pointer' }}>가입 승인 ({selected.size})</button>
-          <button type="button" disabled={busy || selected.size === 0} onClick={() => act('reject')} style={{ padding: '0.45rem 0.9rem', borderRadius: 8, border: 'none', background: selected.size === 0 ? '#E5E7EB' : '#b91c1c', color: selected.size === 0 ? '#9CA3AF' : '#fff', fontWeight: 800, fontSize: '0.85rem', cursor: selected.size === 0 || busy ? 'not-allowed' : 'pointer' }}>가입 거부 ({selected.size})</button>
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
+          <button
+            type="button"
+            disabled={busy || selected.size === 0}
+            onClick={() => act('approve')}
+            style={{
+              flex: 1,
+              minHeight: 40,
+              padding: '0 0.9rem',
+              borderRadius: 8, border: 'none',
+              background: selected.size === 0 ? '#E5E7EB' : '#65A30D',
+              color: selected.size === 0 ? '#9CA3AF' : '#fff',
+              fontWeight: 800, fontSize: '0.85rem',
+              cursor: selected.size === 0 || busy ? 'not-allowed' : 'pointer',
+            }}
+          >가입 승인 ({selected.size})</button>
+          <button
+            type="button"
+            disabled={busy || selected.size === 0}
+            onClick={() => act('reject')}
+            style={{
+              flex: 1,
+              minHeight: 40,
+              padding: '0 0.9rem',
+              borderRadius: 8, border: 'none',
+              background: selected.size === 0 ? '#E5E7EB' : '#b91c1c',
+              color: selected.size === 0 ? '#9CA3AF' : '#fff',
+              fontWeight: 800, fontSize: '0.85rem',
+              cursor: selected.size === 0 || busy ? 'not-allowed' : 'pointer',
+            }}
+          >가입 거부 ({selected.size})</button>
         </div>
       </div>
       {loading ? (
@@ -103,8 +131,8 @@ const SignupApprovalsCard = ({ profileId, k }: Props) => {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: isMobile ? '0.78rem' : '0.86rem', minWidth: isMobile ? 600 : 'auto' }}>
             <thead>
               <tr style={{ background: '#F1F5F9', color: 'var(--color-ink-2)', textAlign: 'left' }}>
-                <th style={{ padding: '0.5rem 0.6rem', width: 32 }}>
-                  <input type="checkbox" checked={selected.size === approvals.length && approvals.length > 0} onChange={toggleAll} />
+                <th style={{ padding: '0.5rem 0.6rem', width: 40 }}>
+                  <input type="checkbox" aria-label="전체 선택" checked={selected.size === approvals.length && approvals.length > 0} onChange={toggleAll} style={{ width: 18, height: 18, cursor: 'pointer' }} />
                 </th>
                 <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>최초접속일</th>
                 <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>아이디</th>
@@ -118,7 +146,7 @@ const SignupApprovalsCard = ({ profileId, k }: Props) => {
               {approvals.map((a) => (
                 <tr key={a.profileId} style={{ borderTop: '1px solid var(--color-surface-border)', background: selected.has(a.profileId) ? '#F7FEE7' : '#fff' }}>
                   <td style={{ padding: '0.55rem 0.6rem' }}>
-                    <input type="checkbox" checked={selected.has(a.profileId)} onChange={() => toggle(a.profileId)} />
+                    <input type="checkbox" aria-label={`${a.realName || a.nickname || a.profileId} 선택`} checked={selected.has(a.profileId)} onChange={() => toggle(a.profileId)} style={{ width: 18, height: 18, cursor: 'pointer' }} />
                   </td>
                   <td style={{ padding: '0.55rem 0.6rem', whiteSpace: 'nowrap', color: 'var(--color-ink-2)' }}>{formatDate(a.firstLoginAt)}</td>
                   <td style={{ padding: '0.55rem 0.6rem' }}>{providerIdPill(a.provider, a.nickname || a.email?.split('@')[0] || a.profileId)}</td>

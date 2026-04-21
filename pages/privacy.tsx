@@ -17,9 +17,9 @@ const PrivacyPage = ({ profileId, displayName, nickname, email, systemAdminHref 
   const effectiveDate = '2026-04-20';
 
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <div style={{ display: 'grid', gap: '0.55rem' }}>
-      <h3 style={{ margin: 0, fontSize: '0.98rem', color: 'var(--color-ink)', fontWeight: 800 }}>{title}</h3>
-      <div style={{ color: 'var(--color-ink)', fontSize: '0.9rem', lineHeight: 1.75 }}>{children}</div>
+    <div style={{ display: 'grid', gap: '0.6rem' }}>
+      <h3 style={{ margin: 0, fontSize: isMobile ? '0.95rem' : '0.98rem', color: 'var(--color-ink)', fontWeight: 800, wordBreak: 'keep-all' }}>{title}</h3>
+      <div style={{ color: 'var(--color-ink)', fontSize: isMobile ? '0.88rem' : '0.9rem', lineHeight: 1.8, wordBreak: 'keep-all' }}>{children}</div>
     </div>
   );
 
@@ -37,10 +37,10 @@ const PrivacyPage = ({ profileId, displayName, nickname, email, systemAdminHref 
       <SubHeader profileId={profileId} displayName={displayName} nickname={nickname} email={email} systemAdminHref={systemAdminHref} />
 
       <main style={{ maxWidth: 840, margin: '0 auto', padding: isMobile ? '1rem 0.6rem 4rem' : '1.5rem 1rem 5rem', display: 'grid', gap: '1.25rem' }}>
-        <section style={{ padding: isMobile ? '0.85rem' : '1.5rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1.1rem' }}>
+        <section style={{ padding: isMobile ? '1rem 0.9rem' : '1.5rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1.25rem' }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: '1.3rem', color: 'var(--color-ink)' }}>개인정보처리방침</h2>
-            <p style={{ margin: '0.35rem 0 0', color: 'var(--color-ink-2)', fontSize: '0.84rem' }}>
+            <h2 style={{ margin: 0, fontSize: isMobile ? '1.15rem' : '1.3rem', color: 'var(--color-ink)' }}>개인정보처리방침</h2>
+            <p style={{ margin: '0.4rem 0 0', color: 'var(--color-ink-2)', fontSize: '0.85rem', lineHeight: 1.75, wordBreak: 'keep-all' }}>
               싱가폴 한인교회(이하 "교회")는 KCIS 장소신청 시스템(이하 "서비스") 이용자의 개인정보를 소중히 다루며, 싱가포르 Personal Data Protection Act(PDPA) 및 관련 법령에 따라 다음과 같이 처리하고 있습니다.
             </p>
           </div>
@@ -95,11 +95,11 @@ const PrivacyPage = ({ profileId, displayName, nickname, email, systemAdminHref 
           </Section>
 
           <Section title="7. 개인정보 보호책임자 및 문의">
-            <div style={{ padding: '0.7rem 0.9rem', borderRadius: 10, background: '#EFF6FF', border: '1px solid #BFDBFE', display: 'grid', gap: '0.25rem' }}>
+            <div style={{ padding: isMobile ? '0.85rem' : '0.7rem 0.9rem', borderRadius: 10, background: '#EFF6FF', border: '1px solid #BFDBFE', display: 'grid', gap: '0.35rem' }}>
               <strong style={{ fontSize: '0.98rem' }}>싱가폴한인교회</strong>
-              <div style={{ fontSize: '0.88rem' }}>21 Gangsa Road Singapore 678973</div>
-              <div style={{ fontSize: '0.88rem' }}>📞 <a href="tel:+6564686694" style={{ color: '#1E40AF', textDecoration: 'none', fontWeight: 700 }}>+65-6468-6694</a></div>
-              <div style={{ fontSize: '0.88rem' }}>✉️ <a href="mailto:koreanchurch@live.com" style={{ color: '#1E40AF', textDecoration: 'none', fontWeight: 700 }}>koreanchurch@live.com</a></div>
+              <div style={{ fontSize: '0.88rem', lineHeight: 1.6 }}>21 Gangsa Road Singapore 678973</div>
+              <div style={{ fontSize: '0.88rem' }}>📞 <a href="tel:+6564686694" style={{ color: '#1E40AF', textDecoration: 'none', fontWeight: 700, display: 'inline-block', minHeight: 32, lineHeight: '32px' }}>+65-6468-6694</a></div>
+              <div style={{ fontSize: '0.88rem' }}>✉️ <a href="mailto:koreanchurch@live.com" style={{ color: '#1E40AF', textDecoration: 'none', fontWeight: 700, display: 'inline-block', minHeight: 32, lineHeight: '32px' }}>koreanchurch@live.com</a></div>
             </div>
           </Section>
 

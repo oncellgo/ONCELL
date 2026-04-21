@@ -108,14 +108,18 @@ const CallbackPage = () => {
       minHeight: '100vh',
       background: 'transparent',
       display: 'flex',
+      flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
-      fontFamily: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      gap: '1.5rem',
+      padding: '1rem',
+      fontFamily: "var(--font-sans, 'Noto Sans KR', sans-serif)",
       color: '#2D4048',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', fontSize: '0.95rem', fontWeight: 600 }}>
-        <span style={{ width: 18, height: 18, borderRadius: '50%', border: '3px solid #CCF4E5', borderTopColor: '#20CD8D', animation: 'spin 0.8s linear infinite' }} />
-        로그인 처리 중입니다...
+      <span style={{ width: 40, height: 40, borderRadius: '50%', border: '4px solid #CCF4E5', borderTopColor: '#20CD8D', animation: 'spin 0.8s linear infinite', display: 'block' }} />
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '1rem', fontWeight: 600, color: '#2D4048' }}>로그인 처리 중입니다...</div>
+        <div style={{ marginTop: '0.4rem', fontSize: '0.83rem', color: '#6B7280' }}>잠시만 기다려주세요.</div>
       </div>
       <style jsx>{`
         @keyframes spin {

@@ -112,7 +112,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
               {t('landing.eyebrow')}
             </span>
             <h1 className={styles.title}>
-              <span style={{ whiteSpace: 'nowrap' }}>{t('landing.tagline1')}</span> <span style={{ whiteSpace: 'nowrap' }}>{t('landing.tagline2')}</span><br />
+              {t('landing.tagline1')} {t('landing.tagline2')}<br />
               <span className={styles.titleAccent}>{t('landing.brand')}</span>
             </h1>
             <p className={styles.description}>
@@ -185,15 +185,15 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
 
         </section>
 
-        <footer style={{ margin: '1.5rem 0 0', padding: '1rem 1.25rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--color-ink-2)', lineHeight: 1.7, borderTop: '1px solid var(--color-surface-border)' }}>
+        <footer style={{ margin: '1.5rem 0 0', padding: isMobile ? '1rem 0.75rem 2rem' : '1rem 1.25rem 1.5rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--color-ink-2)', lineHeight: 1.8, borderTop: '1px solid var(--color-surface-border)' }}>
           <div style={{ marginBottom: '0.35rem' }}>
             <span style={{ fontWeight: 700, color: 'var(--color-ink)' }}>싱가폴한인교회</span>
             <span style={{ margin: '0 0.5rem', color: 'var(--color-gray)' }}>|</span>
-            <a href="/privacy" style={{ color: 'var(--color-ink-2)', textDecoration: 'underline' }}>개인정보처리방침</a>
+            <a href="/privacy" style={{ color: 'var(--color-ink-2)', textDecoration: 'underline', display: 'inline-block', minHeight: 24 }}>개인정보처리방침</a>
           </div>
           <div>21 Gangsa Road Singapore 678973</div>
-          <div>TEL <a href="tel:+6564686694" style={{ color: 'var(--color-ink-2)' }}>+65-6468-6694</a></div>
-          <div><a href="mailto:koreanchurch@live.com" style={{ color: 'var(--color-ink-2)' }}>koreanchurch@live.com</a></div>
+          <div>TEL <a href="tel:+6564686694" style={{ color: 'var(--color-ink-2)', display: 'inline-block', minHeight: 28, lineHeight: '28px' }}>+65-6468-6694</a></div>
+          <div><a href="mailto:koreanchurch@live.com" style={{ color: 'var(--color-ink-2)', display: 'inline-block', minHeight: 28, lineHeight: '28px' }}>koreanchurch@live.com</a></div>
         </footer>
       </div>
 

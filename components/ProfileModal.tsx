@@ -102,43 +102,86 @@ const ProfileModal = ({ profileId, provider, nickname, email, initialRealName, i
   return (
     <div
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.55)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+      style={{
+        position: 'fixed', inset: 0,
+        background: 'rgba(15, 23, 42, 0.55)',
+        zIndex: 100,
+        display: 'flex',
+        alignItems: isMobile ? 'flex-end' : 'center',
+        justifyContent: 'center',
+        padding: isMobile ? 0 : '1rem',
+      }}
     >
-      <div role="dialog" className="modal-card" style={{ width: '100%', maxWidth: 520, maxHeight: '90vh', background: '#fff', borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--color-surface-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+      <div
+        role="dialog"
+        aria-label="내 정보 수정"
+        className="modal-card"
+        style={{
+          width: '100%',
+          maxWidth: isMobile ? '100%' : 520,
+          maxHeight: isMobile ? '92vh' : '90vh',
+          background: '#fff',
+          borderRadius: isMobile ? '18px 18px 0 0' : 16,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ padding: isMobile ? '1rem 1rem' : '1rem 1.25rem', borderBottom: '1px solid var(--color-surface-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
           <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-ink)' }}>내 정보 수정</h3>
-          <button type="button" onClick={onClose} aria-label="닫기" style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-ink-2)' }}>✕</button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="닫기"
+            style={{
+              background: 'none', border: 'none',
+              fontSize: '1.2rem', cursor: 'pointer',
+              color: 'var(--color-ink-2)',
+              minWidth: 40, minHeight: 40,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 8,
+            }}
+          >✕</button>
         </div>
 
-        <div style={{ padding: '1rem 1.25rem', overflowY: 'auto', display: 'grid', gap: '0.9rem' }}>
-          <div style={{ padding: '0.65rem 0.85rem', borderRadius: 10, background: '#F9FAFB', border: '1px solid var(--color-surface-border)', display: 'grid', gap: '0.25rem', fontSize: '0.85rem' }}>
+        <div style={{ padding: isMobile ? '1rem' : '1rem 1.25rem', overflowY: 'auto', display: 'grid', gap: '1rem' }}>
+          <div style={{ padding: '0.65rem 0.85rem', borderRadius: 10, background: '#F9FAFB', border: '1px solid var(--color-surface-border)', display: 'grid', gap: '0.3rem', fontSize: '0.85rem' }}>
             <div><span style={{ color: 'var(--color-ink-2)', fontWeight: 700, minWidth: '4rem', display: 'inline-block' }}>가입일자</span> <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>{loading ? '…' : (joinDateStr || '(기록 없음)')}</span></div>
             {email && <div><span style={{ color: 'var(--color-ink-2)', fontWeight: 700, minWidth: '4rem', display: 'inline-block' }}>이메일</span> <span style={{ color: 'var(--color-ink-2)' }}>{email}</span></div>}
           </div>
 
-          <div style={{ display: 'grid', gap: '0.35rem' }}>
-            <label style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-ink)' }}>실명</label>
+          <div style={{ display: 'grid', gap: '0.4rem' }}>
+            <label htmlFor="profile-realname" style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-ink)' }}>실명</label>
             <input
+              id="profile-realname"
               type="text"
               value={realName}
               onChange={(e) => setRealName(e.target.value)}
               placeholder="실명을 입력하세요"
-              style={{ padding: '0.7rem 0.9rem', borderRadius: 10, border: '1px solid var(--color-gray)', fontSize: '0.95rem', minHeight: 40 }}
+              style={{ padding: '0.75rem 0.9rem', borderRadius: 10, border: '1px solid var(--color-gray)', fontSize: '0.95rem', minHeight: 48 }}
             />
           </div>
 
-          <div style={{ display: 'grid', gap: '0.35rem' }}>
-            <label style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-ink)' }}>연락처</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: '0.4rem' }}>
-              <select value={countryCode} onChange={(e) => setCountryCode(e.target.value)} style={{ padding: '0.7rem 0.5rem', borderRadius: 10, border: '1px solid var(--color-gray)', fontSize: '0.9rem', minHeight: 40, background: '#fff' }}>
+          <div style={{ display: 'grid', gap: '0.4rem' }}>
+            <label htmlFor="profile-contact" style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-ink)' }}>연락처</label>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '100px 1fr' : '110px 1fr', gap: '0.45rem' }}>
+              <select
+                aria-label="국가코드"
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                style={{ padding: '0.75rem 0.5rem', borderRadius: 10, border: '1px solid var(--color-gray)', fontSize: '0.9rem', minHeight: 48, background: '#fff' }}
+              >
                 {COUNTRY_CODES.map((c) => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
               </select>
               <input
+                id="profile-contact"
                 type="text"
                 value={contactLocal}
                 onChange={(e) => setContactLocal(e.target.value)}
                 placeholder="1234-5678"
-                style={{ padding: '0.7rem 0.9rem', borderRadius: 10, border: '1px solid var(--color-gray)', fontSize: '0.95rem', minHeight: 40 }}
+                inputMode="numeric"
+                style={{ padding: '0.75rem 0.9rem', borderRadius: 10, border: '1px solid var(--color-gray)', fontSize: '0.95rem', minHeight: 48 }}
               />
             </div>
           </div>
@@ -146,9 +189,45 @@ const ProfileModal = ({ profileId, provider, nickname, email, initialRealName, i
           {msg && <p style={{ margin: 0, fontSize: '0.82rem', color: msg.includes('저장되었습니다') ? 'var(--color-primary-deep)' : '#b91c1c', fontWeight: 700 }}>{msg}</p>}
         </div>
 
-        <div style={{ padding: '0.85rem 1.25rem', borderTop: '1px solid var(--color-surface-border)', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-          <button type="button" onClick={onClose} style={{ padding: '0.55rem 1rem', borderRadius: 10, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', fontWeight: 700, cursor: 'pointer' }}>닫기</button>
-          <button type="button" onClick={save} disabled={saving} style={{ padding: '0.55rem 1.2rem', borderRadius: 10, border: 'none', background: saving ? '#9CA3AF' : 'var(--color-primary)', color: '#fff', fontWeight: 800, cursor: saving ? 'not-allowed' : 'pointer' }}>{saving ? '저장 중…' : '저장'}</button>
+        <div style={{
+          padding: isMobile ? '0.85rem 1rem 1.5rem' : '0.85rem 1.25rem',
+          borderTop: '1px solid var(--color-surface-border)',
+          display: 'flex',
+          flexDirection: isMobile ? 'column-reverse' : 'row',
+          justifyContent: isMobile ? 'stretch' : 'flex-end',
+          gap: '0.5rem',
+        }}>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              padding: '0.75rem 1rem',
+              borderRadius: 12,
+              border: '1px solid var(--color-gray)',
+              background: '#fff',
+              color: 'var(--color-ink-2)',
+              fontWeight: 700,
+              fontSize: '0.95rem',
+              minHeight: 48,
+              cursor: 'pointer',
+            }}
+          >닫기</button>
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            style={{
+              padding: '0.75rem 1.4rem',
+              borderRadius: 12,
+              border: 'none',
+              background: saving ? '#9CA3AF' : 'var(--color-primary)',
+              color: '#fff',
+              fontWeight: 800,
+              fontSize: '0.95rem',
+              minHeight: 48,
+              cursor: saving ? 'not-allowed' : 'pointer',
+            }}
+          >{saving ? '저장 중…' : '저장'}</button>
         </div>
       </div>
     </div>

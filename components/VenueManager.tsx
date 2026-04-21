@@ -275,8 +275,8 @@ const VenueManager = ({ profileId, k }: Props) => {
             )}
             <input type="text" placeholder="사유 (선택)" value={blockForm.reason} onChange={(e) => setBlockForm({ ...blockForm, reason: e.target.value })} style={{ padding: '0.45rem 0.6rem', borderRadius: 8, border: '1px solid var(--color-gray)' }} />
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
-              <button type="button" onClick={() => setBlockModal(null)} style={{ padding: '0.5rem 0.9rem', borderRadius: 8, border: '1px solid var(--color-gray)', background: '#fff', cursor: 'pointer' }}>취소</button>
-              <button type="button" disabled={busy} onClick={submitExtendedBlock} style={{ padding: '0.5rem 0.9rem', borderRadius: 8, border: 'none', background: '#DC2626', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>블럭 추가</button>
+              <button type="button" onClick={() => setBlockModal(null)} style={{ minHeight: 44, padding: '0 0.9rem', borderRadius: 8, border: '1px solid var(--color-gray)', background: '#fff', cursor: 'pointer', fontWeight: 700 }}>취소</button>
+              <button type="button" disabled={busy} onClick={submitExtendedBlock} style={{ minHeight: 44, padding: '0 0.9rem', borderRadius: 8, border: 'none', background: '#DC2626', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>블럭 추가</button>
             </div>
           </div>
         </Modal>
@@ -285,17 +285,20 @@ const VenueManager = ({ profileId, k }: Props) => {
   );
 };
 
-const Modal = ({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) => (
-  <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(24, 37, 39, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-    <div role="dialog" className="modal-card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 420, background: '#fff', borderRadius: 14, padding: '1.25rem', display: 'grid', gap: '0.75rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--color-ink)' }}>{title}</h3>
-        <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.1rem', cursor: 'pointer' }}>✕</button>
+const Modal = ({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) => {
+  const isMobile = useIsMobile();
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(24, 37, 39, 0.55)', display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', padding: isMobile ? 0 : '1rem' }}>
+      <div role="dialog" aria-modal="true" className="modal-card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: isMobile ? '100%' : 420, background: '#fff', borderRadius: isMobile ? '18px 18px 0 0' : 14, padding: isMobile ? '1.25rem 1rem 2rem' : '1.25rem', display: 'grid', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--color-ink)' }}>{title}</h3>
+          <button type="button" onClick={onClose} aria-label="닫기" style={{ minWidth: 40, minHeight: 40, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', fontSize: '1.1rem', cursor: 'pointer' }}>✕</button>
+        </div>
+        {children}
       </div>
-      {children}
     </div>
-  </div>
-);
+  );
+};
 
 const VenueForm = ({ initial, onSubmit, onCancel }: { initial?: Partial<Venue>; onSubmit: (v: Omit<Venue, 'id'>) => void; onCancel: () => void }) => {
   const [form, setForm] = useState({
@@ -329,8 +332,8 @@ const VenueForm = ({ initial, onSubmit, onCancel }: { initial?: Partial<Venue>; 
         </div>
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
-        <button type="button" onClick={onCancel} style={{ padding: '0.5rem 0.9rem', borderRadius: 8, border: '1px solid var(--color-gray)', background: '#fff', cursor: 'pointer' }}>취소</button>
-        <button type="button" onClick={() => onSubmit(form)} disabled={!form.floor || !form.name} style={{ padding: '0.5rem 0.9rem', borderRadius: 8, border: 'none', background: '#65A30D', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>저장</button>
+        <button type="button" onClick={onCancel} style={{ minHeight: 44, padding: '0 0.9rem', borderRadius: 8, border: '1px solid var(--color-gray)', background: '#fff', cursor: 'pointer', fontWeight: 700 }}>취소</button>
+        <button type="button" onClick={() => onSubmit(form)} disabled={!form.floor || !form.name} style={{ minHeight: 44, padding: '0 0.9rem', borderRadius: 8, border: 'none', background: '#65A30D', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>저장</button>
       </div>
     </div>
   );
@@ -606,14 +609,14 @@ const WeeklyBlockCard = ({ venues, busy, slotMin, availableStart, availableEnd, 
           {editingGroupId && (
             <>
               <span style={{ marginRight: 'auto', fontSize: '0.85rem', fontWeight: 700, color: '#3F6212' }}>✏️ 기존 반복 블럭 수정 중</span>
-              <button type="button" onClick={() => { onCancelEdit(); setSelectedCells(new Set()); setReason(''); }} style={{ padding: '0.55rem 0.85rem', borderRadius: 8, border: '1px solid var(--color-gray)', background: '#fff', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>수정 취소</button>
+              <button type="button" onClick={() => { onCancelEdit(); setSelectedCells(new Set()); setReason(''); }} style={{ minHeight: 44, padding: '0 0.85rem', borderRadius: 8, border: '1px solid var(--color-gray)', background: '#fff', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>수정 취소</button>
             </>
           )}
           {(() => {
             const disabled = busy || submitting || selectedCells.size === 0 || !venue;
             const label = editingGroupId ? '변경 저장' : '블럭 적용';
             return (
-              <button type="button" disabled={disabled} onClick={applyBlocks} style={{ padding: '0.6rem 1.25rem', borderRadius: 8, border: 'none', background: submitting ? '#9CA3AF' : disabled ? '#E5E7EB' : '#DC2626', color: disabled && !submitting ? '#9CA3AF' : '#fff', fontWeight: 800, fontSize: '0.92rem', cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled && !submitting ? 0.85 : 1 }}>
+              <button type="button" disabled={disabled} onClick={applyBlocks} style={{ minHeight: 48, padding: '0 1.25rem', borderRadius: 8, border: 'none', background: submitting ? '#9CA3AF' : disabled ? '#E5E7EB' : '#DC2626', color: disabled && !submitting ? '#9CA3AF' : '#fff', fontWeight: 800, fontSize: '0.92rem', cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled && !submitting ? 0.85 : 1 }}>
                 {submitting ? '적용 중...' : label}
               </button>
             );
@@ -674,9 +677,9 @@ const VenueFloorCard = ({ venues, floors: floorsProp, onAdd, onDelete, onAddFloo
                   <button
                     type="button"
                     onClick={() => onDelete(v.id)}
-                    aria-label="삭제"
+                    aria-label={`${v.name} 삭제`}
                     title="삭제"
-                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: 999, border: 'none', background: 'transparent', color: '#b91c1c', fontSize: '0.9rem', cursor: 'pointer', padding: 0 }}
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 999, border: 'none', background: 'transparent', color: '#b91c1c', fontSize: '0.95rem', cursor: 'pointer', padding: 0 }}
                   >
                     ✕
                   </button>
@@ -752,8 +755,8 @@ const BlockGroupsCard = ({ groups, venues, onEdit, onDelete }: { groups: BlockGr
                 </span>
               )}
               <div style={{ display: 'flex', gap: '0.3rem', marginLeft: 'auto', flex: '0 0 auto' }}>
-                <button type="button" onClick={() => onEdit(g)} style={{ padding: '0.3rem 0.65rem', borderRadius: 8, border: '1px solid #DC2626', background: '#fff', color: '#B91C1C', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>수정</button>
-                <button type="button" onClick={() => onDelete(g.id)} style={{ padding: '0.3rem 0.65rem', borderRadius: 8, border: 'none', background: '#DC2626', color: '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>삭제</button>
+                <button type="button" onClick={() => onEdit(g)} style={{ minHeight: 40, padding: '0 0.65rem', borderRadius: 8, border: '1px solid #DC2626', background: '#fff', color: '#B91C1C', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>수정</button>
+                <button type="button" onClick={() => onDelete(g.id)} style={{ minHeight: 40, padding: '0 0.65rem', borderRadius: 8, border: 'none', background: '#DC2626', color: '#fff', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>삭제</button>
               </div>
             </li>
           );

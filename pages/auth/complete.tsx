@@ -70,34 +70,34 @@ const CompleteSignupPage = () => {
     <>
       <Head><title>KCIS | 가입정보 입력</title></Head>
       <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', fontFamily: 'var(--font-sans)' }}>
-        <div style={{ width: '100%', maxWidth: 440, padding: '2rem', borderRadius: 16, background: '#fff', border: '1px solid #D9F09E', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
+        <div style={{ width: '100%', maxWidth: 440, padding: '2rem 1.5rem', borderRadius: 16, background: '#fff', border: '1px solid #D9F09E', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1.1rem' }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem' }}>📝</div>
-            <h1 style={{ margin: '0.4rem 0 0', fontSize: '1.2rem', color: '#3F6212' }}>가입정보 입력</h1>
-            <p style={{ margin: '0.4rem 0 0', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>가입을 완료하려면 아래 정보를 입력해주세요.</p>
+            <div style={{ fontSize: '2.5rem', lineHeight: 1 }}>📝</div>
+            <h1 style={{ margin: '0.5rem 0 0', fontSize: '1.2rem', color: '#3F6212' }}>가입정보 입력</h1>
+            <p style={{ margin: '0.4rem 0 0', color: 'var(--color-ink-2)', fontSize: '0.88rem', lineHeight: 1.6, wordBreak: 'keep-all' }}>가입을 완료하려면 아래 정보를 입력해주세요.</p>
           </div>
 
           {needRealName && (
-            <label style={{ display: 'grid', gap: '0.3rem' }}>
+            <label style={{ display: 'grid', gap: '0.35rem' }}>
               <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-ink)' }}>실명 <span style={{ color: '#DC2626' }}>*</span></span>
               <input
                 type="text"
                 value={realName}
                 onChange={(e) => setRealName(e.target.value)}
                 placeholder="홍길동"
-                style={{ padding: '0.65rem 0.8rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.95rem' }}
+                style={{ padding: '0.75rem 0.9rem', minHeight: 44, borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.95rem', width: '100%' }}
               />
             </label>
           )}
 
           {needContact && (
-            <label style={{ display: 'grid', gap: '0.3rem' }}>
+            <label style={{ display: 'grid', gap: '0.35rem' }}>
               <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-ink)' }}>연락처 <span style={{ color: '#DC2626' }}>*</span></span>
-              <div style={{ display: 'flex', gap: '0.4rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <select
                   value={countryCode}
                   onChange={(e) => setCountryCode(e.target.value)}
-                  style={{ padding: '0.65rem 0.6rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.95rem', background: '#fff', color: 'var(--color-ink)', fontWeight: 700, flex: '0 0 auto' }}
+                  style={{ padding: '0.75rem 0.5rem', minHeight: 44, borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.95rem', background: '#fff', color: 'var(--color-ink)', fontWeight: 700, flex: '0 0 auto' }}
                 >
                   <option value="+65">+65 (SG)</option>
                   <option value="+82">+82 (KR)</option>
@@ -112,7 +112,7 @@ const CompleteSignupPage = () => {
                   onChange={(e) => setContactLocal(formatContact(e.target.value))}
                   placeholder="0000-0000"
                   inputMode="numeric"
-                  style={{ flex: 1, padding: '0.65rem 0.8rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.95rem' }}
+                  style={{ flex: 1, padding: '0.75rem 0.9rem', minHeight: 44, borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.95rem' }}
                 />
               </div>
             </label>
@@ -125,14 +125,16 @@ const CompleteSignupPage = () => {
             disabled={submitting}
             onClick={submit}
             style={{
-              padding: '0.7rem 1rem',
+              padding: '0.85rem 1rem',
+              minHeight: 48,
               borderRadius: 10,
               border: 'none',
               background: submitting ? '#9CA3AF' : 'var(--color-primary)',
               color: '#fff',
-              fontSize: '0.95rem',
+              fontSize: '1rem',
               fontWeight: 800,
               cursor: submitting ? 'not-allowed' : 'pointer',
+              width: '100%',
             }}
           >
             {submitting ? '저장 중...' : '저장하고 계속'}

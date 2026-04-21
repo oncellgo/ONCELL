@@ -883,8 +883,10 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                     <button
                       key={item}
                       type="button"
+                      aria-pressed={active}
                       style={{
-                        padding: '0.5rem 0.9rem',
+                        minHeight: 40,
+                        padding: '0 0.9rem',
                         borderRadius: 10,
                         border: active ? '2px solid var(--color-primary)' : '1px solid var(--color-gray)',
                         background: active ? 'var(--color-primary-tint)' : 'var(--color-surface)',
@@ -1457,7 +1459,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                                   }}>{badgeLabel}</span>
                                   <span style={{ color: 'var(--color-ink-2)', fontWeight: 600, whiteSpace: 'nowrap' }}>{timeLabel}</span>
                                   <span style={{ fontWeight: 700, color: 'var(--color-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</span>
-                                  <button type="button" onClick={() => {
+                                  <button type="button" aria-label={`${ev.title} 수정`} onClick={() => {
                                     if ((ev as any)._isWorshipService) {
                                       const ws = worshipServices.find((s) => s.id === ev.id);
                                       if (!ws) return;
@@ -1486,8 +1488,8 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                                     setEditingEventId(ev.id);
                                     setEditScope('all');
                                     setEventModalOpen(true);
-                                  }} style={{ background: 'transparent', border: 'none', color: 'var(--color-primary-deep)', fontSize: '0.76rem', cursor: 'pointer', padding: '0.15rem 0.4rem', whiteSpace: 'nowrap', fontWeight: 700 }}>수정</button>
-                                  <button type="button" onClick={() => deleteCalEvent(ev.id)} style={{ background: 'transparent', border: 'none', color: 'var(--color-danger)', fontSize: '0.76rem', cursor: 'pointer', padding: '0.15rem 0.4rem', whiteSpace: 'nowrap' }}>삭제</button>
+                                  }} style={{ minHeight: 36, background: 'transparent', border: 'none', color: 'var(--color-primary-deep)', fontSize: '0.76rem', cursor: 'pointer', padding: '0 0.4rem', whiteSpace: 'nowrap', fontWeight: 700 }}>수정</button>
+                                  <button type="button" aria-label={`${ev.title} 삭제`} onClick={() => deleteCalEvent(ev.id)} style={{ minHeight: 36, background: 'transparent', border: 'none', color: 'var(--color-danger)', fontSize: '0.76rem', cursor: 'pointer', padding: '0 0.4rem', whiteSpace: 'nowrap' }}>삭제</button>
                                 </div>
                               );
                             })}
@@ -1537,8 +1539,8 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
               const currentCommunity = adminCommunities.find((c) => c.id === calCommunityId);
               const isCurrentAdmin = Boolean(currentCommunity);
               return (
-                <div onClick={() => { setEventModalOpen(false); setEditingEventId(null); }} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(24, 37, 39, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-                  <div role="dialog" className="modal-card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 520, background: '#fff', borderRadius: 16, boxShadow: 'var(--shadow-card-lg)', padding: isMobile ? '1rem' : '1.25rem', display: 'grid', gap: '0.75rem' }}>
+                <div onClick={() => { setEventModalOpen(false); setEditingEventId(null); }} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(24, 37, 39, 0.55)', display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', padding: isMobile ? 0 : '1rem' }}>
+                  <div role="dialog" aria-modal="true" className="modal-card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: isMobile ? '100%' : 520, background: '#fff', borderRadius: isMobile ? '18px 18px 0 0' : 16, boxShadow: 'var(--shadow-card-lg)', padding: isMobile ? '1.1rem 1rem 1.5rem' : '1.25rem', display: 'grid', gap: '0.75rem', maxHeight: isMobile ? '92dvh' : undefined, overflowY: 'auto' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-ink)' }}>{editingEventId ? '일정 수정' : '새 일정 등록'}</h3>
                       <button type="button" onClick={() => { setEventModalOpen(false); setEditingEventId(null); }} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-ink-2)' }}>✕</button>
@@ -1634,26 +1636,31 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                       </div>
                     ) : (
                       <>
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                          <DateTimePicker
-                            value={calForm.startAt}
-                            onChange={(v) => {
-                              // 시작을 바꾸면 끝이 비어있거나 시작보다 이른 경우 자동으로 +1h (같은 날짜)
-                              const startDate = new Date(v);
-                              const endDate = calForm.endAt ? new Date(calForm.endAt) : null;
-                              let nextEndAt = calForm.endAt;
-                              if (!endDate || isNaN(endDate.getTime()) || endDate.getTime() <= startDate.getTime()) {
-                                const autoEnd = new Date(startDate.getTime() + 60 * 60 * 1000);
-                                const p = (n: number) => String(n).padStart(2, '0');
-                                nextEndAt = `${autoEnd.getFullYear()}-${p(autoEnd.getMonth() + 1)}-${p(autoEnd.getDate())}T${p(autoEnd.getHours())}:${p(autoEnd.getMinutes())}`;
-                              }
-                              setCalForm({ ...calForm, startAt: v, endAt: nextEndAt });
-                            }}
-                            placeholder="시작"
-                          />
-                          <span style={{ fontSize: '0.88rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>부터</span>
-                          <DateTimePicker value={calForm.endAt} onChange={(v) => setCalForm({ ...calForm, endAt: v })} placeholder="종료" />
-                          <span style={{ fontSize: '0.88rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>까지</span>
+                        <div style={{ display: 'grid', gap: '0.4rem' }}>
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-ink-2)', minWidth: 28 }}>시작</label>
+                            <DateTimePicker
+                              value={calForm.startAt}
+                              onChange={(v) => {
+                                // 시작을 바꾸면 끝이 비어있거나 시작보다 이른 경우 자동으로 +1h (같은 날짜)
+                                const startDate = new Date(v);
+                                const endDate = calForm.endAt ? new Date(calForm.endAt) : null;
+                                let nextEndAt = calForm.endAt;
+                                if (!endDate || isNaN(endDate.getTime()) || endDate.getTime() <= startDate.getTime()) {
+                                  const autoEnd = new Date(startDate.getTime() + 60 * 60 * 1000);
+                                  const p = (n: number) => String(n).padStart(2, '0');
+                                  nextEndAt = `${autoEnd.getFullYear()}-${p(autoEnd.getMonth() + 1)}-${p(autoEnd.getDate())}T${p(autoEnd.getHours())}:${p(autoEnd.getMinutes())}`;
+                                }
+                                setCalForm({ ...calForm, startAt: v, endAt: nextEndAt });
+                              }}
+                              placeholder="시작"
+                              style={isMobile ? { flex: 1, minWidth: 0 } : undefined}
+                            />
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-ink-2)', minWidth: 28 }}>종료</label>
+                            <DateTimePicker value={calForm.endAt} onChange={(v) => setCalForm({ ...calForm, endAt: v })} placeholder="종료" style={isMobile ? { flex: 1, minWidth: 0 } : undefined} />
+                          </div>
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                           {locationMode === 'custom' ? (
@@ -1691,12 +1698,12 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                     )}
                     <div style={{ display: 'grid', gap: '0.4rem', padding: '0.6rem 0.75rem', borderRadius: 10, background: '#F8FAFC', border: '1px solid var(--color-surface-border)' }}>
                       <div style={{ display: 'grid', gap: '0.15rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                          <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--color-ink)' }}>{eventScope === 'worship' ? '이번 이후의 예배일정도 미리 등록해둘까요?' : '반복'}</span>
-                          <label style={{ display: 'inline-flex', gap: '0.3rem', alignItems: 'center', fontSize: '0.85rem', color: 'var(--color-ink)', cursor: 'pointer' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.5rem' : '1rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--color-ink)', flex: isMobile ? '1 1 100%' : 'none' }}>{eventScope === 'worship' ? '이번 이후의 예배일정도 미리 등록해둘까요?' : '반복'}</span>
+                          <label style={{ display: 'inline-flex', gap: '0.4rem', alignItems: 'center', minHeight: 40, padding: isMobile ? '0 0.6rem' : 0, borderRadius: isMobile ? 8 : 0, background: isMobile && recurType !== 'none' ? 'var(--color-primary-tint)' : 'transparent', border: isMobile && recurType !== 'none' ? '1px solid var(--color-primary)' : 'none', fontSize: '0.88rem', color: 'var(--color-ink)', cursor: 'pointer', fontWeight: recurType !== 'none' ? 700 : 400 }}>
                             <input type="radio" name="recurToggle" checked={recurType !== 'none'} onChange={() => setRecurType('weekly')} /> {eventScope === 'worship' ? '예' : '반복함'}
                           </label>
-                          <label style={{ display: 'inline-flex', gap: '0.3rem', alignItems: 'center', fontSize: '0.85rem', color: 'var(--color-ink)', cursor: 'pointer' }}>
+                          <label style={{ display: 'inline-flex', gap: '0.4rem', alignItems: 'center', minHeight: 40, padding: isMobile ? '0 0.6rem' : 0, borderRadius: isMobile ? 8 : 0, background: isMobile && recurType === 'none' ? '#F1F5F9' : 'transparent', border: isMobile && recurType === 'none' ? '1px solid var(--color-gray)' : 'none', fontSize: '0.88rem', color: 'var(--color-ink)', cursor: 'pointer', fontWeight: recurType === 'none' ? 700 : 400 }}>
                             <input type="radio" name="recurToggle" checked={recurType === 'none'} onChange={() => setRecurType('none')} /> {eventScope === 'worship' ? '아니오' : '반복 안함'}
                           </label>
                         </div>
@@ -1882,9 +1889,9 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                       )}
                     </div>
                     {calMsg && <p style={{ margin: 0, fontSize: '0.82rem', color: calMsg.includes('등록') ? 'var(--color-primary-deep)' : 'var(--color-danger)' }}>{calMsg}</p>}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                      <button type="button" onClick={() => { setEventModalOpen(false); setEditingEventId(null); }} style={{ padding: '0.6rem 1.1rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink)', fontWeight: 700, cursor: 'pointer' }}>취소</button>
-                      <button type="button" onClick={createCalEvent} disabled={calSaving} style={{ padding: '0.6rem 1.1rem', borderRadius: 'var(--radius-lg)', border: 'none', background: calSaving ? 'rgba(32, 205, 141, 0.5)' : 'var(--color-primary)', color: '#fff', fontWeight: 800, cursor: calSaving ? 'not-allowed' : 'pointer', boxShadow: 'var(--shadow-button)' }}>
+                    <div style={{ display: 'flex', flexDirection: isMobile ? 'column-reverse' : 'row', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.25rem' }}>
+                      <button type="button" onClick={() => { setEventModalOpen(false); setEditingEventId(null); }} style={{ minHeight: 48, padding: '0 1.1rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink)', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '0.95rem' : '0.88rem' }}>취소</button>
+                      <button type="button" onClick={createCalEvent} disabled={calSaving} style={{ minHeight: 48, padding: '0 1.1rem', borderRadius: 'var(--radius-lg)', border: 'none', background: calSaving ? 'rgba(32, 205, 141, 0.5)' : 'var(--color-primary)', color: '#fff', fontWeight: 800, cursor: calSaving ? 'not-allowed' : 'pointer', boxShadow: 'var(--shadow-button)', fontSize: isMobile ? '0.95rem' : '0.88rem' }}>
                         {calSaving ? '저장 중…' : '저장'}
                       </button>
                     </div>
