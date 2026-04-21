@@ -118,10 +118,20 @@ const BiblePassageCard = ({ reference, koText, enText, passageText }: Props) => 
   return (
     <div style={{ padding: isMobile ? '0.85rem' : '1.1rem 1.2rem', borderRadius: 10, background: '#fff', border: '1px solid #D9F09E' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.75rem', paddingBottom: '0.6rem', borderBottom: '1px solid #ECFCCB', flexWrap: 'wrap' }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
-          <span aria-hidden style={{ fontSize: isMobile ? '0.95rem' : '1rem' }}>📖</span>
-          <strong style={{ fontSize: isMobile ? '0.92rem' : '0.98rem', color: '#3F6212', fontWeight: 800 }}>성경말씀</strong>
-          <span style={{ fontSize: isMobile ? '0.82rem' : '0.88rem', fontWeight: 700, color: 'var(--color-ink-2)' }}>{reference}</span>
+        <span style={{
+          padding: '0.38rem 0.85rem',
+          borderRadius: 999,
+          border: '1px solid #65A30D',
+          background: '#fff',
+          color: '#3F6212',
+          fontSize: '0.86rem',
+          fontWeight: 700,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.35rem',
+        }}>
+          <span aria-hidden>📖</span>
+          <span>{reference}</span>
         </span>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {(hasKo || hasEn) && (

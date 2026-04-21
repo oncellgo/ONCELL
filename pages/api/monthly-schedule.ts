@@ -210,7 +210,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // 1) 메모리 캐시 (같은 인스턴스의 warm 요청) — 디버그 요청은 캐시 바이패스
     const hit = !debug ? memoryCache.get(ckey) : undefined;
     if (hit && nowMs - hit.at < CACHE_TTL) {
-      res.setHeader('Cache-Control', 'public, max-age=1800');
+      res.setHeader('Cache-Control', 'no-store');
       return res.status(200).json({ month, year, items: hit.items, source: { bulletinIdx: hit.bulletinIdx, misbaUrl: hit.misbaUrl }, cached: 'memory' });
     }
 
@@ -218,7 +218,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const persisted = !debug ? await readPersistedCache(year, month) : null;
     if (persisted && nowMs - persisted.at < CACHE_TTL) {
       memoryCache.set(ckey, persisted);
-      res.setHeader('Cache-Control', 'public, max-age=1800');
+      res.setHeader('Cache-Control', 'no-store');
       return res.status(200).json({ month, year, items: persisted.items, source: { bulletinIdx: persisted.bulletinIdx, misbaUrl: persisted.misbaUrl }, cached: 'kv' });
     }
 
@@ -266,7 +266,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json({ month, year, items, headerIdx: hi, headerMatchLen: headerMatch?.[0]?.length ?? null, afterStart, stopIdx, sectionLen: section.length, blocksCount: blocks.length, blocks: blocks.slice(0, 30), snippet, rawLength: pdfText.length });
     }
 
-    res.setHeader('Cache-Control', 'public, max-age=1800');
+    res.setHeader('Cache-Control', 'no-store');
     return res.status(200).json({ month, year, items, source: { bulletinIdx: bulletin.idx, misbaUrl } });
   } catch (e: any) {
     console.error('[monthly-schedule]', e);

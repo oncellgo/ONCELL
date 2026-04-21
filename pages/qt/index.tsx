@@ -8,6 +8,8 @@ import { getSystemAdminHref } from '../../lib/adminGuard';
 import { getProfiles, getUsers } from '../../lib/dataStore';
 import { useIsMobile } from '../../lib/useIsMobile';
 import { useRequireLogin } from '../../lib/useRequireLogin';
+import { fetchChannelUploadsByHandle } from '../../lib/youtube';
+import { getSGDateKey, getSGDow, getSGSundayKey, getSGTodayKey, addDaysToKey } from '../../lib/events';
 
 type Video = { videoId: string; title: string; publishedAt: string; dow: number; dateKey: string };
 
@@ -38,21 +40,12 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
   // 현재 주간(weekOffset 적용)의 큐티 완료 날짜 집합
   const [qtCompletedSet, setQtCompletedSet] = useState<Set<string>>(new Set());
   // 일요일 기준 dow별 실제 날짜 계산 (일=0..토=6). weekOffset은 주 단위 이동(일 단위).
+  // weekStartISO 는 SG 기준 Sunday의 YYYY-MM-DD — addDaysToKey 로 TZ-safe 계산.
   const [weekOffset, setWeekOffset] = useState<number>(0);
+  const dateKeyForDow = (dow: number): string => addDaysToKey(weekStartISO, dow + weekOffset);
   const dateForDow = (dow: number): { m: number; d: number } => {
-    const sunday = new Date(weekStartISO);
-    const target = new Date(sunday);
-    target.setDate(target.getDate() + dow + weekOffset);
-    return { m: target.getMonth() + 1, d: target.getDate() };
-  };
-  const dateKeyForDow = (dow: number): string => {
-    const sunday = new Date(weekStartISO);
-    const target = new Date(sunday);
-    target.setDate(target.getDate() + dow + weekOffset);
-    const y = target.getFullYear();
-    const m = String(target.getMonth() + 1).padStart(2, '0');
-    const d = String(target.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+    const [, m, d] = dateKeyForDow(dow).split('-').map(Number);
+    return { m, d };
   };
   const latestVideo = videos.length
     ? [...videos].sort((a, b) => (b.publishedAt || '').localeCompare(a.publishedAt || ''))[0]
@@ -70,6 +63,20 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
   // 영상 매칭: weekOffset 반영한 실제 날짜(YYYY-MM-DD)와 일치하는 것
   const selectedVideo = videos.find((v) => v.dateKey === dateKeyForDow(selectedDow)) || null;
   const selectedVideoId = selectedVideo?.videoId || null;
+  const videoMeta = (() => {
+    if (!selectedVideo) return null;
+    const raw = selectedVideo.title;
+    const quote =
+      (raw.match(/[""](.+?)[""]/) || raw.match(/"([^"]+)"/) || raw.match(/'([^']+)'/) || raw.match(/「(.+?)」/))?.[1] ?? null;
+    const pastor =
+      (raw.match(/[-–]\s*([가-힣]{2,6}\s*(?:담임)?\s*(?:목사|전도사))\s*[-–]/) ||
+        raw.match(/([가-힣]{2,6}\s*(?:담임)?\s*(?:목사|전도사))/))?.[1]?.replace(/\s+/g, ' ').trim() ?? null;
+    const dm = raw.match(/(\d{4})\.(\d{1,2})\.(\d{1,2})\.?/);
+    const dateStr = dm ? `${dm[1]}.${String(dm[2]).padStart(2, '0')}.${String(dm[3]).padStart(2, '0')}` : null;
+    const dow = selectedVideo.dow;
+    const dowLabel = dow === 0 ? '주일' : DAY_LABELS[dow];
+    return { dateStr, dowLabel, quote, pastor };
+  })();
 
   const goPrev = () => {
     if (selectedDow > 0) {
@@ -93,7 +100,6 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
   const [qtPassageTextEn, setQtPassageTextEn] = useState<string | null>(null);
   const [qtLoading, setQtLoading] = useState(false);
   const [qtError, setQtError] = useState<string | null>(null);
-  const [passageOpen, setPassageOpen] = useState(true);
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteFeelings, setNoteFeelings] = useState('');
   const [noteDecision, setNoteDecision] = useState('');
@@ -102,13 +108,7 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteMsg, setNoteMsg] = useState<string | null>(null);
 
-  const todayKey = (() => {
-    const t = new Date();
-    const y = t.getFullYear();
-    const m = String(t.getMonth() + 1).padStart(2, '0');
-    const d = String(t.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  })();
+  const todayKey = getSGTodayKey();
 
   const openNoteModal = async () => {
     if (!resolvedProfileId) {
@@ -170,16 +170,8 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
     }
   };
 
-  // 선택된 날짜(일=0..토=6 + weekOffset)에 해당하는 YYYY-MM-DD
-  const selectedDateKey = (() => {
-    const sunday = new Date(weekStartISO);
-    const target = new Date(sunday);
-    target.setDate(target.getDate() + selectedDow + weekOffset);
-    const y = target.getFullYear();
-    const m = String(target.getMonth() + 1).padStart(2, '0');
-    const d = String(target.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  })();
+  // 선택된 날짜(일=0..토=6 + weekOffset)에 해당하는 YYYY-MM-DD (SG 기준)
+  const selectedDateKey = dateKeyForDow(selectedDow);
   const isTodaySelected = weekOffset === 0 && selectedDow === todayDow;
 
   // 해당 주간의 큐티 완료 fetch (weekOffset 이 바뀌면 재조회)
@@ -201,11 +193,8 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
     if (!effProfileId) { setQtToggleError('로그인이 필요합니다.'); return; }
     if (qtToggleBusy) return;
     const dkey = selectedDateKey;
-    // 미래 날짜는 큐티 선지급 금지
-    const p = (x: number) => String(x).padStart(2, '0');
-    const n = new Date();
-    const todayKeyLocal = `${n.getFullYear()}-${p(n.getMonth() + 1)}-${p(n.getDate())}`;
-    if (dkey > todayKeyLocal) { setQtToggleError('큐티는 오늘까지만 완료 처리할 수 있어요.'); return; }
+    // 미래 날짜는 큐티 선지급 금지 (SG 기준)
+    if (dkey > getSGTodayKey()) { setQtToggleError('큐티는 오늘까지만 완료 처리할 수 있어요.'); return; }
     const wasCompleted = qtCompletedSet.has(dkey);
     setQtToggleBusy(true); setQtToggleError(null);
     try {
@@ -293,9 +282,8 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                   const { m, d } = dateForDow(dow);
                   const dk = dateKeyForDow(dow);
                   const isDayCompleted = qtCompletedSet.has(dk);
-                  // 오늘 이후(미래) 날짜는 비활성화 — 큐티는 선지급 불가
-                  const todayKeyLocal = (() => { const n = new Date(); const p = (x: number) => String(x).padStart(2, '0'); return `${n.getFullYear()}-${p(n.getMonth() + 1)}-${p(n.getDate())}`; })();
-                  const isFuture = dk > todayKeyLocal;
+                  // 오늘 이후(미래) 날짜는 비활성화 — 큐티는 선지급 불가 (SG 기준)
+                  const isFuture = dk > getSGTodayKey();
                   return (
                     <button
                       key={dow}
@@ -309,7 +297,7 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                         borderRadius: 8,
                         background: isFuture ? '#F9FAFB' : isDayCompleted ? '#20CD8D' : isToday ? '#ECFCCB' : '#fff',
                         cursor: isFuture ? 'not-allowed' : 'pointer',
-                        opacity: v ? 1 : 0.7,
+                        opacity: isFuture ? 0.4 : (v ? 1 : 0.7),
                         textAlign: 'center',
                         boxShadow: isSelected ? '0 2px 6px rgba(32,205,141,0.2)' : 'none',
                         display: 'grid',
@@ -318,7 +306,6 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                         minWidth: 0,
                         position: 'relative',
                         overflow: 'hidden',
-                        opacity: isFuture ? 0.4 : 1,
                       }}
                     >
                       {isLatest && !isFuture && (
@@ -367,7 +354,7 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                 <div style={{ position: 'relative', width: '75%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', background: '#000', margin: '0 auto' }}>
                   <iframe
                     src={`https://www.youtube.com/embed/${selectedVideoId}`}
-                    title="새벽기도 영상"
+                    title={selectedVideo?.title || '새벽기도 영상'}
                     allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                     style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
@@ -403,33 +390,39 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                   <span style={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.02em', color: '#65A30D', textTransform: 'uppercase', flexShrink: 0 }}>
                     {isTodaySelected ? '오늘의 QT말씀' : `${selectedDateKey.slice(5).replace('-', '/')} QT말씀`}
                   </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', flex: isMobile ? undefined : 1 }}>
-                    {qtLoading ? (
+                  {videoMeta && (videoMeta.quote || videoMeta.pastor) && (
+                    <div
+                      style={{
+                        fontSize: isMobile ? '0.82rem' : '0.9rem',
+                        fontWeight: 800,
+                        color: 'var(--color-ink)',
+                        lineHeight: 1.45,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
+                        flex: isMobile ? undefined : 1,
+                        minWidth: 0,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {videoMeta.quote && (
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>&ldquo;{videoMeta.quote}&rdquo;</span>
+                      )}
+                      {videoMeta.pastor && (
+                        <>
+                          <span style={{ color: '#9CA3AF', fontWeight: 700, flexShrink: 0 }}>/</span>
+                          <span style={{ flexShrink: 0 }}>{videoMeta.pastor}</span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', flex: isMobile ? undefined : 1, marginLeft: 'auto' }}>
+                    {qtLoading && (
                       <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>불러오는 중…</span>
-                    ) : qtRef ? (
-                      <button
-                        type="button"
-                        onClick={() => setPassageOpen((v) => !v)}
-                        style={{
-                          padding: '0.38rem 0.85rem',
-                          borderRadius: 999,
-                          border: '1px solid #65A30D',
-                          background: '#fff',
-                          color: '#3F6212',
-                          fontSize: '0.86rem',
-                          fontWeight: 700,
-                          fontFamily: 'inherit',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.35rem',
-                        }}
-                      >
-                        <span>📖</span>
-                        <span>{qtRef}</span>
-                        <span style={{ fontSize: '0.7rem', color: 'var(--color-ink-2)' }}>{passageOpen ? '▾' : '▸'}</span>
-                      </button>
-                    ) : (
+                    )}
+                    {!qtLoading && !qtRef && (
                       <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>{qtError || '오늘의 QT말씀 정보가 없습니다.'}</span>
                     )}
                     {qtRef && (
@@ -437,7 +430,7 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                         <button
                           type="button"
                           onClick={openNoteModal}
-                          title="묵상노트 작성"
+                          title="나의 묵상노트 작성"
                           style={{
                             padding: '0.38rem 0.7rem',
                             borderRadius: 999,
@@ -452,7 +445,7 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                             gap: '0.3rem',
                           }}
                         >
-                          <span>✍️</span><span>묵상노트</span>
+                          <span>✍️</span><span>나의 묵상노트</span>
                         </button>
                         {(() => {
                           const isCompleted = qtCompletedSet.has(selectedDateKey);
@@ -496,16 +489,16 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                   </div>
                 </div>
 
-                {passageOpen && (qtPassageText || qtPassageTextEn) && qtRef && (
+                {(qtPassageText || qtPassageTextEn) && qtRef && (
                   <BiblePassageCard reference={qtRef} koText={qtPassageText} enText={qtPassageTextEn} />
                 )}
-                {passageOpen && !qtPassageText && !qtPassageTextEn && qtPassage && (
+                {!qtPassageText && !qtPassageTextEn && qtPassage && (
                   <div style={{ padding: '0.9rem 1.1rem', borderRadius: 10, background: '#fff', border: '1px solid #D9F09E', fontSize: '0.9rem', color: 'var(--color-ink)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
                     <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-ink-2)', marginBottom: '0.45rem' }}>※ 개역한글 본문 번들 미포함 — 매일성경 해설</div>
                     {qtPassage}
                   </div>
                 )}
-                {passageOpen && !qtPassageText && !qtPassageTextEn && !qtPassage && !qtLoading && (
+                {!qtPassageText && !qtPassageTextEn && !qtPassage && !qtLoading && qtRef && (
                   <div style={{ padding: '0.85rem 1rem', borderRadius: 10, background: '#fff', border: '1px solid #D9F09E', fontSize: '0.88rem', color: 'var(--color-ink-2)' }}>
                     본문을 불러오지 못했습니다.
                   </div>
@@ -556,7 +549,7 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
               <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--color-ink-2)' }}>불러오는 중…</div>
             ) : (
               <div style={{ display: 'grid', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#65A30D' }}>✍️ 묵상노트</label>
+                <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#65A30D' }}>✍️ 나의 묵상노트</label>
                 <p style={{ margin: 0, fontSize: '0.76rem', color: 'var(--color-ink-2)', lineHeight: 1.5 }}>느낀 점 · 결단 · 기도제목을 자유롭게 한 곳에 기록하세요.</p>
                 <textarea
                   value={noteFeelings}
@@ -604,84 +597,28 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
 };
 
 const CHANNEL_HANDLE = 'KoreanChurchInSingapore';
-let cachedChannelId: string | null = null;
-let cachedChannelIdAt = 0;
-
-const resolveChannelId = async (): Promise<string | null> => {
-  const now = Date.now();
-  if (cachedChannelId && now - cachedChannelIdAt < 24 * 60 * 60 * 1000) return cachedChannelId;
-  try {
-    const res = await fetch(`https://www.youtube.com/@${CHANNEL_HANDLE}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-    });
-    const html = await res.text();
-    const m = html.match(/"channelId":"(UC[^"]+)"/) || html.match(/channel\/(UC[a-zA-Z0-9_-]+)/);
-    if (m) {
-      cachedChannelId = m[1];
-      cachedChannelIdAt = now;
-      return cachedChannelId;
-    }
-  } catch {}
-  return null;
-};
-
-let cachedVideos: Array<{ videoId: string; title: string; publishedAt: string }> = [];
-let cachedVideosAt = 0;
-
-const fetchChannelVideos = async (channelId: string) => {
-  const now = Date.now();
-  if (cachedVideos.length > 0 && now - cachedVideosAt < 30 * 60 * 1000) return cachedVideos;
-  try {
-    const res = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-    });
-    const xml = await res.text();
-    const entries: Array<{ videoId: string; title: string; publishedAt: string }> = [];
-    const entryRegex = /<entry>([\s\S]*?)<\/entry>/g;
-    let match: RegExpExecArray | null;
-    while ((match = entryRegex.exec(xml)) !== null) {
-      const body = match[1];
-      const videoId = (body.match(/<yt:videoId>([^<]+)<\/yt:videoId>/) || [])[1];
-      const title = (body.match(/<title>([^<]+)<\/title>/) || [])[1];
-      const published = (body.match(/<published>([^<]+)<\/published>/) || [])[1];
-      if (videoId && title && published) entries.push({ videoId, title, publishedAt: published });
-    }
-    cachedVideos = entries;
-    cachedVideosAt = now;
-    return entries;
-  } catch {
-    return [];
-  }
-};
 
 export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
-  const now = new Date();
-  const todayDow = now.getDay();
-  const sunday = new Date(now);
-  sunday.setDate(now.getDate() - todayDow);
-  sunday.setHours(0, 0, 0, 0);
+  // 모든 날짜 계산은 싱가폴(UTC+8) 기준 — Vercel 서버 UTC 때문에 KST 새벽에 전날로 밀리는 버그 방지
+  const todayDow = getSGDow();
+  const weekStartKey = getSGSundayKey();
 
   let videos: Video[] = [];
-  const channelId = await resolveChannelId();
-  if (channelId) {
-    const all = await fetchChannelVideos(channelId);
-    // 큐티말씀 화면은 '새벽' 영상만 표시 (주일/수요/금요 등 일반 예배 영상 제외)
-    // RSS는 보통 최근 15개를 반환 → 약 ±2주치 영상이 포함됨. 클라이언트에서 주 단위로 필터.
+  {
+    const all = await fetchChannelUploadsByHandle(CHANNEL_HANDLE, 50);
     const allVids = all
       .filter((v) => /새벽/.test(v.title))
       .map((v) => {
-        const pub = new Date(v.publishedAt);
-        const y = pub.getFullYear();
-        const m = String(pub.getMonth() + 1).padStart(2, '0');
-        const d = String(pub.getDate()).padStart(2, '0');
+        const dateKey = getSGDateKey(v.publishedAt) || '';
         return {
           videoId: v.videoId,
           title: v.title,
           publishedAt: v.publishedAt,
-          dow: pub.getDay(),
-          dateKey: `${y}-${m}-${d}`,
+          dow: getSGDow(v.publishedAt),
+          dateKey,
         };
-      });
+      })
+      .filter((v) => v.dateKey);
     // 같은 dateKey에 여러 영상이면 최신 publishedAt 우선
     const byDate = new Map<string, Video>();
     for (const v of allVids) {
@@ -715,7 +652,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
   return {
     props: {
       videos,
-      weekStartISO: sunday.toISOString(),
+      weekStartISO: weekStartKey,
       todayDow,
       profileId,
       displayName,

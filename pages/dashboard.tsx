@@ -697,28 +697,6 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
 
 
           <section style={cardBase}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <h2 style={{ ...sectionTitle, fontSize: '1.05rem', margin: 0 }}>📅 {monthlySchedule?.month || (new Date().getMonth() + 1)}월 교회일정</h2>
-            </div>
-            {!monthlySchedule ? (
-              <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>목회일정 불러오는 중…</p>
-            ) : monthlySchedule.items.length === 0 ? (
-              <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>이번달 목회일정 정보가 아직 준비되지 않았습니다.</p>
-            ) : (
-              <ul style={{ listStyle: 'none', margin: '0.6rem 0 0', padding: 0, display: 'grid', gap: '0.4rem' }}>
-                {monthlySchedule.items.map((ev, i) => (
-                  <li key={i} style={{ display: 'grid', gridTemplateColumns: '56px 1fr', gap: '0.5rem', padding: '0.45rem 0.7rem', borderRadius: 10, background: '#F9FCFB', border: '1px solid var(--color-surface-border)', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 800, color: '#065F46', fontSize: '0.88rem' }}>{ev.label}</span>
-                    <span style={{ color: 'var(--color-ink)', fontWeight: 600, fontSize: '0.88rem' }}>{ev.title}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <p style={{ margin: '0.55rem 0 0', fontSize: '0.74rem', color: 'var(--color-ink-2)', lineHeight: 1.5 }}>※ 교회의 사정에 따라 일정은 변경될 수 있습니다. (출처: 미스바 목회일정)</p>
-          </section>
-
-
-          <section style={cardBase}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
               <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>📍 다가오는 나의 장소예약</h2>
               <a href="/reservation" style={{ color: 'var(--color-primary-deep)', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none' }}>새 예약 →</a>
@@ -805,31 +783,84 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                   if (email) params.set('email', email);
                   const qs = params.toString();
                   const suffix = qs ? `?${qs}` : '';
+                  const DOWS = ['일', '월', '화', '수', '목', '금', '토'];
+                  const padZ = (n: number) => String(n).padStart(2, '0');
+                  const today0 = new Date(); today0.setHours(0, 0, 0, 0);
+                  // 오늘 포함 최근 7일 (가장 오래된 날짜 → 오늘)
+                  const days = Array.from({ length: 7 }, (_, i) => {
+                    const d = new Date(today0);
+                    d.setDate(today0.getDate() - (6 - i));
+                    return { date: d, key: `${d.getFullYear()}-${padZ(d.getMonth() + 1)}-${padZ(d.getDate())}`, isToday: i === 6 };
+                  });
+                  const renderDayPills = (completedSet: Set<string>, accent: { base: string; bg: string; fg: string; border: string }) => (
+                    <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: 2 }}>
+                      {days.map((d) => {
+                        const done = completedSet.has(d.key);
+                        const dow = d.date.getDay();
+                        const label = d.isToday ? '오늘' : DOWS[dow];
+                        // 요일별 색상 팔레트: 일요일=빨강, 토요일=파랑, 평일=해당 메뉴 accent
+                        const dowBase = dow === 0 ? '#DC2626' : dow === 6 ? '#2563EB' : null;
+                        // 평일(월~금): 진회색 테두리로 구분, 일/토: 각 요일 색
+                        const borderColor = dowBase ? dowBase : (done ? accent.base : '#6B7280');
+                        const borderWidth = '1.5px';
+                        const background = done ? (dowBase || accent.base) : '#F9FAFB';
+                        const textColor = done ? '#fff' : (dowBase || accent.fg);
+                        return (
+                          <span
+                            key={d.key}
+                            title={`${d.key}${done ? ' · 완료' : ''}`}
+                            style={{
+                              flex: '0 0 auto',
+                              minWidth: d.isToday ? 36 : 28,
+                              padding: '0.25rem 0.4rem',
+                              borderRadius: 8,
+                              background,
+                              color: textColor,
+                              border: `${borderWidth} solid ${borderColor}`,
+                              fontSize: '0.72rem',
+                              fontWeight: done ? 800 : 600,
+                              textAlign: 'center',
+                              lineHeight: 1.2,
+                              opacity: done ? 1 : 0.85,
+                            }}
+                          >
+                            {label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  );
                   return (
-                    <div style={{ marginTop: '0.65rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                    <div style={{ marginTop: '0.65rem', display: 'grid', gridTemplateColumns: '1fr', gap: '0.5rem' }}>
                       <a
                         href={`/qt${suffix}`}
                         title="큐티 메뉴로 이동"
-                        style={{ padding: '0.55rem 0.7rem', borderRadius: 10, background: '#F7FEE7', border: '1px solid #D9F09E', display: 'flex', alignItems: 'center', gap: '0.45rem', textDecoration: 'none', cursor: 'pointer', transition: 'transform 0.15s ease, box-shadow 0.15s ease' }}
+                        style={{ padding: '0.6rem 0.75rem', borderRadius: 10, background: '#F7FEE7', border: '1px solid #D9F09E', display: 'grid', gap: '0.35rem', textDecoration: 'none', cursor: 'pointer', transition: 'box-shadow 0.15s ease' }}
                         onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 3px 8px rgba(101, 163, 13, 0.2)'; }}
                         onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
                       >
-                        <span aria-hidden>📖</span>
-                        <span style={{ fontSize: '0.82rem', color: '#3F6212', fontWeight: 700 }}>큐티</span>
-                        <strong style={{ marginLeft: 'auto', fontSize: '0.95rem', color: '#3F6212', fontWeight: 800 }}>{qt}<span style={{ fontSize: '0.78rem', fontWeight: 700, opacity: 0.6 }}>/7</span></strong>
-                        <span aria-hidden style={{ color: '#3F6212', opacity: 0.6, fontSize: '0.82rem' }}>›</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                          <span aria-hidden>📖</span>
+                          <span style={{ fontSize: '0.82rem', color: '#3F6212', fontWeight: 700 }}>큐티</span>
+                          <strong style={{ marginLeft: 'auto', fontSize: '0.88rem', color: '#3F6212', fontWeight: 800 }}>{qt}<span style={{ fontSize: '0.74rem', fontWeight: 700, opacity: 0.6 }}>/7</span></strong>
+                          <span aria-hidden style={{ color: '#3F6212', opacity: 0.6, fontSize: '0.82rem' }}>›</span>
+                        </div>
+                        {renderDayPills(weekQtDates, { base: '#65A30D', bg: '#F7FEE7', fg: '#3F6212', border: '#D9F09E' })}
                       </a>
                       <a
                         href={`/reading${suffix}`}
                         title="성경통독 메뉴로 이동"
-                        style={{ padding: '0.55rem 0.7rem', borderRadius: 10, background: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', gap: '0.45rem', textDecoration: 'none', cursor: 'pointer', transition: 'transform 0.15s ease, box-shadow 0.15s ease' }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 3px 8px rgba(30, 64, 175, 0.2)'; }}
+                        style={{ padding: '0.6rem 0.75rem', borderRadius: 10, background: '#F7FEE7', border: '1px solid #D9F09E', display: 'grid', gap: '0.35rem', textDecoration: 'none', cursor: 'pointer', transition: 'box-shadow 0.15s ease' }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 3px 8px rgba(101, 163, 13, 0.2)'; }}
                         onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
                       >
-                        <span aria-hidden>✝</span>
-                        <span style={{ fontSize: '0.82rem', color: '#1E40AF', fontWeight: 700 }}>성경통독</span>
-                        <strong style={{ marginLeft: 'auto', fontSize: '0.95rem', color: '#1E40AF', fontWeight: 800 }}>{rd}<span style={{ fontSize: '0.78rem', fontWeight: 700, opacity: 0.6 }}>/7</span></strong>
-                        <span aria-hidden style={{ color: '#1E40AF', opacity: 0.6, fontSize: '0.82rem' }}>›</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                          <span aria-hidden>✝</span>
+                          <span style={{ fontSize: '0.82rem', color: '#3F6212', fontWeight: 700 }}>성경통독</span>
+                          <strong style={{ marginLeft: 'auto', fontSize: '0.88rem', color: '#3F6212', fontWeight: 800 }}>{rd}<span style={{ fontSize: '0.74rem', fontWeight: 700, opacity: 0.6 }}>/7</span></strong>
+                          <span aria-hidden style={{ color: '#3F6212', opacity: 0.6, fontSize: '0.82rem' }}>›</span>
+                        </div>
+                        {renderDayPills(weekReadingDates, { base: '#65A30D', bg: '#F7FEE7', fg: '#3F6212', border: '#D9F09E' })}
                       </a>
                     </div>
                   );
@@ -837,6 +868,27 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
               </section>
             );
           })()}
+
+          <section style={cardBase}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <h2 style={{ ...sectionTitle, fontSize: '1.05rem', margin: 0 }}>📅 {monthlySchedule?.month || (new Date().getMonth() + 1)}월 교회일정</h2>
+            </div>
+            {!monthlySchedule ? (
+              <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>목회일정 불러오는 중…</p>
+            ) : monthlySchedule.items.length === 0 ? (
+              <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>이번달 목회일정 정보가 아직 준비되지 않았습니다.</p>
+            ) : (
+              <ul style={{ listStyle: 'none', margin: '0.6rem 0 0', padding: 0, display: 'grid', gap: '0.4rem' }}>
+                {monthlySchedule.items.map((ev, i) => (
+                  <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', padding: '0.45rem 0.7rem', borderRadius: 10, background: '#F9FCFB', border: '1px solid var(--color-surface-border)', flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 800, color: '#065F46', fontSize: '0.88rem', flexShrink: 0, whiteSpace: 'nowrap' }}>{ev.label}</span>
+                    <span style={{ color: 'var(--color-ink)', fontWeight: 600, fontSize: '0.88rem', flex: '1 1 60%', minWidth: 0, wordBreak: 'keep-all' }}>{ev.title}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p style={{ margin: '0.55rem 0 0', fontSize: '0.74rem', color: 'var(--color-ink-2)', lineHeight: 1.5 }}>※ 교회의 사정에 따라 일정은 변경될 수 있습니다. (출처: 미스바 목회일정)</p>
+          </section>
 
           {profileId && !profileDone && !activeCommunity && (
             <section style={{ padding: profileExpanded ? (isMobile ? '1.1rem' : '1.5rem') : '1rem 1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', transition: 'padding 0.2s ease' }}>

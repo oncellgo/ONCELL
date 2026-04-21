@@ -30,6 +30,7 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
   const [lsProfileId, setLsProfileId] = useState<string | null>(null);
   const [lsNickname, setLsNickname] = useState<string | null>(null);
   const [lsEmail, setLsEmail] = useState<string | null>(null);
+  const [lsAdminHref, setLsAdminHref] = useState<string | null>(null);
   useEffect(() => {
     try {
       if (!profileId) {
@@ -44,12 +45,20 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
         const e = window.localStorage.getItem('kcisEmail');
         if (e) setLsEmail(e);
       }
+      // systemAdminHref 캐싱/복원 — SSR 프롭이 null이면 localStorage에서 꺼냄
+      if (systemAdminHref) {
+        window.localStorage.setItem('kcisSystemAdminHref', systemAdminHref);
+      } else {
+        const s = window.localStorage.getItem('kcisSystemAdminHref');
+        if (s) setLsAdminHref(s);
+      }
     } catch {}
-  }, [profileId, nickname, email]);
+  }, [profileId, nickname, email, systemAdminHref]);
 
   const effProfileId = profileId || lsProfileId;
   const effNickname = nickname || lsNickname;
   const effEmail = email || lsEmail;
+  const effAdminHref = systemAdminHref || lsAdminHref;
 
   const providerLabel = effProfileId?.startsWith('kakao-') ? '카카오 사용자' : effProfileId?.startsWith('google-') ? 'Google 사용자' : '사용자';
   const userLabel = currentDisplayName || displayName || effNickname || (effEmail ? effEmail.split('@')[0] : providerLabel);
@@ -135,7 +144,7 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
               flexShrink: 0,
             }}
           >
-            <span aria-hidden>📊</span>{!isMobile && <span>내 대시보드</span>}
+            <span aria-hidden>📊</span><span>내 대시보드</span>
           </Link>
         )}
         {effProfileId && (
@@ -163,9 +172,9 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
               title="내 정보 수정"
               style={{ background: 'none', border: 'none', padding: 0, margin: 0, font: 'inherit', color: 'inherit', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'underline', textUnderlineOffset: 3, textDecorationColor: 'var(--color-gray)' }}
             >{userLabel}</button>
-            {systemAdminHref && (
+            {effAdminHref && (
               <Link
-                href={systemAdminHref}
+                href={effAdminHref}
                 aria-label="시스템 설정"
                 title="시스템 설정"
                 style={{
@@ -197,6 +206,7 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
             onClick={() => {
               try {
                 window.localStorage.removeItem('kcisProfileId');
+                window.localStorage.removeItem('kcisSystemAdminHref');
                 window.localStorage.removeItem('kcisNickname');
                 window.localStorage.removeItem('kcisEmail');
               } catch {}

@@ -7,6 +7,7 @@ import { getSystemAdminHref } from '../lib/adminGuard';
 import { getProfiles, getUsers } from '../lib/dataStore';
 import { useIsMobile } from '../lib/useIsMobile';
 import { useRequireLogin } from '../lib/useRequireLogin';
+import { fetchPlaylistItems } from '../lib/youtube';
 
 type Video = { videoId: string; title: string; publishedAt: string; dateKey: string };
 
@@ -288,81 +289,17 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
   );
 };
 
-const CHANNEL_HANDLE = 'KoreanChurchInSingapore';
-let cachedChannelId: string | null = null;
-let cachedChannelIdAt = 0;
-const resolveChannelId = async (): Promise<string | null> => {
-  const now = Date.now();
-  if (cachedChannelId && now - cachedChannelIdAt < 24 * 60 * 60 * 1000) return cachedChannelId;
-  try {
-    const res = await fetch(`https://www.youtube.com/@${CHANNEL_HANDLE}`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-    const html = await res.text();
-    const m = html.match(/"channelId":"(UC[^"]+)"/) || html.match(/channel\/(UC[a-zA-Z0-9_-]+)/);
-    if (m) { cachedChannelId = m[1]; cachedChannelIdAt = now; return cachedChannelId; }
-  } catch {}
-  return null;
-};
-
-let cachedVideos: Array<{ videoId: string; title: string; publishedAt: string }> = [];
-let cachedVideosAt = 0;
-const fetchChannelVideos = async (channelId: string) => {
-  const now = Date.now();
-  if (cachedVideos.length > 0 && now - cachedVideosAt < 30 * 60 * 1000) return cachedVideos;
-  try {
-    const res = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-    const xml = await res.text();
-    const entries: Array<{ videoId: string; title: string; publishedAt: string }> = [];
-    const entryRegex = /<entry>([\s\S]*?)<\/entry>/g;
-    let match: RegExpExecArray | null;
-    while ((match = entryRegex.exec(xml)) !== null) {
-      const body = match[1];
-      const videoId = (body.match(/<yt:videoId>([^<]+)<\/yt:videoId>/) || [])[1];
-      const title = (body.match(/<title>([^<]+)<\/title>/) || [])[1];
-      const published = (body.match(/<published>([^<]+)<\/published>/) || [])[1];
-      if (videoId && title && published) entries.push({ videoId, title, publishedAt: published });
-    }
-    cachedVideos = entries;
-    cachedVideosAt = now;
-    return entries;
-  } catch { return []; }
-};
-
-// "주일예배 - 싱가폴한인교회" 플레이리스트 RSS — 최근 주일1부/2부/3부예배 모음
-// 채널 기본 RSS는 15개 제한에 새벽기도회 매일 업로드로 주일예배가 밀려나므로 플레이리스트 RSS를 사용
+// "주일예배 - 싱가폴한인교회" 플레이리스트 — 최근 주일1부/2부/3부예배 모음
+// 채널 기본 업로드는 50개 제한에 새벽기도회 매일 업로드로 주일예배가 밀려나므로 전용 플레이리스트를 사용
 const SUNDAY_SERVICE_PLAYLIST_ID = 'PLSCiGfh6aK3T0eD4sx5mGkSlg1MZ-Egcn';
-let cachedPlaylistVideos: Array<{ videoId: string; title: string; dateKey: string | null }> = [];
-let cachedPlaylistVideosAt = 0;
 
 const fetchSundayServicePlaylist = async (): Promise<Array<{ videoId: string; title: string; dateKey: string | null }>> => {
-  const now = Date.now();
-  if (cachedPlaylistVideos.length > 0 && now - cachedPlaylistVideosAt < 30 * 60 * 1000) return cachedPlaylistVideos;
-  try {
-    const res = await fetch(`https://www.youtube.com/feeds/videos.xml?playlist_id=${SUNDAY_SERVICE_PLAYLIST_ID}`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-    const xml = await res.text();
-    const out: Array<{ videoId: string; title: string; dateKey: string | null }> = [];
-    const entryRegex = /<entry>([\s\S]*?)<\/entry>/g;
-    let match: RegExpExecArray | null;
-    while ((match = entryRegex.exec(xml)) !== null) {
-      const body = match[1];
-      const videoId = (body.match(/<yt:videoId>([^<]+)<\/yt:videoId>/) || [])[1];
-      const rawTitle = (body.match(/<title>([^<]+)<\/title>/) || [])[1];
-      if (!videoId || !rawTitle) continue;
-      // HTML entity 디코딩 (&quot; &amp; 등)
-      const title = rawTitle
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>');
-      // 제목에서 날짜 추출: "... 2026.04.05." 패턴
-      const dm = title.match(/(\d{4})\.(\d{1,2})\.(\d{1,2})\.?/);
-      const dateKey = dm ? `${dm[1]}-${String(dm[2]).padStart(2, '0')}-${String(dm[3]).padStart(2, '0')}` : null;
-      out.push({ videoId, title, dateKey });
-    }
-    cachedPlaylistVideos = out;
-    cachedPlaylistVideosAt = now;
-    return out;
-  } catch { return []; }
+  const items = await fetchPlaylistItems(SUNDAY_SERVICE_PLAYLIST_ID, 50);
+  return items.map((v) => {
+    const dm = v.title.match(/(\d{4})\.(\d{1,2})\.(\d{1,2})\.?/);
+    const dateKey = dm ? `${dm[1]}-${String(dm[2]).padStart(2, '0')}-${String(dm[3]).padStart(2, '0')}` : null;
+    return { videoId: v.videoId, title: v.title, dateKey };
+  });
 };
 
 export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {

@@ -101,6 +101,25 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
       </div>
       <div style={{ display: 'inline-flex', alignItems: 'center', gap: isMobile ? '0.3rem' : '0.5rem', flexWrap: 'nowrap', justifyContent: 'flex-end', flexShrink: 0 }}>
         {effProfileId && (
+          <a
+            href={dashboardHref}
+            title="내 대시보드"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+              padding: isMobile ? '0.3rem 0.55rem' : '0.35rem 0.75rem',
+              borderRadius: 999,
+              background: 'var(--color-primary-tint)',
+              border: '1px solid var(--color-primary-tint)',
+              color: 'var(--color-primary-deep)',
+              fontWeight: 800,
+              fontSize: isMobile ? '0.78rem' : '0.85rem',
+              textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
+            }}
+          >
+            <span aria-hidden>📊</span><span>내 대시보드</span>
+          </a>
+        )}
+        {effProfileId && (
           <span style={{
             display: 'inline-flex',
             alignItems: 'center',
