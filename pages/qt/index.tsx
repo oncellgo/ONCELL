@@ -161,6 +161,12 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
       });
       if (!r.ok) throw new Error('save failed');
       setNoteMsg('저장됐어요.');
+      // qt-notes API가 완료여부를 자동 동기화 (1자 이상이면 완료, 전부 비우면 해제)
+      setQtCompletedSet((prev) => {
+        const next = new Set(prev);
+        if (hasNoteInput) next.add(todayKey); else next.delete(todayKey);
+        return next;
+      });
       // 저장 성공 후 잠시 메시지 보여주고 창 닫기
       setTimeout(() => { setNoteOpen(false); setNoteMsg(null); }, 600);
     } catch {
@@ -185,38 +191,6 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effProfileId, weekOffset]);
-
-  // 큐티 완료 토글 (성경통독과 동일한 UX) — 묵상노트와 독립적으로 완료 플래그만 기록
-  const [qtToggleBusy, setQtToggleBusy] = useState(false);
-  const [qtToggleError, setQtToggleError] = useState<string | null>(null);
-  const toggleQtComplete = async () => {
-    if (!effProfileId) { setQtToggleError('로그인이 필요합니다.'); return; }
-    if (qtToggleBusy) return;
-    const dkey = selectedDateKey;
-    // 미래 날짜는 큐티 선지급 금지 (SG 기준)
-    if (dkey > getSGTodayKey()) { setQtToggleError('큐티는 오늘까지만 완료 처리할 수 있어요.'); return; }
-    const wasCompleted = qtCompletedSet.has(dkey);
-    setQtToggleBusy(true); setQtToggleError(null);
-    try {
-      if (wasCompleted) {
-        const r = await fetch(`/api/completions?profileId=${encodeURIComponent(effProfileId)}&type=qt&date=${dkey}`, { method: 'DELETE' });
-        if (!r.ok) { const d = await r.json().catch(() => ({})); setQtToggleError(d?.error || `삭제 실패 (${r.status})`); return; }
-        setQtCompletedSet((prev) => { const n = new Set(prev); n.delete(dkey); return n; });
-      } else {
-        const r = await fetch('/api/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ profileId: effProfileId, type: 'qt', date: dkey, allowPast: true }),
-        });
-        if (!r.ok) { const d = await r.json().catch(() => ({})); setQtToggleError(d?.error || `저장 실패 (${r.status})`); return; }
-        setQtCompletedSet((prev) => new Set(prev).add(dkey));
-      }
-    } catch (e: any) {
-      setQtToggleError(e?.message || '네트워크 오류');
-    } finally {
-      setQtToggleBusy(false);
-    }
-  };
 
   useEffect(() => {
     let cancelled = false;
@@ -425,67 +399,37 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                     {!qtLoading && !qtRef && (
                       <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>{qtError || '오늘의 QT말씀 정보가 없습니다.'}</span>
                     )}
-                    {qtRef && (
-                      <div style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <button
-                          type="button"
-                          onClick={openNoteModal}
-                          title="나의 묵상노트 작성"
-                          style={{
-                            padding: '0.38rem 0.7rem',
-                            borderRadius: 999,
-                            border: '1px solid #65A30D',
-                            background: '#fff',
-                            color: '#3F6212',
-                            fontSize: '0.8rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.3rem',
-                          }}
-                        >
-                          <span>✍️</span><span>나의 묵상노트</span>
-                        </button>
-                        {(() => {
-                          const isCompleted = qtCompletedSet.has(selectedDateKey);
-                          return (
-                            <button
-                              type="button"
-                              role="switch"
-                              aria-checked={isCompleted}
-                              aria-label={isCompleted ? '큐티 완료됨 — 취소' : '큐티 전 — 완료 처리'}
-                              onClick={toggleQtComplete}
-                              disabled={qtToggleBusy}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.45rem',
-                                padding: '0.3rem 0.7rem 0.3rem 0.4rem',
-                                borderRadius: 999,
-                                border: `1px solid ${isCompleted ? '#20CD8D' : 'var(--color-gray)'}`,
-                                background: isCompleted ? '#20CD8D' : '#fff',
-                                color: isCompleted ? '#fff' : 'var(--color-ink-2)',
-                                cursor: qtToggleBusy ? 'wait' : 'pointer',
-                                opacity: qtToggleBusy ? 0.7 : 1,
-                                fontSize: '0.8rem',
-                                fontWeight: 800,
-                                letterSpacing: '0.02em',
-                                transition: 'background 0.15s ease, border-color 0.15s ease, color 0.15s ease',
-                              }}
-                            >
-                              <span aria-hidden style={{ position: 'relative', display: 'inline-block', width: 30, height: 18, borderRadius: 999, background: isCompleted ? 'rgba(255,255,255,0.28)' : '#E5E7EB', flexShrink: 0, transition: 'background 0.15s ease' }}>
-                                <span style={{ position: 'absolute', top: 2, left: isCompleted ? 14 : 2, width: 14, height: 14, borderRadius: 999, background: '#fff', boxShadow: '0 1px 2px rgba(0,0,0,0.25)', transition: 'left 0.18s ease' }} />
-                              </span>
-                              <span>{qtToggleBusy ? '처리 중…' : isCompleted ? '✓ 큐티 완료' : '큐티 전'}</span>
-                            </button>
-                          );
-                        })()}
-                      </div>
-                    )}
-                    {qtToggleError && (
-                      <span style={{ fontSize: '0.7rem', color: '#B91C1C', fontWeight: 700 }}>⚠ {qtToggleError}</span>
-                    )}
+                    {qtRef && (() => {
+                      const hasNote = qtCompletedSet.has(selectedDateKey);
+                      return (
+                        <div style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <button
+                            type="button"
+                            onClick={openNoteModal}
+                            title={hasNote ? '묵상 입력됨 — 클릭하여 수정' : '나의 묵상노트 작성'}
+                            aria-label={hasNote ? '묵상 입력됨' : '묵상 미입력'}
+                            style={{
+                              padding: '0.38rem 0.85rem',
+                              borderRadius: 999,
+                              border: `1px solid ${hasNote ? '#20CD8D' : 'var(--color-gray)'}`,
+                              background: hasNote ? '#20CD8D' : '#fff',
+                              color: hasNote ? '#fff' : 'var(--color-ink-2)',
+                              fontSize: '0.8rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              letterSpacing: '0.02em',
+                              transition: 'background 0.15s ease, border-color 0.15s ease, color 0.15s ease',
+                            }}
+                          >
+                            <span aria-hidden>{hasNote ? '✓' : '✍️'}</span>
+                            <span>{hasNote ? '묵상 입력됨' : '묵상 미입력'}</span>
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
 
