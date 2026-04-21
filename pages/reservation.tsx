@@ -72,9 +72,8 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
   }, []);
   // 예약자 확인 체크박스 3종 — 모두 체크되어야 완료 가능
   const [confirmMember, setConfirmMember] = useState(false);
-  const [confirmInfo, setConfirmInfo] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
-  const allConfirmed = confirmMember && confirmInfo && confirmCancel;
+  const allConfirmed = confirmMember && confirmCancel;
   const [confirmShake, setConfirmShake] = useState(false);
   const triggerConfirmShake = () => {
     setConfirmShake(true);
@@ -1017,8 +1016,7 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
                   <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#92400E' }}>예약전 확인요청사항</span>
                 </div>
                 {[
-                  { checked: confirmMember, setter: setConfirmMember, label: '싱가폴한인교회 등록교인입니다.' },
-                  { checked: confirmInfo, setter: setConfirmInfo, label: '실명과 연락가능한 번호를 올바르게 입력했습니다.' },
+                  { checked: confirmMember, setter: setConfirmMember, label: '싱가폴한인교회 등록교인이며, 실명과 연락가능한 번호를 올바르게 입력했습니다.' },
                   { checked: confirmCancel, setter: setConfirmCancel, label: '잘못된 정보를 입력할 경우, 사전통보없이 예약이 취소될 수 있음을 인지했습니다.' },
                 ].map((item, i) => (
                   <label key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: isMobile ? '0.82rem' : '0.86rem', color: '#78350F', fontWeight: 700, lineHeight: 1.5, cursor: 'pointer' }}>

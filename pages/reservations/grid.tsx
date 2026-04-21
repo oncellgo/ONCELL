@@ -45,9 +45,8 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [description, setDescription] = useState('');
   const [cMember, setCMember] = useState(false);
-  const [cInfo, setCInfo] = useState(false);
   const [cCancel, setCCancel] = useState(false);
-  const allConfirmed = cMember && cInfo && cCancel;
+  const allConfirmed = cMember && cCancel;
   const [shakeDesc, setShakeDesc] = useState(false);
   const [shakeConfirm, setShakeConfirm] = useState(false);
   const shake = (setter: (v: boolean) => void) => { setter(true); setTimeout(() => setter(false), 650); };
@@ -704,8 +703,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
               }}>
                 <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#92400E', letterSpacing: '0.02em' }}>⚠️ 예약전 확인사항</div>
                 {[
-                  { checked: cMember, setter: setCMember, label: '싱가폴한인교회 등록교인입니다.' },
-                  { checked: cInfo, setter: setCInfo, label: '실명과 연락가능한 번호를 올바르게 입력했습니다.' },
+                  { checked: cMember, setter: setCMember, label: '싱가폴한인교회 등록교인이며, 실명과 연락가능한 번호를 올바르게 입력했습니다.' },
                   { checked: cCancel, setter: setCCancel, label: '잘못된 정보를 입력할 경우, 사전통보 없이 예약이 취소될 수 있음을 인지했습니다.' },
                 ].map((item, i) => (
                   <label key={i} style={{
