@@ -772,13 +772,13 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
 
       {pickerOpen && (
         <div
-          onClick={(e) => { if (e.target === e.currentTarget) { setPickerOpen(false); router.push('/'); } }}
+          onClick={(e) => { if (e.target === e.currentTarget) setPickerOpen(false); }}
           style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.55)', zIndex: 90, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
         >
           <div role="dialog" className="modal-card" style={{ width: '100%', maxWidth: 560, maxHeight: '90vh', background: '#fff', borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--color-surface-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
               <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-ink)' }}>예약시간/장소 선택</h3>
-              <button type="button" onClick={() => { setPickerOpen(false); router.push('/'); }} aria-label="닫기" style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-ink-2)' }}>✕</button>
+              <button type="button" onClick={() => setPickerOpen(false)} aria-label="닫기" style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-ink-2)' }}>✕</button>
             </div>
 
             <div style={{ padding: '1rem 1.25rem', overflowY: 'auto', display: 'grid', gap: '1rem' }}>
@@ -1037,7 +1037,7 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
             <div style={{ padding: '0.85rem 1.25rem', borderTop: '1px solid var(--color-surface-border)', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
               <button
                 type="button"
-                onClick={() => { setPickerOpen(false); router.push('/'); }}
+                onClick={() => setPickerOpen(false)}
                 style={{ padding: '0.55rem 1rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', fontWeight: 700, cursor: 'pointer' }}
               >취소</button>
               <button
