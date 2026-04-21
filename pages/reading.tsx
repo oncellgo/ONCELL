@@ -163,7 +163,7 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
           <div style={{ display: 'flex', alignItems: 'stretch', gap: isMobile ? '0.2rem' : '0.3rem' }}>
             <button
               type="button" onClick={goPrev} aria-label="이전 날짜"
-              style={{ padding: isMobile ? '0 0.35rem' : '0 0.45rem', borderRadius: 8, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', cursor: 'pointer', fontSize: isMobile ? '1.05rem' : '0.9rem', fontWeight: 800, flexShrink: 0, minWidth: isMobile ? 32 : 'auto' }}
+              style={{ padding: isMobile ? '0 0.4rem' : '0 0.45rem', borderRadius: 8, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', cursor: 'pointer', fontSize: isMobile ? '1.1rem' : '0.9rem', fontWeight: 800, flexShrink: 0, minWidth: 44, minHeight: 44 }}
             >‹</button>
             <div style={{ flex: 1, minWidth: 0, display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: isMobile ? '0.15rem' : '0.25rem' }}>
               {[0, 1, 2, 3, 4, 5, 6].map((dow) => {
@@ -217,20 +217,22 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
             </div>
             <button
               type="button" onClick={goNext} aria-label="다음 날짜"
-              style={{ padding: isMobile ? '0 0.35rem' : '0 0.45rem', borderRadius: 8, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', cursor: 'pointer', fontSize: isMobile ? '1.05rem' : '0.9rem', fontWeight: 800, flexShrink: 0, minWidth: isMobile ? 32 : 'auto' }}
+              style={{ padding: isMobile ? '0 0.4rem' : '0 0.45rem', borderRadius: 8, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', cursor: 'pointer', fontSize: isMobile ? '1.1rem' : '0.9rem', fontWeight: 800, flexShrink: 0, minWidth: 44, minHeight: 44 }}
             >›</button>
           </div>
 
           {/* 선택된 날짜의 통독 범위 */}
           <div style={{ padding: isMobile ? '0.9rem' : '1.1rem', borderRadius: 12, background: '#ECFCCB', border: '1px solid #D9F09E', display: 'grid', gap: '0.7rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#65A30D', textTransform: 'uppercase' }}>
-                {selectedDate.getFullYear()}.{String(selectedDate.getMonth() + 1).padStart(2, '0')}.{String(selectedDate.getDate()).padStart(2, '0')} ({DAY_LABELS[selectedDate.getDay()]}) 통독
-              </span>
-              {isCompleted && (
-                <span style={{ padding: '0.15rem 0.55rem', borderRadius: 999, background: '#20CD8D', color: '#fff', fontSize: '0.72rem', fontWeight: 800 }}>✓ 완료</span>
-              )}
-              <div style={{ marginLeft: 'auto', display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#65A30D', textTransform: 'uppercase' }}>
+                  {selectedDate.getFullYear()}.{String(selectedDate.getMonth() + 1).padStart(2, '0')}.{String(selectedDate.getDate()).padStart(2, '0')} ({DAY_LABELS[selectedDate.getDay()]}) 통독
+                </span>
+                {isCompleted && (
+                  <span style={{ padding: '0.15rem 0.55rem', borderRadius: 999, background: '#20CD8D', color: '#fff', fontSize: '0.72rem', fontWeight: 800 }}>✓ 완료</span>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: isMobile ? 'stretch' : 'flex-end', gap: '0.25rem', marginLeft: isMobile ? 0 : 'auto' }}>
                 <button
                   type="button"
                   role="switch"
@@ -239,20 +241,23 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                   onClick={toggleComplete}
                   disabled={busy}
                   style={{
-                    display: 'inline-flex',
+                    display: 'flex',
                     alignItems: 'center',
+                    justifyContent: isMobile ? 'center' : 'flex-start',
                     gap: '0.45rem',
-                    padding: '0.3rem 0.7rem 0.3rem 0.4rem',
+                    padding: isMobile ? '0.65rem 1rem' : '0.3rem 0.7rem 0.3rem 0.4rem',
                     borderRadius: 999,
                     border: `1px solid ${isCompleted ? '#20CD8D' : 'var(--color-gray)'}`,
                     background: isCompleted ? '#20CD8D' : '#fff',
                     color: isCompleted ? '#fff' : 'var(--color-ink-2)',
                     cursor: busy ? 'wait' : 'pointer',
                     opacity: busy ? 0.7 : 1,
-                    fontSize: '0.8rem',
+                    fontSize: '0.9rem',
                     fontWeight: 800,
                     letterSpacing: '0.02em',
                     transition: 'background 0.15s ease, border-color 0.15s ease, color 0.15s ease',
+                    minHeight: 48,
+                    width: isMobile ? '100%' : 'auto',
                   }}
                 >
                   <span
@@ -285,7 +290,7 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                   <span>{busy ? '처리 중…' : isCompleted ? '✓ 통독 완료' : '통독 전'}</span>
                 </button>
                 {!isCompleted && !toggleError && (
-                  <span style={{ fontSize: '0.68rem', color: 'var(--color-ink-2)', fontWeight: 600 }}>통독 후 토글하세요</span>
+                  <span style={{ fontSize: '0.68rem', color: 'var(--color-ink-2)', fontWeight: 600, textAlign: isMobile ? 'center' : 'right' }}>통독 후 토글하세요</span>
                 )}
                 {toggleError && (
                   <span style={{ fontSize: '0.7rem', color: '#B91C1C', fontWeight: 700 }}>⚠ {toggleError}</span>

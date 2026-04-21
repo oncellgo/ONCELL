@@ -10,7 +10,8 @@ const LanguageSwitcher = () => {
       value={current}
       onChange={(e) => changeLanguage(e.target.value as 'ko' | 'en' | 'zh')}
       style={{
-        padding: '0.35rem 0.5rem',
+        minHeight: 40,
+        padding: '0.45rem 0.5rem',
         borderRadius: 8,
         border: '1px solid var(--color-gray)',
         background: 'var(--color-surface)',

@@ -241,10 +241,10 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                   onClick={goPrev}
                   aria-label="이전 날짜"
                   style={{
-                    padding: isMobile ? '0 0.35rem' : '0 0.45rem', borderRadius: 8, border: '1px solid var(--color-gray)',
+                    padding: isMobile ? '0 0.4rem' : '0 0.45rem', borderRadius: 8, border: '1px solid var(--color-gray)',
                     background: '#fff', color: 'var(--color-ink-2)', cursor: 'pointer',
-                    fontSize: isMobile ? '1.05rem' : '0.9rem', fontWeight: 800, flexShrink: 0,
-                    minWidth: isMobile ? 32 : 'auto',
+                    fontSize: isMobile ? '1.1rem' : '0.9rem', fontWeight: 800, flexShrink: 0,
+                    minWidth: 44, minHeight: 44,
                   }}
                 >‹</button>
                 <div style={{ flex: 1, minWidth: 0, display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: isMobile ? '0.15rem' : '0.25rem' }}>
@@ -316,16 +316,16 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                   onClick={goNext}
                   aria-label="다음 날짜"
                   style={{
-                    padding: isMobile ? '0 0.35rem' : '0 0.45rem', borderRadius: 8, border: '1px solid var(--color-gray)',
+                    padding: isMobile ? '0 0.4rem' : '0 0.45rem', borderRadius: 8, border: '1px solid var(--color-gray)',
                     background: '#fff', color: 'var(--color-ink-2)', cursor: 'pointer',
-                    fontSize: isMobile ? '1.05rem' : '0.9rem', fontWeight: 800, flexShrink: 0,
-                    minWidth: isMobile ? 32 : 'auto',
+                    fontSize: isMobile ? '1.1rem' : '0.9rem', fontWeight: 800, flexShrink: 0,
+                    minWidth: 44, minHeight: 44,
                   }}
                 >›</button>
               </div>
 
               {selectedVideoId ? (
-                <div style={{ position: 'relative', width: '75%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', background: '#000', margin: '0 auto' }}>
+                <div style={{ position: 'relative', width: isMobile ? '100%' : '75%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', background: '#000', margin: '0 auto' }}>
                   <iframe
                     src={`https://www.youtube.com/embed/${selectedVideoId}`}
                     title={selectedVideo?.title || '새벽기도 영상'}
@@ -336,7 +336,7 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                 </div>
               ) : (
                 <div style={{
-                  position: 'relative', width: '75%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12,
+                  position: 'relative', width: isMobile ? '100%' : '75%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12,
                   background: '#F3F4F6', border: '1px dashed var(--color-gray)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: 'var(--color-ink-2)', fontSize: '1rem', fontWeight: 700,
@@ -370,25 +370,20 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                         fontSize: isMobile ? '0.82rem' : '0.9rem',
                         fontWeight: 800,
                         color: 'var(--color-ink)',
-                        lineHeight: 1.45,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.3rem',
+                        lineHeight: 1.5,
+                        display: 'flex',
+                        alignItems: isMobile ? 'flex-start' : 'center',
+                        flexDirection: isMobile ? 'column' : 'row',
+                        gap: isMobile ? '0.15rem' : '0.3rem',
                         flex: isMobile ? undefined : 1,
                         minWidth: 0,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
                       }}
                     >
                       {videoMeta.quote && (
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>&ldquo;{videoMeta.quote}&rdquo;</span>
+                        <span style={{ wordBreak: 'keep-all', overflowWrap: 'break-word' }}>&ldquo;{videoMeta.quote}&rdquo;</span>
                       )}
                       {videoMeta.pastor && (
-                        <>
-                          <span style={{ color: '#9CA3AF', fontWeight: 700, flexShrink: 0 }}>/</span>
-                          <span style={{ flexShrink: 0 }}>{videoMeta.pastor}</span>
-                        </>
+                        <span style={{ color: 'var(--color-ink-2)', fontWeight: 700, fontSize: isMobile ? '0.76rem' : undefined }}>— {videoMeta.pastor}</span>
                       )}
                     </div>
                   )}
@@ -457,18 +452,22 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
           onClick={() => setNoteOpen(false)}
           style={{
             position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: isMobile ? '0.5rem' : '1rem', zIndex: 1000,
+            display: 'flex',
+            alignItems: isMobile ? 'flex-end' : 'center',
+            justifyContent: 'center',
+            padding: isMobile ? 0 : '1rem', zIndex: 1000,
           }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             className="modal-card"
             style={{
-              width: '100%', maxWidth: 560, background: '#fff', borderRadius: 16,
-              padding: isMobile ? '1rem' : '1.5rem', boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
-              display: 'grid', gap: isMobile ? '0.7rem' : '0.9rem',
-              maxHeight: '92vh', overflowY: 'auto',
+              width: '100%', maxWidth: isMobile ? '100%' : 560, background: '#fff',
+              borderRadius: isMobile ? '16px 16px 0 0' : 16,
+              padding: isMobile ? '1.25rem 1rem 2rem' : '1.5rem',
+              boxShadow: '0 -4px 30px rgba(0,0,0,0.18)',
+              display: 'grid', gap: isMobile ? '0.75rem' : '0.9rem',
+              maxHeight: isMobile ? '92dvh' : '92vh', overflowY: 'auto',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
@@ -499,12 +498,12 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                   value={noteFeelings}
                   onChange={(e) => { setNoteFeelings(e.target.value); setNoteMsg(null); }}
                   placeholder={'오늘 말씀을 통해 받은 은혜·결단·기도제목을 자유롭게 기록해 보세요.\n\n예)\n💭 느낀점 — …\n🌱 결단 — …\n🙏 기도제목 — …'}
-                  rows={12}
+                  rows={isMobile ? 9 : 12}
                   style={{
                     width: '100%', padding: '0.75rem 0.9rem', borderRadius: 10,
-                    border: '1px solid var(--color-gray)', fontSize: '0.93rem', lineHeight: 1.7,
+                    border: '1px solid var(--color-gray)', fontSize: isMobile ? '1rem' : '0.93rem', lineHeight: 1.75,
                     fontFamily: '"Noto Sans KR", "Nanum Gothic", "Malgun Gothic", system-ui, sans-serif',
-                    resize: 'vertical',
+                    resize: 'vertical', boxSizing: 'border-box',
                   }}
                 />
               </div>
@@ -512,24 +511,25 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
             {noteMsg && (
               <div style={{ fontSize: '0.82rem', color: noteMsg.includes('실패') ? '#B91C1C' : '#047857' }}>{noteMsg}</div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column-reverse' : 'row', justifyContent: 'flex-end', gap: '0.5rem' }}>
               <button
                 type="button"
                 onClick={() => setNoteOpen(false)}
-                style={{ padding: isMobile ? '0.7rem 1.1rem' : '0.55rem 1rem', borderRadius: 8, border: '1px solid var(--color-gray)', background: '#fff', cursor: 'pointer', fontWeight: 700, minHeight: 40 }}
+                style={{ padding: '0.7rem 1.1rem', borderRadius: 8, border: '1px solid var(--color-gray)', background: '#fff', cursor: 'pointer', fontWeight: 700, minHeight: 48, width: isMobile ? '100%' : 'auto' }}
               >닫기</button>
               <button
                 type="button"
                 onClick={saveNote}
                 disabled={noteSaving || noteLoading || !hasNoteInput}
                 style={{
-                  padding: isMobile ? '0.7rem 1.3rem' : '0.55rem 1.2rem', borderRadius: 8, border: 'none',
+                  padding: '0.7rem 1.3rem', borderRadius: 8, border: 'none',
                   background: (!hasNoteInput || noteLoading) ? '#D1D5DB' : noteSaving ? '#86EFAC' : '#20CD8D',
                   color: '#fff',
                   cursor: (noteSaving || !hasNoteInput || noteLoading) ? 'not-allowed' : 'pointer',
                   fontWeight: 800,
                   opacity: (!hasNoteInput || noteLoading) ? 0.7 : 1,
-                  minHeight: 40,
+                  minHeight: 48,
+                  width: isMobile ? '100%' : 'auto',
                 }}
               >{noteSaving ? '저장 중…' : '저장'}</button>
             </div>

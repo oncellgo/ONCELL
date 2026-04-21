@@ -158,54 +158,57 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
           </div>
 
           {/* 최근 4개 주일 — 주 이동 네비 없음 */}
-          <div style={{ display: 'flex', alignItems: 'stretch', gap: isMobile ? '0.2rem' : '0.3rem' }}>
-            <div style={{ flex: 1, minWidth: 0, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: isMobile ? '0.15rem' : '0.25rem' }}>
-              {recentSundays.map((key) => {
-                const d = new Date(key);
-                const isSelected = selectedKey === key;
-                const isToday = key === todayKey;
-                return (
-                  <button
-                    key={key} type="button" onClick={() => setSelectedKey(key)}
-                    style={{
-                      padding: isMobile ? '0.25rem 0.05rem' : '0.3rem 0.2rem',
-                      border: isSelected ? '2px solid #20CD8D' : isToday ? '1.5px solid #D9F09E' : '1px solid var(--color-gray)',
-                      borderRadius: 8,
-                      background: isToday ? '#ECFCCB' : '#fff',
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      boxShadow: isSelected ? '0 2px 6px rgba(32,205,141,0.2)' : 'none',
-                      display: 'grid', gap: isMobile ? '0.1rem' : '0.15rem',
-                      minHeight: isMobile ? 44 : 48, minWidth: 0, position: 'relative', overflow: 'hidden',
-                    }}
-                  >
-                    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '0.05rem' : '0.2rem', lineHeight: 1 }}>
-                      <span style={{ fontSize: isMobile ? '0.7rem' : '0.82rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1 }}>
-                        {d.getMonth() + 1}/{d.getDate()}
-                      </span>
-                      <span style={{ fontSize: isMobile ? '0.58rem' : '0.64rem', fontWeight: 700, color: '#DC2626', lineHeight: 1 }}>{(() => { const o = Math.ceil(d.getDate() / 7); return ['첫째주','둘째주','셋째주','넷째주','다섯째주'][o - 1] || '주일'; })()}</span>
-                    </div>
-                    {isToday && (
-                      <span style={{ fontSize: isMobile ? '0.55rem' : '0.6rem', fontWeight: 800, color: '#fff', background: '#20CD8D', padding: '0.05rem 0.35rem', borderRadius: 999, letterSpacing: '0.02em', justifySelf: 'center' }}>오늘</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: isMobile ? '0.3rem' : '0.4rem' }}>
+            {recentSundays.map((key) => {
+              const d = new Date(key);
+              const isSelected = selectedKey === key;
+              const isToday = key === todayKey;
+              const weekOrd = Math.ceil(d.getDate() / 7);
+              const weekLabel = ['첫째주','둘째주','셋째주','넷째주','다섯째주'][weekOrd - 1] || '주일';
+              return (
+                <button
+                  key={key} type="button" onClick={() => setSelectedKey(key)}
+                  aria-label={`${d.getMonth() + 1}월 ${d.getDate()}일 ${weekLabel}`}
+                  aria-pressed={isSelected}
+                  style={{
+                    padding: isMobile ? '0.45rem 0.2rem' : '0.4rem 0.3rem',
+                    border: isSelected ? '2px solid #20CD8D' : isToday ? '1.5px solid #D9F09E' : '1px solid var(--color-gray)',
+                    borderRadius: 8,
+                    background: isSelected ? '#F0FDF9' : isToday ? '#ECFCCB' : '#fff',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                    boxShadow: isSelected ? '0 2px 6px rgba(32,205,141,0.2)' : 'none',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    gap: '0.2rem',
+                    minHeight: isMobile ? 56 : 52, minWidth: 0,
+                  }}
+                >
+                  <span style={{ fontSize: isMobile ? '0.78rem' : '0.84rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1 }}>
+                    {d.getMonth() + 1}/{d.getDate()}
+                  </span>
+                  <span style={{ fontSize: isMobile ? '0.68rem' : '0.72rem', fontWeight: 700, color: '#DC2626', lineHeight: 1 }}>{weekLabel}</span>
+                  {isToday && (
+                    <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#fff', background: '#20CD8D', padding: '0.08rem 0.4rem', borderRadius: 999, letterSpacing: '0.02em' }}>오늘</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          {/* 날짜 + 설교제목 + 성경구절 */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', padding: isMobile ? '0.7rem 0.85rem' : '0.85rem 1.1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: isMobile ? '0.88rem' : '0.98rem', fontWeight: 800, color: 'var(--color-ink)' }}>{selectedLabel}</span>
-              {sermonTitle && <span style={{ fontSize: isMobile ? '0.88rem' : '0.98rem', fontWeight: 700, color: 'var(--color-ink)' }}>· "{sermonTitle}"</span>}
-              {preacher && <span style={{ fontSize: '0.82rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>/ {preacher}</span>}
+          {/* 날짜 + 설교제목 + 설교자 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '0.5rem' : '0.4rem', padding: isMobile ? '0.75rem 0.9rem' : '0.85rem 1.1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
+            <span style={{ fontSize: isMobile ? '0.82rem' : '0.88rem', fontWeight: 700, color: 'var(--color-ink-2)' }}>{selectedLabel}</span>
+            {sermonTitle && (
+              <span style={{ fontSize: isMobile ? '1rem' : '1.08rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1.35 }}>"{sermonTitle}"</span>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {preacher && <span style={{ fontSize: isMobile ? '0.84rem' : '0.88rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>{preacher}</span>}
               {misbaUrl && (
                 <a
                   href={misbaUrl}
                   target="_blank" rel="noopener noreferrer"
-                  title="미스바 파일 바로 열기"
-                  style={{ marginLeft: 'auto', padding: '0.3rem 0.7rem', borderRadius: 999, border: '1px solid #1E40AF', background: '#EFF6FF', color: '#1E40AF', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                  aria-label="미스바 파일 바로 열기"
+                  style={{ padding: '0.45rem 0.85rem', borderRadius: 999, border: '1px solid #1E40AF', background: '#EFF6FF', color: '#1E40AF', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', minHeight: 40 }}
                 >
                   <span>📘</span><span>미스바 보기</span>
                 </a>
@@ -244,13 +247,13 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
                     return (
                       <iframe
                         key={f.n} src={src} title={f.name || `주보 ${f.n + 1}`}
-                        style={{ width: '100%', height: isMobile ? 480 : 720, borderRadius: 12, border: '1px solid var(--color-surface-border)', background: '#fff' }}
+                        style={{ width: '100%', height: isMobile ? 520 : 720, borderRadius: 12, border: '1px solid var(--color-surface-border)', background: '#fff' }}
                       />
                     );
                   }
                   return (
                     <a key={f.n} href={src} target="_blank" rel="noopener noreferrer"
-                      style={{ padding: '0.5rem 0.7rem', borderRadius: 8, border: '1px solid var(--color-surface-border)', background: '#fff', color: 'var(--color-ink)', fontSize: '0.85rem', fontWeight: 700, textDecoration: 'none' }}>
+                      style={{ padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid var(--color-surface-border)', background: '#fff', color: 'var(--color-ink)', fontSize: '0.88rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', minHeight: 44 }}>
                       📎 {f.name || `첨부 ${f.n + 1}`} 다운로드
                     </a>
                   );

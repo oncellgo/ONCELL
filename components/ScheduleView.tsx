@@ -231,13 +231,13 @@ const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId
               <h2 style={{ margin: 0, fontSize: isMobile ? '1.05rem' : '1.15rem', fontWeight: 800, color: '#3F6212', letterSpacing: '-0.01em' }}>📅 {weekLabel} 일정</h2>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                 <button type="button" onClick={() => setScheduleWeekOffset((w) => w - 1)} aria-label="이전주"
-                  style={{ padding: '0.3rem 0.7rem', borderRadius: 10, border: '1px solid #D9F09E', background: '#fff', color: '#65A30D', fontSize: '1.05rem', fontWeight: 800, cursor: 'pointer' }}>‹</button>
-                <span style={{ padding: '0.3rem 0.8rem', borderRadius: 999, background: '#ECFCCB', color: '#3F6212', fontSize: isMobile ? '0.85rem' : '0.9rem', fontWeight: 800 }}>{rangeText}</span>
+                  style={{ minWidth: 44, minHeight: 44, padding: '0.5rem 0.75rem', borderRadius: 10, border: '1px solid #D9F09E', background: '#fff', color: '#65A30D', fontSize: '1.1rem', fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+                <span style={{ padding: isMobile ? '0.4rem 0.65rem' : '0.3rem 0.8rem', borderRadius: 999, background: '#ECFCCB', color: '#3F6212', fontSize: isMobile ? '0.82rem' : '0.9rem', fontWeight: 800, minHeight: isMobile ? 36 : 'auto', display: 'inline-flex', alignItems: 'center' }}>{rangeText}</span>
                 <button type="button" onClick={() => setScheduleWeekOffset((w) => w + 1)} aria-label="다음주"
-                  style={{ padding: '0.3rem 0.7rem', borderRadius: 10, border: '1px solid #D9F09E', background: '#fff', color: '#65A30D', fontSize: '1.05rem', fontWeight: 800, cursor: 'pointer' }}>›</button>
+                  style={{ minWidth: 44, minHeight: 44, padding: '0.5rem 0.75rem', borderRadius: 10, border: '1px solid #D9F09E', background: '#fff', color: '#65A30D', fontSize: '1.1rem', fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
                 {scheduleWeekOffset !== 0 && (
                   <button type="button" onClick={() => setScheduleWeekOffset(0)}
-                    style={{ padding: '0.25rem 0.6rem', borderRadius: 999, border: '1px solid #65A30D', background: '#fff', color: '#65A30D', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer' }}>오늘</button>
+                    style={{ minHeight: 40, padding: '0.35rem 0.7rem', borderRadius: 999, border: '1px solid #65A30D', background: '#fff', color: '#65A30D', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}>오늘</button>
                 )}
               </div>
             </div>
@@ -247,7 +247,7 @@ const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId
                 const isToday = d.key === todayKey;
                 const dowColor = d.dow === 0 ? '#DC2626' : d.dow === 6 ? '#2563EB' : 'var(--color-ink)';
                 return (
-                  <li key={d.key} style={{ display: 'grid', gridTemplateColumns: isMobile ? '72px 1fr' : '96px 1fr', gap: isMobile ? '0.5rem' : '0.75rem', padding: isMobile ? '0.5rem 0.6rem' : '0.6rem 0.8rem', borderRadius: 10, background: isToday ? '#F7FEE7' : '#F9FCFB', border: `1px solid ${isToday ? '#D9F09E' : 'var(--color-surface-border)'}` }}>
+                  <li key={d.key} style={{ display: 'grid', gridTemplateColumns: isMobile ? '68px 1fr' : '96px 1fr', gap: isMobile ? '0.5rem' : '0.75rem', padding: isMobile ? '0.65rem 0.6rem' : '0.6rem 0.8rem', borderRadius: 10, background: isToday ? '#F7FEE7' : '#F9FCFB', border: `1px solid ${isToday ? '#D9F09E' : 'var(--color-surface-border)'}` }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.15rem' }}>
                       <span style={{ fontSize: '0.72rem', fontWeight: 700, color: dowColor }}>{DOWS[d.dow]}요일</span>
                       <span style={{ fontSize: isMobile ? '1rem' : '1.1rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1 }}>{d.date.getMonth() + 1}.{d.date.getDate()}</span>

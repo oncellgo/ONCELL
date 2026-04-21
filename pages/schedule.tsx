@@ -39,7 +39,7 @@ const SchedulePage = ({ communities, events, worshipServices, defaultCommunityId
         rightExtras={systemAdminHref ? (
           <a
             href={`/management?${new URLSearchParams({ ...(profileId ? { profileId } : {}), ...(nickname ? { nickname } : {}), ...(email ? { email } : {}), communityId: defaultCommunityId, isAdmin: '1', menu: '일정관리' }).toString()}`}
-            style={{ padding: isMobile ? '0.4rem 0.6rem' : '0.45rem 0.8rem', borderRadius: 10, background: 'var(--color-primary)', color: '#fff', fontSize: isMobile ? '0.78rem' : '0.85rem', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}
+            style={{ display: 'inline-flex', alignItems: 'center', minHeight: 40, padding: isMobile ? '0.4rem 0.65rem' : '0.45rem 0.8rem', borderRadius: 10, background: 'var(--color-primary)', color: '#fff', fontSize: isMobile ? '0.78rem' : '0.85rem', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}
           >
             {isMobile ? '✏️ 편집' : '✏️ 일정 편집'}
           </a>

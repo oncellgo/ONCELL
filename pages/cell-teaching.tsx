@@ -135,68 +135,75 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
           </div>
 
           {/* 최근 4개 주일 — 주 이동 네비 없음 */}
-          <div style={{ display: 'flex', alignItems: 'stretch', gap: isMobile ? '0.2rem' : '0.3rem' }}>
-            <div style={{ flex: 1, minWidth: 0, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: isMobile ? '0.15rem' : '0.25rem' }}>
-              {recentSundays.map((key) => {
-                const d = new Date(key);
-                const isSelected = selectedKey === key;
-                const isToday = key === todayKey;
-                return (
-                  <button
-                    key={key} type="button" onClick={() => setSelectedKey(key)}
-                    style={{
-                      padding: isMobile ? '0.25rem 0.05rem' : '0.3rem 0.2rem',
-                      border: isSelected ? '2px solid #20CD8D' : isToday ? '1.5px solid #D9F09E' : '1px solid var(--color-gray)',
-                      borderRadius: 8,
-                      background: isToday ? '#ECFCCB' : '#fff',
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      boxShadow: isSelected ? '0 2px 6px rgba(32,205,141,0.2)' : 'none',
-                      display: 'grid', gap: isMobile ? '0.1rem' : '0.15rem',
-                      minHeight: isMobile ? 44 : 48, minWidth: 0, position: 'relative', overflow: 'hidden',
-                    }}
-                  >
-                    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '0.05rem' : '0.2rem', lineHeight: 1 }}>
-                      <span style={{ fontSize: isMobile ? '0.7rem' : '0.82rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1 }}>
-                        {d.getMonth() + 1}/{d.getDate()}
-                      </span>
-                      <span style={{ fontSize: isMobile ? '0.58rem' : '0.64rem', fontWeight: 700, color: '#DC2626', lineHeight: 1 }}>{(() => { const o = Math.ceil(d.getDate() / 7); return ['첫째주','둘째주','셋째주','넷째주','다섯째주'][o - 1] || '주일'; })()}</span>
-                    </div>
-                    {isToday && (
-                      <span style={{ fontSize: isMobile ? '0.55rem' : '0.6rem', fontWeight: 800, color: '#fff', background: '#20CD8D', padding: '0.05rem 0.35rem', borderRadius: 999, letterSpacing: '0.02em', justifySelf: 'center' }}>오늘</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: isMobile ? '0.3rem' : '0.4rem' }}>
+            {recentSundays.map((key) => {
+              const d = new Date(key);
+              const isSelected = selectedKey === key;
+              const isToday = key === todayKey;
+              const weekOrd = Math.ceil(d.getDate() / 7);
+              const weekLabel = ['첫째주','둘째주','셋째주','넷째주','다섯째주'][weekOrd - 1] || '주일';
+              return (
+                <button
+                  key={key} type="button" onClick={() => setSelectedKey(key)}
+                  aria-label={`${d.getMonth() + 1}월 ${d.getDate()}일 ${weekLabel}`}
+                  aria-pressed={isSelected}
+                  style={{
+                    padding: isMobile ? '0.45rem 0.2rem' : '0.4rem 0.3rem',
+                    border: isSelected ? '2px solid #20CD8D' : isToday ? '1.5px solid #D9F09E' : '1px solid var(--color-gray)',
+                    borderRadius: 8,
+                    background: isSelected ? '#F0FDF9' : isToday ? '#ECFCCB' : '#fff',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                    boxShadow: isSelected ? '0 2px 6px rgba(32,205,141,0.2)' : 'none',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    gap: '0.2rem',
+                    minHeight: isMobile ? 56 : 52, minWidth: 0,
+                  }}
+                >
+                  <span style={{ fontSize: isMobile ? '0.78rem' : '0.84rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1 }}>
+                    {d.getMonth() + 1}/{d.getDate()}
+                  </span>
+                  <span style={{ fontSize: isMobile ? '0.68rem' : '0.72rem', fontWeight: 700, color: '#DC2626', lineHeight: 1 }}>{weekLabel}</span>
+                  {isToday && (
+                    <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#fff', background: '#20CD8D', padding: '0.08rem 0.4rem', borderRadius: 999, letterSpacing: '0.02em' }}>오늘</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           {/* 날짜 + 설교제목 + 성경구절 */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', padding: isMobile ? '0.7rem 0.85rem' : '0.85rem 1.1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: isMobile ? '0.88rem' : '0.98rem', fontWeight: 800, color: 'var(--color-ink)' }}>{selectedLabel}</span>
-              {sermonTitle && <span style={{ fontSize: isMobile ? '0.88rem' : '0.98rem', fontWeight: 700, color: 'var(--color-ink)' }}>· "{sermonTitle}"</span>}
-              {preacher && <span style={{ fontSize: '0.82rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>/ {preacher}</span>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '0.5rem' : '0.45rem', padding: isMobile ? '0.75rem 0.9rem' : '0.85rem 1.1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
+            {/* 날짜 + 유튜브 설교자 (보조 정보) */}
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'baseline', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: isMobile ? '0.82rem' : '0.88rem', fontWeight: 700, color: 'var(--color-ink-2)' }}>{selectedLabel}</span>
+              {preacher && <span style={{ fontSize: isMobile ? '0.82rem' : '0.86rem', color: 'var(--color-ink-2)', fontWeight: 600 }}>{preacher}</span>}
             </div>
+            {/* 구역예배지 설교제목 (강조) */}
+            {guide?.found && guide.sermonTitle && (
+              <div style={{ fontSize: isMobile ? '1rem' : '1.08rem', fontWeight: 800, color: '#3F6212', lineHeight: 1.4, wordBreak: 'keep-all', overflowWrap: 'break-word' }}>
+                {guide.sermonTitle}
+              </div>
+            )}
+            {/* 유튜브 제목에서 추출한 설교제목 — 구역예배지 없을 때만 */}
+            {(!guide?.found || !guide.sermonTitle) && sermonTitle && (
+              <div style={{ fontSize: isMobile ? '1rem' : '1.08rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1.4, wordBreak: 'keep-all', overflowWrap: 'break-word' }}>
+                "{sermonTitle}"
+              </div>
+            )}
+            {/* 성경참조 + PDF 버튼 */}
             {guide?.found && (guide.normalizedRef || guide.biblePassage) && (
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <div style={{ display: 'grid', gap: '0.15rem', flex: '1 1 auto', minWidth: 0 }}>
-                  {guide.sermonTitle && (
-                    <div style={{ fontSize: isMobile ? '1rem' : '1.08rem', fontWeight: 800, color: '#3F6212', lineHeight: 1.3 }}>
-                      {guide.sermonTitle}
-                    </div>
-                  )}
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: isMobile ? '0.82rem' : '0.88rem', fontWeight: 700, color: 'var(--color-ink-2)' }}>
-                    <span aria-hidden>📖</span>
-                    <span>{guide.normalizedRef || guide.biblePassage}</span>
-                  </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: isMobile ? '0.86rem' : '0.9rem', fontWeight: 700, color: 'var(--color-ink-2)' }}>
+                  <span aria-hidden>📖</span>
+                  <span>{guide.normalizedRef || guide.biblePassage}</span>
                 </div>
                 {guide.idx && (
                   <a
                     href={`/api/bulletin-file?idx=${encodeURIComponent(guide.idx)}&n=0`}
                     target="_blank" rel="noopener noreferrer"
-                    title="구역예배지 PDF 바로 열기"
-                    style={{ marginLeft: 'auto', padding: '0.3rem 0.7rem', borderRadius: 999, border: '1px solid #1E40AF', background: '#EFF6FF', color: '#1E40AF', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                    aria-label="구역예배지 PDF 원문 열기"
+                    style={{ padding: '0.45rem 0.9rem', borderRadius: 999, border: '1px solid #1E40AF', background: '#EFF6FF', color: '#1E40AF', fontSize: '0.84rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', minHeight: 40, whiteSpace: 'nowrap' }}
                   >
                     <span>📘</span><span>구역예배지 원문보기</span>
                   </a>

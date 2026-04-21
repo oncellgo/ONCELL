@@ -168,7 +168,8 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: isMobile ? '0.5rem 0.85rem' : '0.6rem 1.1rem',
+            minHeight: 44,
+            padding: isMobile ? '0.5rem 0.9rem' : '0.6rem 1.1rem',
             borderRadius: 'var(--radius-md)',
             background: 'var(--color-primary)',
             color: '#ffffff',
@@ -199,12 +200,12 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.4rem',
-            padding: '0.35rem 0.85rem',
+            padding: isMobile ? '0.3rem 0.7rem' : '0.35rem 0.85rem',
             borderRadius: 999,
             background: adminAccent ? '#BEF264' : 'var(--color-primary-tint)',
             color: adminAccent ? '#3F6212' : 'var(--color-primary-deep)',
             fontWeight: 800,
-            fontSize: '0.92rem',
+            fontSize: isMobile ? '0.85rem' : '0.92rem',
           }}>
             {badge}
           </span>

@@ -107,12 +107,16 @@ const MenuBar = ({ profileId, nickname, email }: Props) => {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: isMobile ? '0.3rem' : '0.45rem',
-        padding: isMobile ? '0.35rem 0.6rem' : '0.4rem 0.85rem',
+        gap: isMobile ? '0.35rem' : '0.45rem',
+        padding: isMobile ? '0.4rem 0.6rem' : '0.4rem 0.85rem',
         background: 'transparent',
         overflowX: 'auto',
+        // 스크롤바 숨김 (WebKit + 표준 모두)
+        scrollbarWidth: 'none',
+        WebkitOverflowScrolling: 'touch',
         whiteSpace: 'nowrap',
-        justifyContent: 'center',
+        // 모바일: 항목이 많으면 스크롤되도록 stretch 금지; 데스크톱: 중앙 정렬
+        justifyContent: isMobile ? 'flex-start' : 'center',
         position: 'relative',
         zIndex: 15,
       }}
@@ -129,7 +133,9 @@ const MenuBar = ({ profileId, nickname, email }: Props) => {
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: isMobile ? '0.4rem 0.7rem' : '0.5rem 1rem',
+              // 모바일 터치 타겟 44px 확보 (padding 상하 0.55rem ≈ 약 9px → 내용 포함 44px+)
+              minHeight: 44,
+              padding: isMobile ? '0.55rem 0.75rem' : '0.5rem 1rem',
               borderRadius: 999,
               background: active ? 'var(--color-primary)' : 'var(--color-primary-tint)',
               color: active ? '#fff' : 'var(--color-primary-deep)',
@@ -140,7 +146,7 @@ const MenuBar = ({ profileId, nickname, email }: Props) => {
               whiteSpace: 'nowrap',
               flexShrink: 0,
               boxShadow: active ? '0 4px 10px rgba(32, 205, 141, 0.28)' : 'none',
-              transition: 'background 0.15s ease, color 0.15s ease, transform 0.15s ease',
+              transition: 'background 0.15s ease, color 0.15s ease',
             }}
           >
             {item.label}

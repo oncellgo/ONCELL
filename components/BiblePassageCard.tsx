@@ -73,7 +73,7 @@ const BiblePassageCard = ({ reference, koText, enText, passageText }: Props) => 
   ];
 
   const renderBlocks = (blocks: Block[]) => (
-    <div style={{ display: 'grid', gap: '0.5rem', color: 'var(--color-ink)', fontSize: isMobile ? '0.92rem' : '0.97rem', lineHeight: isMobile ? 1.75 : 1.85 }}>
+    <div style={{ display: 'grid', gap: '0.5rem', color: 'var(--color-ink)', fontSize: isMobile ? '1rem' : '0.97rem', lineHeight: isMobile ? 1.85 : 1.85 }}>
       {blocks.map((b, i) => {
         const prev = i > 0 ? blocks[i - 1] : null;
         const showDivider = !!(b.verse && prev?.verse);
@@ -145,15 +145,16 @@ const BiblePassageCard = ({ reference, koText, enText, passageText }: Props) => 
                     onClick={() => !opt.disabled && setLang(opt.key)}
                     disabled={opt.disabled}
                     style={{
-                      padding: '0.2rem 0.6rem',
+                      padding: isMobile ? '0.5rem 0.75rem' : '0.2rem 0.6rem',
                       border: 'none',
                       background: active ? '#65A30D' : '#F7FEE7',
                       color: active ? '#fff' : opt.disabled ? '#B7C5A3' : '#3F6212',
-                      fontSize: '0.72rem',
+                      fontSize: isMobile ? '0.78rem' : '0.72rem',
                       fontWeight: 800,
                       cursor: opt.disabled ? 'not-allowed' : 'pointer',
                       opacity: opt.disabled ? 0.55 : 1,
                       letterSpacing: '0.02em',
+                      minHeight: isMobile ? 40 : undefined,
                     }}
                   >{opt.label}</button>
                 );

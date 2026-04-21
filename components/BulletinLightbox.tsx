@@ -111,9 +111,9 @@ const BulletinLightbox = ({ images, initialIndex = 0, onClose, title }: Props) =
           >+</button>
           <button
             type="button" onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
-            aria-label="초기 크기"
-            style={{ ...btnStyle, fontSize: '0.72rem' }}
-          >초기화</button>
+            aria-label="원래 크기로"
+            style={{ ...btnStyle, fontSize: '0.8rem' }}
+          >1:1</button>
           <a
             href={img.src} target="_blank" rel="noopener noreferrer"
             title="새 창에서 원본 열기"
@@ -196,7 +196,7 @@ const BulletinLightbox = ({ images, initialIndex = 0, onClose, title }: Props) =
           </div>
         )}
         <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)' }}>
-          더블클릭·핀치 확대 / 드래그 이동 / ← → 페이지 / ESC 닫기
+          핀치·더블클릭 확대 / ESC 닫기
         </span>
       </div>
     </div>
@@ -204,7 +204,7 @@ const BulletinLightbox = ({ images, initialIndex = 0, onClose, title }: Props) =
 };
 
 const btnStyle: React.CSSProperties = {
-  minWidth: 32, height: 32, padding: '0 0.5rem',
+  minWidth: 40, height: 40, padding: '0 0.6rem',
   borderRadius: 8, border: '1px solid rgba(255,255,255,0.25)',
   background: 'rgba(255,255,255,0.08)', color: '#fff',
   fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
