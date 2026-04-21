@@ -111,11 +111,13 @@ type Props = {
   selectedSlots?: Map<string, Set<number>>;
   alternateSlots?: Map<string, Set<number>>;  // picker에서 함께 선택된 "대체" 장소 — 비활성 표시, 클릭 시 swap
   onSlotClick?: (venue: Venue, slotMin: number, blocked: boolean) => void;
+  onSlotPointerDown?: (venue: Venue, slotMin: number, blocked: boolean) => void;
+  onSlotPointerEnter?: (venue: Venue, slotMin: number, blocked: boolean) => void;
   renderRowExtra?: (venue: Venue) => React.ReactNode;
   showActionColumn?: boolean;
 };
 
-const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate, slotMin = SLOT_MIN, availableStart = '06:00', availableEnd = '22:00', selectedSlots, alternateSlots, onSlotClick, renderRowExtra, showActionColumn = false }: Props) => {
+const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate, slotMin = SLOT_MIN, availableStart = '06:00', availableEnd = '22:00', selectedSlots, alternateSlots, onSlotClick, onSlotPointerDown, onSlotPointerEnter, renderRowExtra, showActionColumn = false }: Props) => {
   const isMobile = useIsMobile();
   const blockedByVenue = computeBlockedSlotsForDate(groups, selectedDate);
 
@@ -309,8 +311,14 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                         type="button"
                         disabled={!clickable}
                         onClick={() => onSlotClick && onSlotClick(v, m, blocked)}
+                        onPointerDown={onSlotPointerDown ? (e) => {
+                          // 터치/마우스 드래그 시 브라우저 기본 selection/scroll 방지
+                          try { (e.currentTarget as HTMLButtonElement).releasePointerCapture(e.pointerId); } catch {}
+                          onSlotPointerDown(v, m, blocked);
+                        } : undefined}
+                        onPointerEnter={onSlotPointerEnter ? () => onSlotPointerEnter(v, m, blocked) : undefined}
                         title={titleParts.join(' | ')}
-                        style={{ width: '100%', height: blocked ? span * 20 : 20, border: isAlternate ? '1.5px dashed #20CD8D' : 'none', background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: '0.6rem', fontWeight: 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box' }}
+                        style={{ width: '100%', height: blocked ? span * 20 : 20, border: isAlternate ? '1.5px dashed #20CD8D' : 'none', background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: '0.6rem', fontWeight: 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box', touchAction: 'none', userSelect: 'none' }}
                       >
                         {isConflict ? '예약불가' : isSelected ? '예약가능' : isAlternate ? '○' : (blocked ? (
                           showStacked ? (

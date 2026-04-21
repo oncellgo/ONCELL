@@ -1,9 +1,9 @@
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import SubHeader from '../../components/SubHeader';
-import VenueGrid, { Venue, Block, BlockGroup, dateKey } from '../../components/VenueGrid';
+import VenueGrid, { Venue, Block, BlockGroup, dateKey, computeBlockedSlotsForDate } from '../../components/VenueGrid';
 import DateTimePicker from '../../components/DateTimePicker';
 import { getSystemAdminHref } from '../../lib/adminGuard';
 import { useIsMobile } from '../../lib/useIsMobile';
@@ -72,7 +72,91 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
     return m;
   }, [activeVenueId, activeSlots]);
 
+  // ---- 드래그 선택 지원 ----
+  // pointerDown 으로 anchor 기록 → pointerEnter 로 range 확장 → window pointerup 으로 종료.
+  // 이동이 있었으면 draggedRef=true 로 뒤따라오는 onClick 을 무시 (double-mutation 방지).
+  const dragAnchorRef = useRef<number | null>(null);
+  const dragVenueIdRef = useRef<string | null>(null);
+  const draggedRef = useRef(false);
+
+  // 현재 날짜·장소의 '블럭(예약/교회일정/블럭)' 슬롯 Map — 드래그 범위에서 제외용
+  const blockedSlotMap = useMemo(() => {
+    const map = new Map<string, Set<number>>();
+    const [py, pm, pd] = selectedDate.split('-').map(Number);
+    if (!py || !pm || !pd) return map;
+    const endOfDay = 24 * 60;
+    // adhoc blocks + 펼친 이벤트 블럭
+    for (const b of blocks) {
+      const bs = new Date(b.startAt).getTime();
+      const be = b.endAt ? new Date(b.endAt).getTime() : Number.POSITIVE_INFINITY;
+      for (let mm = 0; mm < endOfDay; mm += slotMin) {
+        const slotStart = new Date(py, pm - 1, pd, Math.floor(mm / 60), mm % 60).getTime();
+        const slotEnd = slotStart + slotMin * 60000;
+        if (bs < slotEnd && be > slotStart) {
+          if (!map.has(b.venueId)) map.set(b.venueId, new Set());
+          map.get(b.venueId)!.add(mm);
+        }
+      }
+    }
+    // 반복 block groups
+    const grpMap = computeBlockedSlotsForDate(groups, selectedDate);
+    for (const [vid, mins] of grpMap.entries()) {
+      if (!map.has(vid)) map.set(vid, new Set());
+      for (const mm of mins) map.get(vid)!.add(mm);
+    }
+    return map;
+  }, [blocks, groups, selectedDate, slotMin]);
+
+  useEffect(() => {
+    const onUp = () => {
+      if (dragAnchorRef.current !== null) {
+        dragAnchorRef.current = null;
+        dragVenueIdRef.current = null;
+        // onClick 이 pointerup 바로 뒤에 발생하므로 약간 지연 후 초기화
+        setTimeout(() => { draggedRef.current = false; }, 60);
+      }
+    };
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+    return () => {
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+    };
+  }, []);
+
+  const handleSlotPointerDown = (venue: Venue, startMin: number, blocked: boolean) => {
+    if (blocked) return;
+    dragAnchorRef.current = startMin;
+    dragVenueIdRef.current = venue.id;
+    draggedRef.current = false;
+  };
+
+  const handleSlotPointerEnter = (venue: Venue, startMin: number, _blocked: boolean) => {
+    if (dragAnchorRef.current === null) return;
+    if (dragVenueIdRef.current !== venue.id) return;
+    draggedRef.current = true;
+    const anchor = dragAnchorRef.current;
+    const blockedForVenue = blockedSlotMap.get(venue.id) || new Set<number>();
+    const next = new Set<number>([anchor]);
+    // anchor 에서 drag 위치까지 연속 확장 — 첫 블럭 셀을 만나면 거기서 멈춤
+    if (startMin > anchor) {
+      for (let mm = anchor + slotMin; mm <= startMin; mm += slotMin) {
+        if (blockedForVenue.has(mm)) break;
+        next.add(mm);
+      }
+    } else if (startMin < anchor) {
+      for (let mm = anchor - slotMin; mm >= startMin; mm -= slotMin) {
+        if (blockedForVenue.has(mm)) break;
+        next.add(mm);
+      }
+    }
+    setActiveVenueId(venue.id);
+    setActiveSlots(next);
+  };
+
   const handleSlotClick = (venue: Venue, startMin: number, blocked: boolean) => {
+    // 드래그 직후 onClick 은 무시 (pointerDown+enter 로 이미 선택이 갱신됐음)
+    if (draggedRef.current) return;
     if (blocked) return;  // 예약/교회일정/블럭 셀은 클릭 무효
 
     // 다른 장소 클릭 → 새 선택으로 교체 (첫 셀부터 시작)
@@ -391,6 +475,8 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                 availableEnd={availableEnd}
                 selectedSlots={selectedSlotsMap}
                 onSlotClick={handleSlotClick}
+                onSlotPointerDown={handleSlotPointerDown}
+                onSlotPointerEnter={handleSlotPointerEnter}
               />
 
               {/* 선택 요약 + 예약하기 바로가기 */}
@@ -418,7 +504,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                 </div>
               ) : (
                 <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-ink-2)', lineHeight: 1.55 }}>
-                  💡 <strong>팁:</strong> 빈 시간(연라임)을 클릭해서 토글 선택할 수 있어요. 예약을 원하는 시간대의 연결된 블럭들을 순서대로 선택하세요.
+                  💡 <strong>팁:</strong> 빈 시간(연라임)을 <strong>클릭</strong>하거나 <strong>드래그</strong>해서 원하는 시간대를 선택하세요. 예약된 시간은 건너뛸 수 없습니다.
                 </p>
               )}
               <p style={{ margin: 0, fontSize: '0.76rem', color: 'var(--color-ink-2)' }}>
