@@ -395,7 +395,7 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
       const summary = selectedVenues
         .map((v) => `• ${pickerDate} ${sh}:${sm}~${eh}:${em} · ${v.floor} ${v.name}`)
         .join('\n');
-      alert(`예약이 완료되었습니다.\n\n${summary}\n\n예약현황 페이지로 이동합니다.`);
+      alert(`예약이 완료되었습니다.\n\n${summary}\n\n나의 장소예약 페이지로 이동합니다.`);
 
       const qs = new URLSearchParams();
       if (effectiveProfileId) qs.set('profileId', effectiveProfileId);

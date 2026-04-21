@@ -79,7 +79,7 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
   return (
     <>
       <Head>
-        <title>KCIS | 나의 예약현황</title>
+        <title>KCIS | 나의 장소예약</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
@@ -94,7 +94,7 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
       <main style={{ maxWidth: 840, margin: '0 auto', padding: isMobile ? '1rem 0.6rem 4rem' : '1.5rem 1rem 5rem', display: 'grid', gap: '1.25rem' }}>
         <section style={{ padding: isMobile ? '0.85rem' : '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>나의 예약현황</h2>
+            <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>나의 장소예약</h2>
             <Link
               href={`/reservation${effectiveProfileId ? `?profileId=${encodeURIComponent(effectiveProfileId)}` : ''}`}
               style={{ padding: '0.5rem 1rem', borderRadius: 999, border: '1px solid var(--color-primary)', background: '#fff', color: 'var(--color-primary)', fontWeight: 800, fontSize: '0.86rem', textDecoration: 'none' }}
