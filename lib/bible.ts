@@ -138,7 +138,20 @@ export const parseReference = (ref: string): ParsedReference | null => {
   const book = bookMatch[1];
   const rest = (bookMatch[2] || '').trim();
 
-  // "26장 34-48절" 형태
+  // "M-N장" (장 범위 전체)
+  const chapterRangeKorean = /^(\d{1,3})\s*[-~]\s*(\d{1,3})\s*장$/.exec(rest);
+  if (chapterRangeKorean) {
+    return {
+      book,
+      startChapter: Number(chapterRangeKorean[1]),
+      startVerse: 1,
+      endChapter: Number(chapterRangeKorean[2]),
+      endVerse: 200,
+      raw: ref,
+    };
+  }
+
+  // "26장 34-48절" 형태 (단일 장 + 절 선택)
   const chapterVerseKorean = /^(\d{1,3})\s*장\s*(?:(\d{1,3})(?:\s*[-~]\s*(\d{1,3}))?\s*절)?$/.exec(rest);
   if (chapterVerseKorean) {
     const c = Number(chapterVerseKorean[1]);

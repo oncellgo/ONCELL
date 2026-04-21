@@ -162,6 +162,12 @@
 - **특정 회차 수정**: `PATCH /api/events` body `{ seriesId, occurrenceDate, fields }` → `overrides[date]` 부분 병합
 - `ICS` export는 `RRULE:...` 문자열로 구독자 측에서 펼침
 
+### 4.6 예약 인당 한도 (`reservationLimitMode: 'perUser'`)
+- **서버**: POST `/api/events`에서 `type=reservation`이고 한도 모드일 때 해당 프로필의 **미래** 예약 수를 집계 → `reservationLimitPerUser` 초과 시 **409/429 반환** (지난 예약은 자동 제외)
+- **클라이언트 (`/reservation`)**: 페이지 진입 시 `/api/events?type=reservation&profileId=...` 로 내 미래 예약 조회 → 한도 도달이면 **"예약시간/장소 선택" 모달 대신** "예약 한도 도달" 모달을 띄워 내 예약 목록을 노출
+  - 각 행: **수정**(제목만, PATCH) / **삭제**(DELETE, occurrence면 `scope=one`·단일은 `scope=all`)
+  - 삭제로 한도 아래로 내려가면 picker 모달로 자동 전환
+
 ---
 
 ## 5. 장소관리 (`VenueManager`)
@@ -233,6 +239,10 @@ data/
   worship-services.json        # 예배 일정(별도 유지)
 ```
 
+서브에이전트 · 스킬:
+- `.claude/agents/{ux-designer,service-planner,tech-optimizer}.md` — 역할 정의
+- `.claude/skills/{ux-review,service-plan,tech-audit}/SKILL.md` — 각 역할의 실행 프로토콜 (Skill 도구로 호출)
+
 컴포넌트 주요 파일:
 - `components/VenueGrid.tsx` — 공용 시간표(on-demand 계산)
 - `components/VenueManager.tsx` — 관리자 차단 UI (WeeklyBlockCard, BlockGroupsCard)
@@ -263,10 +273,12 @@ data/
 - [x] ICS export → `RRULE:...` 직렬화
 - [x] plan.md 현행화
 
+- [x] `/reservation` 빈 슬롯 선택 → POST `/api/events` with `type: 'reservation'` (연속 슬롯 rowSpan 묶음)
+- [x] 예약 시 교회일정과의 **충돌 감지** (동일 venueId/location + 시간 겹침, 409 반환)
+- [x] **인당 예약 한도 모달** (`/reservation`): 한도 도달 시 내 예약 목록으로 전환, 제목 수정·삭제 가능
+- [x] **VenueGrid 블럭 색상 분기** (`kind: 'event' | 'reservation' | 'block'`): 교회행사=빨강(#DC2626), 예약=중간회색(#9CA3AF), 관리자차단=어두운회색(#4B5563)
+- [x] **대시보드 재구성**: 이번주 교회일정·다가오는 나의 장소예약 통합 DB 실데이터 연결, 미구현 placeholder(성경통독·셀그룹) 제거, dead code 제거
+- [x] **management 캘린더 동적 range**: `calView` 변화에 따라 `/api/events?from=&to=` ±1개월 범위로 재조회
+
 ### 남은 작업
-- [ ] `/reservation`에 **예약 생성 UI** (빈 슬롯 클릭 → 제목/시간 → POST `/api/events` with `type: 'reservation'`)
-- [ ] 예약 시 교회일정과의 **충돌 감지** (동일 venueId + 시간 겹침 확인, 409 반환)
-- [ ] 관리자 이벤트를 venue grid에 **시각적으로 구분** 표시 (사용자 예약 vs 교회 행사)
-- [ ] 대시보드의 "나의 장소예약"을 통합 DB에서 조회
-- [ ] management.tsx 캘린더가 뷰 월에 맞춰 **동적 range**로 `/api/events?from=&to=` 재조회 (현재 default ±2/±3개월)
-- [ ] worship-services.json을 events.json으로 통합 마이그레이션 (bulletin template은 worship-services 유지)
+- [ ] **worship-services → events 마이그레이션 (부분 완료)**: `scripts/migrate-worship-to-events.mjs` 스크립트 준비됨 (dry-run 확인: 5건 대상). 실행 전 `pages/schedule.tsx` 및 `ScheduleView`에서 worship_services 중복 표시 제거 코디네이션 필요

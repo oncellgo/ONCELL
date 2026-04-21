@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>KCIS 서브에이전트 담당 영역 Org Chart</title>
+<style>
+  body { margin:0; padding:24px; background:#F7FEE7; font-family: 'Noto Sans KR','Nanum Gothic',sans-serif; color:#111; }
+  h1 { margin:0 0 4px; font-size:18px; }
+  .sub { color:#6b7280; font-size:12px; margin-bottom:16px; }
+</style>
+</head>
+<body>
+<h1>KCIS 서브에이전트 담당 영역 Org Chart</h1>
+<div class="sub">민트(#20CD8D) = service-planner · 라임(#65A30D) = ux-designer · 청록(#0EA5E9) = tech-optimizer · 회색 = 공동 소유</div>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1480 1180" width="1480" height="1180" style="background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.08)">
+  <defs>
+    <style><![CDATA[
+      .title { font: 600 13px 'Noto Sans KR',sans-serif; fill:#111; }
+      .small { font: 500 11px 'Noto Sans KR',sans-serif; fill:#374151; }
+      .mini  { font: 500 10px 'Noto Sans KR',sans-serif; fill:#4b5563; }
+      .root  { font: 700 16px 'Noto Sans KR',sans-serif; fill:#fff; }
+      .agent { font: 700 14px 'Noto Sans KR',sans-serif; fill:#fff; }
+      .sect  { font: 700 12px 'Noto Sans KR',sans-serif; fill:#111; }
+      .line  { stroke:#94a3b8; stroke-width:1.5; fill:none; }
+      .line-mint  { stroke:#20CD8D; stroke-width:1.5; fill:none; }
+      .line-lime  { stroke:#65A30D; stroke-width:1.5; fill:none; }
+      .line-cyan  { stroke:#0EA5E9; stroke-width:1.5; fill:none; }
+    ]]></style>
+  </defs>
+
+  <!-- Root -->
+  <rect x="620" y="20" width="240" height="54" rx="12" fill="#0f172a"/>
+  <text x="740" y="44" text-anchor="middle" class="root">KCIS 앱</text>
+  <text x="740" y="62" text-anchor="middle" class="small" fill="#cbd5e1">Next.js 16 · Pages Router</text>
+
+  <!-- Connectors from root to 3 agents -->
+  <path class="line-mint" d="M740,74 C740,110 240,110 240,150" />
+  <path class="line-lime" d="M740,74 C740,110 740,110 740,150" />
+  <path class="line-cyan" d="M740,74 C740,110 1240,110 1240,150" />
+
+  <!-- service-planner -->
+  <rect x="80" y="150" width="320" height="60" rx="14" fill="#20CD8D"/>
+  <text x="240" y="178" text-anchor="middle" class="agent">service-planner</text>
+  <text x="240" y="198" text-anchor="middle" class="small" fill="#064e3b">참여 · 도메인 룰 · 기획</text>
+
+  <!-- ux-designer -->
+  <rect x="580" y="150" width="320" height="60" rx="14" fill="#65A30D"/>
+  <text x="740" y="178" text-anchor="middle" class="agent">ux-designer</text>
+  <text x="740" y="198" text-anchor="middle" class="small" fill="#1a2e05">UI · 레이아웃 · 접근성</text>
+
+  <!-- tech-optimizer -->
+  <rect x="1080" y="150" width="320" height="60" rx="14" fill="#0EA5E9"/>
+  <text x="1240" y="178" text-anchor="middle" class="agent">tech-optimizer</text>
+  <text x="1240" y="198" text-anchor="middle" class="small" fill="#082f49">성능 · DB · 캐시 · 배포</text>
+
+  <!-- ===== service-planner children ===== -->
+  <!-- connector -->
+  <path class="line-mint" d="M240,210 L240,240 M140,240 L340,240 M140,240 L140,270 M340,240 L340,270"/>
+
+  <!-- 참여 동선 -->
+  <rect x="20" y="270" width="240" height="280" rx="10" fill="#F0FDF4" stroke="#20CD8D"/>
+  <text x="140" y="292" text-anchor="middle" class="sect">① 참여 동선</text>
+  <text x="32" y="316" class="small">• / 랜딩 (6개 카드)</text>
+  <text x="32" y="336" class="small">• /dashboard 로그인 착지</text>
+  <text x="32" y="356" class="small">• /qt 오늘의 큐티</text>
+  <text x="46" y="374" class="mini">– YouTube 새벽영상</text>
+  <text x="46" y="390" class="mini">– 매일성경 본문</text>
+  <text x="46" y="406" class="mini">– 묵상노트</text>
+  <text x="32" y="428" class="small">• /schedule 주간·월간</text>
+  <text x="32" y="448" class="small">• /reservation 공개조회</text>
+  <text x="32" y="468" class="small">• /reservations/my</text>
+  <text x="32" y="488" class="small">• 인증 분기</text>
+  <text x="46" y="506" class="mini">– /auth/complete</text>
+  <text x="46" y="522" class="mini">– /auth/pending · rejected</text>
+  <text x="46" y="538" class="mini">– [provider]/callback</text>
+
+  <!-- 도메인 룰 -->
+  <rect x="280" y="270" width="240" height="280" rx="10" fill="#F0FDF4" stroke="#20CD8D"/>
+  <text x="400" y="292" text-anchor="middle" class="sect">② 도메인 정책 룰</text>
+  <text x="292" y="316" class="small">• 가입 승인(auto/admin)</text>
+  <text x="292" y="336" class="small">• 필수정보 (실명·+65)</text>
+  <text x="292" y="356" class="small">• scope/type 권한</text>
+  <text x="306" y="374" class="mini">– event: 관리자만</text>
+  <text x="306" y="390" class="mini">– reservation: 로그인</text>
+  <text x="292" y="412" class="small">• 예약 충돌 규칙(설계)</text>
+  <text x="292" y="432" class="small">• 반복 규칙(RRULE)</text>
+  <text x="292" y="452" class="small">• 블럭 vs 예약 구분</text>
+  <text x="292" y="472" class="small">• 기타설정 4카드 정책</text>
+  <text x="306" y="490" class="mini">– 가용시간 · 슬롯 · 승인</text>
+  <text x="292" y="512" class="small">• 참여 장치 (여지)</text>
+  <text x="306" y="530" class="mini">– 스트릭 · 셀그룹 · 알림</text>
+
+  <!-- ===== ux-designer children ===== -->
+  <path class="line-lime" d="M740,210 L740,240 M520,240 L960,240 M520,240 L520,270 M740,240 L740,270 M960,240 L960,270"/>
+
+  <!-- 네비 -->
+  <rect x="540" y="270" width="200" height="280" rx="10" fill="#FEFCE8" stroke="#65A30D"/>
+  <text x="640" y="292" text-anchor="middle" class="sect">③ 네비 체계</text>
+  <text x="552" y="316" class="small">• TopNav (/)</text>
+  <text x="566" y="334" class="mini">– 로고/로그인/lang</text>
+  <text x="552" y="356" class="small">• SubHeader</text>
+  <text x="566" y="374" class="mini">– 홈/주보/영상/예약</text>
+  <text x="566" y="390" class="mini">– 일정/큐티 6개</text>
+  <text x="552" y="412" class="small">• AdminTabBar</text>
+  <text x="566" y="430" class="mini">– sticky · 5탭 · 한 줄</text>
+  <text x="552" y="452" class="small">• 사용자 칩</text>
+  <text x="566" y="470" class="mini">– localStorage 복구</text>
+  <text x="552" y="492" class="small">• 로그아웃 키 제거</text>
+
+  <!-- 공통 UI -->
+  <rect x="760" y="270" width="200" height="280" rx="10" fill="#FEFCE8" stroke="#65A30D"/>
+  <text x="860" y="292" text-anchor="middle" class="sect">④ 공통 UI / 팔레트</text>
+  <text x="772" y="316" class="small">• 민트 #20CD8D</text>
+  <text x="772" y="336" class="small">• 라임 #65A30D</text>
+  <text x="772" y="356" class="small">• 카드 radius 16</text>
+  <text x="772" y="376" class="small">• 버튼 ≥ 40px</text>
+  <text x="772" y="396" class="small">• useIsMobile()</text>
+  <text x="786" y="414" class="mini">– 세로정렬/큰 탭</text>
+  <text x="772" y="436" class="small">• 한글 타이포</text>
+  <text x="786" y="454" class="mini">– Noto Sans KR</text>
+  <text x="772" y="476" class="small">• i18n ko/en/zh</text>
+  <text x="772" y="496" class="small">• DateTimePicker</text>
+  <text x="786" y="514" class="mini">– 오전/오후</text>
+  <text x="772" y="536" class="small">• RequiredInfoModal</text>
+
+  <!-- 페이지 레이아웃 -->
+  <rect x="980" y="270" width="200" height="280" rx="10" fill="#FEFCE8" stroke="#65A30D"/>
+  <text x="1080" y="292" text-anchor="middle" class="sect">⑤ 화면 레이아웃</text>
+  <text x="992" y="316" class="small">• /schedule 캘린더</text>
+  <text x="992" y="336" class="small">• /qt 7일 + iframe</text>
+  <text x="992" y="356" class="small">• /dashboard 위젯</text>
+  <text x="992" y="376" class="small">• /reservation 그리드</text>
+  <text x="992" y="396" class="small">• /admin/system</text>
+  <text x="1006" y="414" class="mini">– users/bulletin/venue</text>
+  <text x="992" y="436" class="small">• /management</text>
+  <text x="1006" y="454" class="mini">– 오늘셀 + 아이콘</text>
+  <text x="992" y="476" class="small">• VenueManager 3-step</text>
+  <text x="1006" y="494" class="mini">– 장소 → 시간 → 반복</text>
+  <text x="992" y="516" class="small">• WeeklyBlockCard</text>
+  <text x="992" y="536" class="small">• BlockGroupsCard</text>
+
+  <!-- ===== tech-optimizer children ===== -->
+  <path class="line-cyan" d="M1240,210 L1240,240 M1340,240 L1340,270"/>
+  <path class="line-cyan" d="M1240,240 L1240,270"/>
+
+  <!-- 데이터 -->
+  <rect x="1120" y="270" width="160" height="280" rx="10" fill="#F0F9FF" stroke="#0EA5E9"/>
+  <text x="1200" y="292" text-anchor="middle" class="sect">⑥ 데이터</text>
+  <text x="1132" y="316" class="small">• Supabase</text>
+  <text x="1146" y="334" class="mini">– 이관 34f0182</text>
+  <text x="1132" y="356" class="small">• events.json</text>
+  <text x="1146" y="374" class="mini">– type 통합</text>
+  <text x="1132" y="396" class="small">• recurrence.ts</text>
+  <text x="1146" y="414" class="mini">– expand/RRULE</text>
+  <text x="1132" y="436" class="small">• /api/events</text>
+  <text x="1146" y="454" class="mini">– from/to range</text>
+  <text x="1132" y="476" class="small">• venue-blocks</text>
+  <text x="1146" y="494" class="mini">– on-demand Map</text>
+  <text x="1132" y="516" class="small">• signup-approvals</text>
+  <text x="1132" y="536" class="small">• profiles/users</text>
+
+  <!-- 캐시 · 외부 -->
+  <rect x="1300" y="270" width="160" height="280" rx="10" fill="#F0F9FF" stroke="#0EA5E9"/>
+  <text x="1380" y="292" text-anchor="middle" class="sect">⑦ 캐시 · 외부연동</text>
+  <text x="1312" y="316" class="small">• YT 채널 24h</text>
+  <text x="1312" y="336" class="small">• RSS 30m</text>
+  <text x="1312" y="356" class="small">• 매일성경 3단</text>
+  <text x="1326" y="374" class="mini">– mem→kv→fetch</text>
+  <text x="1312" y="396" class="small">• Supabase kv</text>
+  <text x="1326" y="414" class="mini">– qt_YYYY-MM-DD</text>
+  <text x="1312" y="436" class="small">• OAuth Kakao/Google</text>
+  <text x="1312" y="456" class="small">• ICS export</text>
+  <text x="1326" y="474" class="mini">– webcal · RRULE</text>
+  <text x="1312" y="496" class="small">• Vercel 함수</text>
+  <text x="1326" y="514" class="mini">– 타임아웃 · 콜드</text>
+  <text x="1312" y="536" class="small">• Turbopack 빌드</text>
+
+  <!-- ===== 공동 소유 영역 ===== -->
+  <rect x="80" y="600" width="1320" height="200" rx="14" fill="#F8FAFC" stroke="#94a3b8"/>
+  <text x="100" y="626" class="sect">공동 소유 영역 (경계 중첩)</text>
+
+  <!-- item 1 -->
+  <rect x="100" y="640" width="300" height="140" rx="10" fill="#fff" stroke="#cbd5e1"/>
+  <text x="114" y="662" class="sect">/qt 큐티 페이지</text>
+  <text x="114" y="684" class="small">주: service-planner (참여 유도)</text>
+  <text x="114" y="704" class="small">부: ux-designer (7일 캘·iframe)</text>
+  <text x="114" y="724" class="small">부: tech-optimizer (3단 캐시)</text>
+  <text x="114" y="754" class="mini">/qt/notes, 매일성경, YouTube</text>
+
+  <!-- item 2 -->
+  <rect x="420" y="640" width="300" height="140" rx="10" fill="#fff" stroke="#cbd5e1"/>
+  <text x="434" y="662" class="sect">예약 생성 UI (진행중)</text>
+  <text x="434" y="684" class="small">주: ux-designer (슬롯 클릭 흐름)</text>
+  <text x="434" y="704" class="small">부: service-planner (충돌 메시지)</text>
+  <text x="434" y="724" class="small">부: tech-optimizer (409 감지)</text>
+  <text x="434" y="754" class="mini">/reservation POST type=reservation</text>
+
+  <!-- item 3 -->
+  <rect x="740" y="640" width="300" height="140" rx="10" fill="#fff" stroke="#cbd5e1"/>
+  <text x="754" y="662" class="sect">반복 일정 (rule/override)</text>
+  <text x="754" y="684" class="small">주: tech-optimizer (expand 성능)</text>
+  <text x="754" y="704" class="small">부: service-planner (반복 UX룰)</text>
+  <text x="754" y="724" class="small">부: ux-designer (반복 입력 UI)</text>
+  <text x="754" y="754" class="mini">lib/recurrence.ts · RRULE</text>
+
+  <!-- item 4 -->
+  <rect x="1060" y="640" width="320" height="140" rx="10" fill="#fff" stroke="#cbd5e1"/>
+  <text x="1074" y="662" class="sect">기타설정 4카드</text>
+  <text x="1074" y="684" class="small">주: service-planner (정책 결정)</text>
+  <text x="1074" y="704" class="small">부: ux-designer (토글/드롭다운)</text>
+  <text x="1074" y="724" class="small">부: tech-optimizer (settings.json)</text>
+  <text x="1074" y="754" class="mini">가용시간·슬롯·승인·필수정보</text>
+
+  <!-- ===== 남은 작업 (plan.md §10) ===== -->
+  <rect x="80" y="830" width="1320" height="320" rx="14" fill="#FFFBEB" stroke="#F59E0B"/>
+  <text x="100" y="858" class="sect">남은 작업 — plan.md §10 (담당 매핑)</text>
+
+  <rect x="100" y="880" width="600" height="34" rx="8" fill="#fff" stroke="#fcd34d"/>
+  <text x="114" y="902" class="small">① /reservation 예약 생성 UI</text>
+  <rect x="560" y="886" width="70" height="22" rx="11" fill="#65A30D"/>
+  <text x="595" y="902" text-anchor="middle" class="small" fill="#fff">ux</text>
+  <rect x="640" y="886" width="50" height="22" rx="11" fill="#20CD8D"/>
+  <text x="665" y="902" text-anchor="middle" class="small" fill="#fff">svc</text>
+
+  <rect x="720" y="880" width="600" height="34" rx="8" fill="#fff" stroke="#fcd34d"/>
+  <text x="734" y="902" class="small">② 예약 · 교회일정 충돌 감지 (409)</text>
+  <rect x="1230" y="886" width="80" height="22" rx="11" fill="#0EA5E9"/>
+  <text x="1270" y="902" text-anchor="middle" class="small" fill="#fff">tech</text>
+
+  <rect x="100" y="924" width="600" height="34" rx="8" fill="#fff" stroke="#fcd34d"/>
+  <text x="114" y="946" class="small">③ venue grid — 관리자 이벤트 시각구분</text>
+  <rect x="560" y="930" width="70" height="22" rx="11" fill="#65A30D"/>
+  <text x="595" y="946" text-anchor="middle" class="small" fill="#fff">ux</text>
+
+  <rect x="720" y="924" width="600" height="34" rx="8" fill="#fff" stroke="#fcd34d"/>
+  <text x="734" y="946" class="small">④ 대시보드 "나의 장소예약" 통합 DB 전환</text>
+  <rect x="1230" y="930" width="80" height="22" rx="11" fill="#0EA5E9"/>
+  <text x="1270" y="946" text-anchor="middle" class="small" fill="#fff">tech</text>
+
+  <rect x="100" y="968" width="600" height="34" rx="8" fill="#fff" stroke="#fcd34d"/>
+  <text x="114" y="990" class="small">⑤ management 월 range 동적 재조회</text>
+  <rect x="610" y="974" width="80" height="22" rx="11" fill="#0EA5E9"/>
+  <text x="650" y="990" text-anchor="middle" class="small" fill="#fff">tech</text>
+
+  <rect x="720" y="968" width="600" height="34" rx="8" fill="#fff" stroke="#fcd34d"/>
+  <text x="734" y="990" class="small">⑥ worship-services.json → events.json 마이그레이션</text>
+  <rect x="1230" y="974" width="80" height="22" rx="11" fill="#0EA5E9"/>
+  <text x="1270" y="990" text-anchor="middle" class="small" fill="#fff">tech</text>
+
+  <rect x="100" y="1012" width="1220" height="34" rx="8" fill="#fff" stroke="#fcd34d"/>
+  <text x="114" y="1034" class="small">⑦ (신규 제안 여지) 큐티 스트릭·참여 뱃지·알림 등 참여 장치</text>
+  <rect x="1165" y="1018" width="70" height="22" rx="11" fill="#20CD8D"/>
+  <text x="1200" y="1034" text-anchor="middle" class="small" fill="#fff">svc</text>
+  <rect x="1245" y="1018" width="70" height="22" rx="11" fill="#65A30D"/>
+  <text x="1280" y="1034" text-anchor="middle" class="small" fill="#fff">ux</text>
+
+  <!-- 범례 -->
+  <rect x="100" y="1080" width="1220" height="50" rx="10" fill="#fff" stroke="#e5e7eb"/>
+  <circle cx="130" cy="1105" r="8" fill="#20CD8D"/>
+  <text x="148" y="1110" class="small">service-planner: 사용자 여정·도메인 룰·참여 장치</text>
+  <circle cx="560" cy="1105" r="8" fill="#65A30D"/>
+  <text x="578" y="1110" class="small">ux-designer: 레이아웃·네비·접근성·공통 컴포넌트</text>
+  <circle cx="990" cy="1105" r="8" fill="#0EA5E9"/>
+  <text x="1008" y="1110" class="small">tech-optimizer: 데이터·캐시·성능·배포</text>
+</svg>
+</body>
+</html>

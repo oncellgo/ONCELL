@@ -3,7 +3,7 @@ import { useIsMobile } from '../lib/useIsMobile';
 
 type Props = {
   authQS: string;
-  active?: 'users' | 'schedule' | 'bulletinTemplate' | 'venue' | 'etc' | null;
+  active?: 'users' | 'schedule' | 'bulletinTemplate' | 'venue' | 'etc' | 'stats' | null;
   defaultCommunityId?: string;
 };
 
@@ -12,8 +12,10 @@ const AdminTabBar = ({ authQS, active = null, defaultCommunityId }: Props) => {
   const tabs = [
     { key: 'users', label: '사용자관리', href: `/admin/system?${authQS}` },
     { key: 'schedule', label: '일정관리', href: `/management?${authQS}${defaultCommunityId ? `&communityId=${encodeURIComponent(defaultCommunityId)}` : ''}&isAdmin=1&menu=${encodeURIComponent('일정관리')}` },
-    { key: 'bulletinTemplate', label: '주보관리', href: `/admin/system?${authQS}&section=bulletinTemplate` },
+    // 주보관리는 hidden (필요 시 아래 주석 해제)
+    // { key: 'bulletinTemplate', label: '주보관리', href: `/admin/system?${authQS}&section=bulletinTemplate` },
     { key: 'venue', label: '장소예약관리', href: `/admin/system?${authQS}&section=venue` },
+    { key: 'stats', label: '통계관리', href: `/admin/system?${authQS}&section=stats` },
     { key: 'etc', label: '기타설정', href: `/admin/system?${authQS}&section=etc` },
   ] as const;
 

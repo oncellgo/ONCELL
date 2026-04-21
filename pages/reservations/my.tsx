@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import SubHeader from '../../components/SubHeader';
 import { getSystemAdminHref } from '../../lib/adminGuard';
 import { useIsMobile } from '../../lib/useIsMobile';
+import { useRequireLogin } from '../../lib/useRequireLogin';
 
 type Reservation = {
   id: string;
@@ -36,6 +37,7 @@ const fmtDateTime = (iso: string) => {
 
 const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdminHref }: Props) => {
   const isMobile = useIsMobile();
+  useRequireLogin(profileId);
   const [effectiveProfileId, setEffectiveProfileId] = useState<string | null>(profileId);
   const [items, setItems] = useState<Reservation[] | null>(null);
   const [loading, setLoading] = useState(false);

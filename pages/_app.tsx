@@ -1,7 +1,6 @@
 import type { AppProps } from 'next/app';
 import { useEffect } from 'react';
 import '../styles/globals.css';
-import BottomNav from '../components/BottomNav';
 import { AudioProvider } from '../components/AudioPlayer';
 import { VideoProvider } from '../components/VideoPlayer';
 import { themeCssVars } from '../styles/theme';
@@ -16,7 +15,6 @@ const App = ({ Component, pageProps }: AppProps) => {
       <AudioProvider>
         <VideoProvider>
           <Component {...pageProps} />
-          <BottomNav />
         </VideoProvider>
       </AudioProvider>
     </>

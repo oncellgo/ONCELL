@@ -13,6 +13,7 @@ import EtcSettings from '../../components/EtcSettings';
 import SignupApprovalsCard from '../../components/SignupApprovalsCard';
 import MembersCard from '../../components/MembersCard';
 import AdminTabBar from '../../components/AdminTabBar';
+import StatsPanel from '../../components/StatsPanel';
 import { expandOccurrences, EventRow as RawEventRow } from '../../lib/recurrence';
 import { getCommunities, getEvents, getWorshipServices, getProfiles, getUsers } from '../../lib/dataStore';
 import { useIsMobile } from '../../lib/useIsMobile';
@@ -69,14 +70,16 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
   const video = useVideo();
   const isMobile = useIsMobile();
   const k = typeof router.query.k === 'string' ? router.query.k : '';
-  const authQS = `profileId=${encodeURIComponent(profileId)}&k=${encodeURIComponent(k)}`;
-  const authHeaders = { 'x-profile-id': profileId, 'x-admin-token': k };
+  const authQS = `profileId=${encodeURIComponent(profileId)}&k=${encodeURIComponent(k)}${email ? `&email=${encodeURIComponent(email)}` : ''}`;
+  const authHeaders: Record<string, string> = { 'x-profile-id': profileId, 'x-admin-token': k, ...(email ? { 'x-email': email } : {}) };
+  const myEmailLower = (email || '').trim().toLowerCase();
   const sectionFilter = typeof router.query.section === 'string' ? router.query.section : null;
   const subFilter = typeof router.query.sub === 'string' ? router.query.sub : null;
 
   const [communities, setCommunities] = useState<AdminCommunity[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [admins, setAdmins] = useState<string[]>([]);
+  const [adminEmails, setAdminEmails] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newAdmin, setNewAdmin] = useState('');
@@ -225,6 +228,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
       setCommunities(cData.communities || []);
       setUsers(uData.users || []);
       setAdmins(aData.profileIds || []);
+      setAdminEmails(aData.emails || []);
       if (wRes.ok) {
         const wData = await wRes.json();
         setWorshipItems(wData.items || []);
@@ -288,16 +292,18 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
   const addAdmin = async () => {
     const id = newAdmin.trim();
     if (!id) return;
+    const isEmail = /@/.test(id);
     setBusy(true);
     try {
       const res = await fetch(`/api/admin/system-admins?${authQS}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders },
-        body: JSON.stringify({ profileId: id }),
+        body: JSON.stringify(isEmail ? { email: id } : { profileId: id }),
       });
       if (!res.ok) throw new Error('추가 실패');
       const data = await res.json();
       setAdmins(data.profileIds || []);
+      setAdminEmails(data.emails || []);
       setNewAdmin('');
     } catch (e: any) {
       window.alert(e?.message || '추가 실패');
@@ -306,11 +312,21 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
     }
   };
 
-  const removeAdmin = async (id: string) => {
-    if (!window.confirm(t('admin.confirmRemoveAdmin', { id }))) return;
+  const removeAdmin = async (id: string, kind: 'profileId' | 'email' = 'profileId') => {
+    // 자기 이메일 제거 시 강한 경고
+    if (kind === 'email' && myEmailLower && id.trim().toLowerCase() === myEmailLower) {
+      const still = admins.includes(profileId);
+      const warn = still
+        ? `⚠️ 본인 이메일입니다. 제거해도 profileId(${profileId})로 관리자 권한은 유지됩니다. 계속할까요?`
+        : `⚠️ 본인 이메일입니다. 제거 후 관리자 권한을 잃습니다. 다른 관리자가 다시 등록해야 복구됩니다. 정말 계속할까요?`;
+      if (!window.confirm(warn)) return;
+    } else {
+      if (!window.confirm(t('admin.confirmRemoveAdmin', { id }))) return;
+    }
     setBusy(true);
     try {
-      const res = await fetch(`/api/admin/system-admins?profileId=${encodeURIComponent(id)}&${authQS}`, {
+      const param = kind === 'email' ? `email=${encodeURIComponent(id)}` : `profileId=${encodeURIComponent(id)}`;
+      const res = await fetch(`/api/admin/system-admins?${param}&${authQS}`, {
         method: 'DELETE',
         headers: authHeaders,
       });
@@ -320,6 +336,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
       }
       const data = await res.json();
       setAdmins(data.profileIds || []);
+      setAdminEmails(data.emails || []);
     } catch (e: any) {
       window.alert(e?.message || '제거 실패');
     } finally {
@@ -343,7 +360,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
 
           <AdminTabBar
             authQS={authQS}
-            active={!sectionFilter ? 'users' : sectionFilter === 'bulletinTemplate' ? 'bulletinTemplate' : sectionFilter === 'venue' ? 'venue' : sectionFilter === 'etc' ? 'etc' : null}
+            active={!sectionFilter ? 'users' : sectionFilter === 'bulletinTemplate' ? 'bulletinTemplate' : sectionFilter === 'venue' ? 'venue' : sectionFilter === 'etc' ? 'etc' : sectionFilter === 'stats' ? 'stats' : null}
             defaultCommunityId={scheduleDefaultCommunityId}
           />
 
@@ -394,26 +411,42 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
 
         {!sectionFilter && (
         <section style={{ ...cardStyle, padding: isMobile ? '0.85rem' : cardStyle.padding }}>
-          <h2 style={titleStyle}>{t('admin.sectionSysAdmins')} ({admins.length})</h2>
-          <p style={subtle}>이 목록에 포함된 profileId만 /admin/system 접근이 가능합니다.</p>
+          <h2 style={titleStyle}>{t('admin.sectionSysAdmins')} ({admins.length + adminEmails.length})</h2>
+          <p style={subtle}>profileId 또는 email로 등록 가능합니다. email을 포함한 입력은 email로 저장됩니다.</p>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr auto', gap: '0.5rem' }}>
             <input
               type="text"
               value={newAdmin}
               onChange={(e) => setNewAdmin(e.target.value)}
-              placeholder={t('admin.addAdminPlaceholder')}
+              placeholder="profileId(예: google-12345) 또는 email"
               style={{ padding: '0.65rem 0.8rem', borderRadius: 10, border: '1px solid #cbd5d0', fontSize: '0.9rem' }}
             />
             <button disabled={busy || !newAdmin.trim()} onClick={addAdmin} style={{ ...btn, background: '#20CD8D', color: '#fff' }}>{t('admin.add')}</button>
           </div>
           <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: '0.35rem' }}>
             {admins.map((id) => (
-              <li key={id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', padding: '0.55rem 0.75rem', border: '1px solid #E7F3EE', borderRadius: 10, background: '#F9FCFB' }}>
-                <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#182527', overflow: 'hidden', textOverflow: 'ellipsis' }}>{id}{id === profileId ? ` (${t('admin.me')})` : ''}</span>
-                <button disabled={busy || id === profileId} onClick={() => removeAdmin(id)} style={{ ...btn, background: id === profileId ? '#e5e7eb' : '#b91c1c', color: id === profileId ? '#6b7280' : '#fff', cursor: id === profileId ? 'not-allowed' : 'pointer' }}>{t('admin.remove')}</button>
+              <li key={`pid-${id}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', padding: '0.55rem 0.75rem', border: '1px solid #E7F3EE', borderRadius: 10, background: '#F9FCFB' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', overflow: 'hidden', minWidth: 0 }}>
+                  <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#20CD8D', color: '#fff', fontSize: '0.68rem', fontWeight: 800, flexShrink: 0 }}>ID</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#182527', overflow: 'hidden', textOverflow: 'ellipsis' }}>{id}{id === profileId ? ` (${t('admin.me')})` : ''}</span>
+                </span>
+                <button disabled={busy || id === profileId} onClick={() => removeAdmin(id, 'profileId')} style={{ ...btn, background: id === profileId ? '#e5e7eb' : '#b91c1c', color: id === profileId ? '#6b7280' : '#fff', cursor: id === profileId ? 'not-allowed' : 'pointer' }}>{t('admin.remove')}</button>
               </li>
             ))}
-            {admins.length === 0 && <li><p style={subtle}>관리자가 없습니다.</p></li>}
+            {adminEmails.map((em) => {
+              const isMine = myEmailLower && em.toLowerCase() === myEmailLower;
+              return (
+                <li key={`em-${em}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', padding: '0.55rem 0.75rem', border: isMine ? '1px solid #F59E0B' : '1px solid #BFDBFE', borderRadius: 10, background: isMine ? '#FEF3C7' : '#EFF6FF' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', overflow: 'hidden', minWidth: 0 }}>
+                    <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#1E40AF', color: '#fff', fontSize: '0.68rem', fontWeight: 800, flexShrink: 0 }}>EMAIL</span>
+                    <span style={{ fontSize: '0.85rem', color: '#182527', overflow: 'hidden', textOverflow: 'ellipsis' }}>{em}</span>
+                    {isMine && <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#F59E0B', color: '#fff', fontSize: '0.68rem', fontWeight: 800, flexShrink: 0 }}>⚠️ 나</span>}
+                  </span>
+                  <button disabled={busy} onClick={() => removeAdmin(em, 'email')} style={{ ...btn, background: '#b91c1c', color: '#fff' }}>{t('admin.remove')}</button>
+                </li>
+              );
+            })}
+            {admins.length === 0 && adminEmails.length === 0 && <li><p style={subtle}>관리자가 없습니다.</p></li>}
           </ul>
         </section>
         )}
@@ -483,6 +516,10 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
 
         {sectionFilter === 'etc' && (
           <EtcSettings profileId={profileId} k={k} />
+        )}
+
+        {sectionFilter === 'stats' && (
+          <StatsPanel profileId={profileId} k={k} email={email} />
         )}
 
         {sectionFilter === 'bulletinTemplate' && (

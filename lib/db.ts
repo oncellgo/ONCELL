@@ -67,8 +67,6 @@ export const KV_KEYS = {
   settings: 'settings',
   systemAdmins: 'system_admins',
   worshipTemplates: 'worship_templates',
-  usageLogs: 'usage_logs',
-  translationsCache: 'translations_cache',
 } as const;
 
 export const kvGet = async <T = any>(key: string): Promise<T | null> => {

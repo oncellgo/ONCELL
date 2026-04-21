@@ -15,7 +15,7 @@ const LanguageSwitcher = () => {
         border: '1px solid var(--color-gray)',
         background: 'var(--color-surface)',
         color: 'var(--color-ink)',
-        fontSize: '0.8rem',
+        fontSize: '0.9rem',
         fontWeight: 700,
         cursor: 'pointer',
       }}

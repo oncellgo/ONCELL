@@ -73,6 +73,16 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
     router.push('/reservation');
   };
 
+  // 로그인 필요 메뉴(큐티·예배 및 모임교안·문의)의 공통 가드
+  const handleProtectedClick = (href: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    if (!effectiveProfileId) {
+      window.location.href = '/auth/login';
+      return;
+    }
+    router.push(href);
+  };
+
   return (
     <>
       <Head>
@@ -119,17 +129,16 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
                 </span>
                 <span className={styles.menuLabel}>장소예약</span>
               </a>
-              <a className={styles.menuCard} href="/schedule">
+              <a className={styles.menuCard} href="/cell-teaching" onClick={handleProtectedClick('/cell-teaching')}>
                 <span className={styles.menuIcon} aria-hidden>
                   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
-                    <path d="M3.5 10h17" />
-                    <path d="M8 3v4M16 3v4" />
+                    <rect x="3" y="5" width="18" height="14" rx="2.5" />
+                    <path d="M10 9.5v5l4.5-2.5z" fill="currentColor" stroke="none" />
                   </svg>
                 </span>
-                <span className={styles.menuLabel}>일정</span>
+                <span className={styles.menuLabel}>예배 및 모임교안</span>
               </a>
-              <a className={styles.menuCard} href="/qt">
+              <a className={styles.menuCard} href="/qt" onClick={handleProtectedClick('/qt')}>
                 <span className={styles.menuIcon} aria-hidden>
                   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15H5.5A1.5 1.5 0 0 1 4 17.5z" />
@@ -138,14 +147,14 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
                 </span>
                 <span className={styles.menuLabel}>큐티</span>
               </a>
-              <a className={styles.menuCard} href="#">
+              <a className={styles.menuCard} href="/reading" onClick={handleProtectedClick('/reading')}>
                 <span className={styles.menuIcon} aria-hidden>
                   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="5" width="18" height="14" rx="2.5" />
-                    <path d="M10 9.5v5l4.5-2.5z" fill="currentColor" stroke="none" />
+                    <path d="M4 19.5V6a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2" />
+                    <path d="M8 7h8M8 11h8M8 15h5" />
                   </svg>
                 </span>
-                <span className={styles.menuLabel}>모임교안</span>
+                <span className={styles.menuLabel}>말씀통독</span>
               </a>
             </div>
 
@@ -163,99 +172,20 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
                 <span className={styles.trustLabel}>{t('landing.trustSsoSub')}</span>
               </div>
             </div>
+
           </div>
 
-          <div className={styles.heroVisual}>
-            <div className={styles.dashboardCard}>
-              <div className={styles.dashboardHeader}>
-                <span className={styles.dashboardTitle}>{t('landing.weeklyTitle')}</span>
-                <span className={styles.dashboardBadge}>{t('landing.live')}</span>
-              </div>
-              <div className={styles.dashboardList}>
-                <div className={styles.dashboardRow}>
-                  <div className={styles.dashboardRowInner}>
-                    <span className={styles.dashboardRowDot} style={{ background: '#20CD8D' }} />
-                    <span className={styles.dashboardRowLabel}>{t('landing.sundayWorship')}</span>
-                  </div>
-                  <span className={styles.dashboardRowMeta}>{t('landing.sundayWorshipMeta')}</span>
-                </div>
-                <div className={styles.dashboardRow}>
-                  <div className={styles.dashboardRowInner}>
-                    <span className={styles.dashboardRowDot} style={{ background: '#2D4048' }} />
-                    <span className={styles.dashboardRowLabel}>{t('landing.cellMeeting')}</span>
-                  </div>
-                  <span className={styles.dashboardRowMeta}>{t('landing.cellMeetingMeta')}</span>
-                </div>
-                <div className={styles.dashboardRow}>
-                  <div className={styles.dashboardRowInner}>
-                    <span className={styles.dashboardRowDot} style={{ background: '#20CD8D' }} />
-                    <span className={styles.dashboardRowLabel}>{t('landing.discipleship')}</span>
-                  </div>
-                  <span className={styles.dashboardRowMeta}>{t('landing.discipleshipMeta')}</span>
-                </div>
-                <div className={styles.dashboardRow}>
-                  <div className={styles.dashboardRowInner}>
-                    <span className={styles.dashboardRowDot} style={{ background: '#182527' }} />
-                    <span className={styles.dashboardRowLabel}>{t('landing.biblePlan')}</span>
-                  </div>
-                  <span className={styles.dashboardRowMeta}>{t('landing.bibleDay')}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className={`${styles.floatCard} ${styles.floatCardTop}`}>
-              <span className={styles.floatCardIcon} style={{ background: '#CCF4E5', color: '#20CD8D' }}>✓</span>
-              {t('landing.attendance')}
-            </div>
-            <div className={`${styles.floatCard} ${styles.floatCardBottom}`}>
-              <span className={styles.floatCardIcon} style={{ background: 'var(--color-gold-tint)', color: 'var(--color-gold-deep)' }}>📖</span>
-              {t('landing.qtStreak')}
-            </div>
-          </div>
         </section>
 
-        <section id="features" className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <p className={styles.sectionEyebrow}>{t('landing.featuresEyebrow')}</p>
-            <h2 className={styles.sectionTitle}>{t('landing.featuresTitle')}</h2>
-            <p className={styles.sectionDescription}>
-              {t('landing.featuresDescription')}
-            </p>
+        <footer style={{ margin: '1.5rem 0 0', padding: '1rem 1.25rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--color-ink-2)', lineHeight: 1.7, borderTop: '1px solid var(--color-surface-border)' }}>
+          <div style={{ marginBottom: '0.35rem' }}>
+            <span style={{ fontWeight: 700, color: 'var(--color-ink)' }}>싱가폴한인교회</span>
+            <span style={{ margin: '0 0.5rem', color: 'var(--color-gray)' }}>|</span>
+            <a href="/privacy" style={{ color: 'var(--color-ink-2)', textDecoration: 'underline' }}>개인정보처리방침</a>
           </div>
-
-          <div className={styles.features}>
-            {featureKeys.map((n, i) => (
-              <article key={n} className={styles.featureCard}>
-                <span className={styles.featureIcon}>{featureIcons[i]}</span>
-                <h3>{t(`landing.feat${n}Title`)}</h3>
-                <p>{t(`landing.feat${n}Desc`)}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section id="pricing" className={styles.ctaSection}>
-          <div className={styles.ctaCard}>
-            <h2 className={styles.ctaTitle}>{t('landing.ctaTitle')}</h2>
-            <p className={styles.ctaDescription}>
-              {t('landing.ctaDescription')}
-            </p>
-            <div className={styles.ctaActions}>
-              {!loggedIn && (
-                <a href="/auth/login" className={styles.ctaButton}>{t('landing.ctaFree')}</a>
-              )}
-              <a href="mailto:hello@stewardplusai.app" className={styles.ctaButtonGhost}>{t('landing.ctaInquiry')}</a>
-            </div>
-          </div>
-        </section>
-
-        <footer className={styles.footer}>
-          <span>© {new Date().getFullYear()} Steward+AI. All rights reserved.</span>
-          <div className={styles.footerLinks}>
-            <a href="#">{t('landing.footerTerms')}</a>
-            <a href="#">{t('landing.footerPrivacy')}</a>
-            <a href="mailto:hello@stewardplusai.app">{t('landing.footerContact')}</a>
-          </div>
+          <div>21 Gangsa Road Singapore 678973</div>
+          <div>TEL <a href="tel:+6564686694" style={{ color: 'var(--color-ink-2)' }}>+65-6468-6694</a></div>
+          <div><a href="mailto:koreanchurch@live.com" style={{ color: 'var(--color-ink-2)' }}>koreanchurch@live.com</a></div>
         </footer>
       </div>
 

@@ -7,6 +7,7 @@ type Approval = {
   nickname: string;
   email: string;
   realName?: string;
+  contact?: string;
   firstLoginAt: string;
   lastLoginAt: string;
   loginCount: number;
@@ -27,14 +28,15 @@ const formatDate = (iso: string) => {
   }
 };
 
-const providerBadge = (p: string) => {
-  const label = p === 'kakao' ? 'Kakao' : p === 'google' ? 'Google' : p;
-  const bg = p === 'kakao' ? '#FEE500' : p === 'google' ? '#fff' : '#E5E7EB';
-  const color = p === 'kakao' ? '#181600' : p === 'google' ? '#1F2937' : '#374151';
-  const border = p === 'google' ? '1px solid #D1D5DB' : 'none';
+const providerIdPill = (provider: string, id: string) => {
+  const bg = provider === 'kakao' ? '#FEE500' : provider === 'google' ? '#fff' : '#E5E7EB';
+  const color = provider === 'kakao' ? '#181600' : provider === 'google' ? '#1F2937' : '#374151';
+  const border = provider === 'google' ? '1px solid #D1D5DB' : '1px solid transparent';
+  const prefix = provider === 'kakao' ? 'K' : provider === 'google' ? 'G' : provider.charAt(0).toUpperCase();
   return (
-    <span style={{ display: 'inline-block', padding: '0.1rem 0.45rem', borderRadius: 999, background: bg, color, fontSize: '0.7rem', fontWeight: 700, border, whiteSpace: 'nowrap' }}>
-      {label}
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.15rem 0.55rem', borderRadius: 999, background: bg, color, fontSize: '0.76rem', fontWeight: 700, border, whiteSpace: 'nowrap', maxWidth: '100%' }}>
+      <span style={{ width: 14, height: 14, borderRadius: 999, background: provider === 'kakao' ? '#181600' : provider === 'google' ? '#F3F4F6' : '#6B7280', color: provider === 'kakao' ? '#FEE500' : '#1F2937', fontSize: '0.62rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto' }}>{prefix}</span>
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{id}</span>
     </span>
   );
 };
@@ -106,8 +108,8 @@ const SignupApprovalsCard = ({ profileId, k }: Props) => {
                 </th>
                 <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>최초접속일</th>
                 <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>아이디</th>
-                <th style={{ padding: '0.5rem 0.6rem' }}>제공자</th>
                 <th style={{ padding: '0.5rem 0.6rem' }}>실명</th>
+                <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>연락처</th>
                 <th style={{ padding: '0.5rem 0.6rem', textAlign: 'right' }}>로그인 횟수</th>
                 <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>최근접속일</th>
               </tr>
@@ -119,9 +121,9 @@ const SignupApprovalsCard = ({ profileId, k }: Props) => {
                     <input type="checkbox" checked={selected.has(a.profileId)} onChange={() => toggle(a.profileId)} />
                   </td>
                   <td style={{ padding: '0.55rem 0.6rem', whiteSpace: 'nowrap', color: 'var(--color-ink-2)' }}>{formatDate(a.firstLoginAt)}</td>
-                  <td style={{ padding: '0.55rem 0.6rem', fontWeight: 700, color: 'var(--color-ink)' }}>{a.nickname || a.email?.split('@')[0] || a.profileId}</td>
-                  <td style={{ padding: '0.55rem 0.6rem' }}>{providerBadge(a.provider)}</td>
+                  <td style={{ padding: '0.55rem 0.6rem' }}>{providerIdPill(a.provider, a.nickname || a.email?.split('@')[0] || a.profileId)}</td>
                   <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink)' }}>{a.realName || '-'}</td>
+                  <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono, monospace)' }}>{a.contact || '-'}</td>
                   <td style={{ padding: '0.55rem 0.6rem', textAlign: 'right', color: 'var(--color-ink-2)' }}>{a.loginCount}</td>
                   <td style={{ padding: '0.55rem 0.6rem', whiteSpace: 'nowrap', color: 'var(--color-ink-2)' }}>{formatDate(a.lastLoginAt)}</td>
                 </tr>

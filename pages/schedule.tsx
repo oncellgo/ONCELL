@@ -6,6 +6,7 @@ import { getSystemAdminHref } from '../lib/adminGuard';
 import { expandOccurrences, EventRow as RawEventRow } from '../lib/recurrence';
 import { getCommunities, getEvents, getWorshipServices, getProfiles, getUsers } from '../lib/dataStore';
 import { useIsMobile } from '../lib/useIsMobile';
+import { useRequireLogin } from '../lib/useRequireLogin';
 
 type Props = {
   communities: Community[];
@@ -21,6 +22,7 @@ type Props = {
 
 const SchedulePage = ({ communities, events, worshipServices, defaultCommunityId, profileId, displayName, nickname, email, systemAdminHref }: Props) => {
   const isMobile = useIsMobile();
+  useRequireLogin(profileId);
   return (
     <>
       <Head>

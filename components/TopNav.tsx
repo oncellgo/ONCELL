@@ -58,17 +58,7 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
   return (
     <div style={{ position: 'sticky', top: 0, zIndex: 20, display: 'grid', gap: '0.35rem' }}>
     <style>{`
-      .kcis-brand { display: inline-block; will-change: color, text-shadow; animation: kcisGreenFlash 4.5s ease-in-out infinite; }
-      @keyframes kcisGreenFlash {
-        0%, 100% { color: #0F7A52; text-shadow: none; }
-        40% { color: #20CD8D; text-shadow: none; }
-        70%, 80% {
-          color: #8EF070;
-          text-shadow:
-            0 0 6px rgba(142, 240, 112, 0.55),
-            0 0 14px rgba(142, 240, 112, 0.3);
-        }
-      }
+      .kcis-brand { display: inline-block; color: #0B3A2B; text-shadow: none; }
       .kcis-logo { will-change: opacity, filter; animation: kcisLogoPulse 4.5s ease-in-out infinite; }
       @keyframes kcisLogoPulse {
         0%, 100% {
@@ -105,7 +95,7 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
             className="kcis-logo"
             style={{ width: isMobile ? 24 : 28, height: isMobile ? 24 : 28, objectFit: 'contain', display: 'inline-block' }}
           />
-          <strong style={{ fontWeight: 800, letterSpacing: '0.02em', fontSize: isMobile ? '0.95rem' : '1rem' }}>
+          <strong style={{ fontWeight: 800, letterSpacing: '0.02em', fontSize: isMobile ? '0.82rem' : '0.9rem' }}>
             <span className="kcis-brand">KCIS</span>
           </strong>
         </a>
@@ -122,7 +112,7 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
             border: '1px solid var(--color-surface-border)',
             color: '#182527',
             fontWeight: 700,
-            fontSize: isMobile ? '0.74rem' : '0.82rem',
+            fontSize: isMobile ? '0.82rem' : '0.9rem',
             maxWidth: isMobile ? 130 : 'none',
             overflow: 'hidden',
             whiteSpace: 'nowrap',

@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getProfiles, setProfiles } from '../../lib/dataStore';
+import { getProfiles, setProfiles, getSignupApprovals } from '../../lib/dataStore';
 
 type Profile = {
   profileId: string;
@@ -27,7 +27,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       const profileId = typeof req.query.profileId === 'string' ? req.query.profileId : undefined;
       if (!profileId) return res.status(400).json({ error: 'profileId is required.' });
       const profile = profiles.find((p) => p.profileId === profileId) || null;
-      return res.status(200).json({ profile });
+      // 가입일자 (signup_approvals.firstLoginAt) 조회
+      let firstLoginAt: string | null = null;
+      try {
+        const approvals = (await getSignupApprovals()) as Array<{ profileId: string; firstLoginAt?: string }>;
+        const a = Array.isArray(approvals) ? approvals.find((x) => x.profileId === profileId) : null;
+        firstLoginAt = a?.firstLoginAt || null;
+      } catch {}
+      return res.status(200).json({ profile, firstLoginAt });
     }
 
     if (req.method === 'POST') {

@@ -109,13 +109,6 @@ body {
   }
 }
 
-/* 8. body padding-bottom — BottomNav 공간 */
-@media (max-width: 640px) {
-  body {
-    padding-bottom: 5rem;
-  }
-}
-
 /* 9. 그리드 자동 stack 헬퍼 */
 @media (max-width: 640px) {
   .stack-on-mobile {

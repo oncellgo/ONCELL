@@ -6,8 +6,10 @@ import { useTranslation } from 'react-i18next';
 import { useAudio } from '../components/AudioPlayer';
 import AppShell from '../components/AppShell';
 import { WorshipBulletinPreview } from '../components/WorshipBulletinEditor';
-import { getCommunities, getUsers, getProfiles, getSystemAdmins } from '../lib/dataStore';
+import { getCommunities, getUsers, getProfiles } from '../lib/dataStore';
+import { getSystemAdminHref } from '../lib/adminGuard';
 import { useIsMobile } from '../lib/useIsMobile';
+import { isAllDayEvent } from '../lib/events';
 
 type Community = {
   id: string;
@@ -78,36 +80,41 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
     source: string;
   } | null>(null);
   const [audioOpen, setAudioOpen] = useState(false);
-  const [reflectionOpen, setReflectionOpen] = useState(false);
-  const [reflection, setReflection] = useState('');
-  const [reflectionSavedAt, setReflectionSavedAt] = useState<string | null>(null);
 
-  const reflectionKey = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    return profileId ? `qt-reflection:${profileId}:${today}` : null;
-  }, [profileId]);
+  // QT 3단 노트 서버 상태
+  type QtNote = { feelings: string; decision: string; prayer: string; updatedAt?: string };
+  const [qtNoteToday, setQtNoteToday] = useState<QtNote | null>(null);
+  const [qtNoteYesterday, setQtNoteYesterday] = useState<QtNote | null>(null);
+  const [qtNoteDates, setQtNoteDates] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!reflectionKey || typeof window === 'undefined') return;
-    try {
-      const raw = window.localStorage.getItem(reflectionKey);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setReflection(parsed.text || '');
-        setReflectionSavedAt(parsed.savedAt || null);
-      }
-    } catch {}
-  }, [reflectionKey]);
-
-  const saveReflection = () => {
-    if (!reflectionKey || typeof window === 'undefined') return;
-    const savedAt = new Date().toISOString();
-    window.localStorage.setItem(
-      reflectionKey,
-      JSON.stringify({ text: reflection, savedAt, reference: qt?.reference || null }),
-    );
-    setReflectionSavedAt(savedAt);
-  };
+    if (!profileId) return;
+    let cancelled = false;
+    fetch(`/api/qt-notes?profileId=${encodeURIComponent(profileId)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        const notes: Array<{ date: string; feelings?: string; decision?: string; prayer?: string; updatedAt?: string }> = Array.isArray(d?.notes) ? d.notes : [];
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const toKey = (dt: Date) => `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+        const today = toKey(new Date());
+        const yesterdayDt = new Date(); yesterdayDt.setDate(yesterdayDt.getDate() - 1);
+        const yesterday = toKey(yesterdayDt);
+        const dates = new Set<string>();
+        let t: QtNote | null = null; let y: QtNote | null = null;
+        for (const n of notes) {
+          const has = (n.feelings || n.decision || n.prayer || '').trim().length > 0;
+          if (has) dates.add(n.date);
+          if (n.date === today && has) t = { feelings: n.feelings || '', decision: n.decision || '', prayer: n.prayer || '', updatedAt: n.updatedAt };
+          if (n.date === yesterday && has) y = { feelings: n.feelings || '', decision: n.decision || '', prayer: n.prayer || '' };
+        }
+        setQtNoteToday(t);
+        setQtNoteYesterday(y);
+        setQtNoteDates(dates);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [profileId]);
   const [qtLoading, setQtLoading] = useState(true);
 
   useEffect(() => {
@@ -205,6 +212,45 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
   const [activeCommunityId, setActiveCommunityId] = useState<string | null>(null);
   const [publishedServices, setPublishedServices] = useState<any[]>([]);
   const [previewBulletin, setPreviewBulletin] = useState<any>(null);
+
+  type WeekEvent = { id: string; title: string; startAt: string; endAt: string; location?: string; scope?: string; category?: string };
+  type MyReservation = { id: string; title: string; startAt: string; endAt: string; location?: string };
+  const [weekEvents, setWeekEvents] = useState<WeekEvent[] | null>(null);
+  const [myReservations, setMyReservations] = useState<MyReservation[] | null>(null);
+
+  useEffect(() => {
+    // 이번주(월~일) 교회일정 - kcis 공동체 기준
+    const now = new Date();
+    const day = now.getDay(); // 0=일
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    const monday = new Date(now); monday.setDate(now.getDate() + mondayOffset); monday.setHours(0, 0, 0, 0);
+    const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6); sunday.setHours(23, 59, 59, 999);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const fromStr = `${monday.getFullYear()}-${pad(monday.getMonth() + 1)}-${pad(monday.getDate())}`;
+    const toStr = `${sunday.getFullYear()}-${pad(sunday.getMonth() + 1)}-${pad(sunday.getDate())}`;
+    const qs = new URLSearchParams({ communityId: 'kcis', type: 'event', from: fromStr, to: toStr });
+    if (profileId) qs.set('profileId', profileId);
+    fetch(`/api/events?${qs.toString()}`)
+      .then((r) => r.json())
+      .then((d) => setWeekEvents(Array.isArray(d.events) ? d.events : []))
+      .catch(() => setWeekEvents([]));
+  }, [profileId]);
+
+  useEffect(() => {
+    if (!profileId) { setMyReservations([]); return; }
+    const qs = new URLSearchParams({ communityId: 'kcis', type: 'reservation', profileId });
+    fetch(`/api/events?${qs.toString()}`)
+      .then((r) => r.json())
+      .then((d) => {
+        const all = Array.isArray(d.events) ? d.events : [];
+        const nowTs = Date.now();
+        const future = all
+          .filter((r: any) => new Date(r.endAt).getTime() >= nowTs)
+          .sort((a: any, b: any) => a.startAt.localeCompare(b.startAt));
+        setMyReservations(future);
+      })
+      .catch(() => setMyReservations([]));
+  }, [profileId]);
 
   useEffect(() => {
     if (!activeCommunityId) { setPublishedServices([]); return; }
@@ -457,77 +503,84 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                     </p>
                   )}
 
-                  {/* 묵상 적기 */}
-                  <div style={{ marginTop: '0.25rem' }}>
-                    <button
-                      type="button"
-                      onClick={() => setReflectionOpen((v) => !v)}
-                      aria-expanded={reflectionOpen}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.35rem',
-                        padding: '0.3rem 0.7rem',
-                        borderRadius: 999,
-                        background: reflection ? 'rgba(32, 205, 141, 0.2)' : 'rgba(255, 255, 255, 0.1)',
-                        color: reflection ? 'var(--color-primary)' : '#ffffff',
-                        border: reflection ? '1px solid rgba(32, 205, 141, 0.35)' : '1px solid rgba(255, 255, 255, 0.22)',
-                        fontWeight: 700,
-                        fontSize: '0.78rem',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      ✎ 묵상 적기{reflection ? ' · 작성됨' : ''}
-                      <span style={{ fontSize: '0.75rem', transform: reflectionOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.15s ease' }}>▾</span>
-                    </button>
-
-                    {reflectionOpen && (
-                      <div style={{ marginTop: '0.5rem', display: 'grid', gap: '0.5rem' }}>
-                        <textarea
-                          value={reflection}
-                          onChange={(e) => setReflection(e.target.value)}
-                          placeholder="오늘 말씀을 통해 받은 은혜나 결단을 자유롭게 적어보세요."
-                          rows={4}
+                  {/* 묵상노트 통합 — 작성/어제 미리보기/30일 히트맵 */}
+                  <div style={{ marginTop: '0.25rem', display: 'grid', gap: '0.55rem' }}>
+                    {(() => {
+                      const params = new URLSearchParams();
+                      if (profileId) params.set('profileId', profileId);
+                      if (nickname) params.set('nickname', nickname);
+                      if (email) params.set('email', email);
+                      const hasToday = !!qtNoteToday;
+                      return (
+                        <a
+                          href={`/qt/notes${params.toString() ? `?${params.toString()}` : ''}`}
                           style={{
-                            width: '100%',
-                            padding: '0.75rem 0.85rem',
-                            borderRadius: 12,
-                            border: '1px solid rgba(255, 255, 255, 0.2)',
-                            background: 'rgba(255, 255, 255, 0.06)',
-                            color: '#ffffff',
-                            fontSize: '0.9rem',
-                            lineHeight: 1.55,
-                            resize: 'vertical',
-                            outline: 'none',
-                            fontFamily: 'var(--font-sans)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            padding: '0.3rem 0.7rem',
+                            borderRadius: 999,
+                            background: hasToday ? 'rgba(32, 205, 141, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+                            color: hasToday ? 'var(--color-primary)' : '#ffffff',
+                            border: hasToday ? '1px solid rgba(32, 205, 141, 0.35)' : '1px solid rgba(255, 255, 255, 0.22)',
+                            fontWeight: 700,
+                            fontSize: '0.78rem',
+                            textDecoration: 'none',
+                            width: 'fit-content',
                           }}
-                        />
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                          <span style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.75rem' }}>
-                            {reflectionSavedAt
-                              ? `마지막 저장: ${new Date(reflectionSavedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`
-                              : '아직 저장된 묵상이 없습니다.'}
+                        >
+                          ✎ 묵상노트 열기{hasToday ? ' · 오늘 작성됨' : ''}
+                        </a>
+                      );
+                    })()}
+
+                    {qtNoteYesterday && (() => {
+                      const one = (qtNoteYesterday.decision || qtNoteYesterday.feelings || qtNoteYesterday.prayer || '').replace(/\n+/g, ' ').slice(0, 60);
+                      const label = qtNoteYesterday.decision ? '어제의 결단' : qtNoteYesterday.feelings ? '어제의 느낀점' : '어제의 기도제목';
+                      return (
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.78)', lineHeight: 1.5 }}>
+                          <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>{label}: </span>
+                          {one}{one.length >= 60 ? '…' : ''}
+                        </p>
+                      );
+                    })()}
+
+                    {profileId && (() => {
+                      // 최근 30일 히트맵 (오늘 포함 오른쪽 정렬, 왼쪽이 과거)
+                      const days: Array<{ key: string; hasNote: boolean; isToday: boolean }> = [];
+                      const pad = (n: number) => String(n).padStart(2, '0');
+                      const today = new Date();
+                      const todayKey = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+                      for (let i = 29; i >= 0; i--) {
+                        const d = new Date(today);
+                        d.setDate(today.getDate() - i);
+                        const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+                        days.push({ key, hasNote: qtNoteDates.has(key), isToday: key === todayKey });
+                      }
+                      const count = days.filter((d) => d.hasNote).length;
+                      return (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.72rem', color: 'rgba(255, 255, 255, 0.6)', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                            최근 30일 · {count}일 기록
                           </span>
-                          <button
-                            type="button"
-                            onClick={saveReflection}
-                            disabled={!reflectionKey}
-                            style={{
-                              padding: '0.4rem 0.95rem',
-                              borderRadius: 10,
-                              border: 'none',
-                              background: reflectionKey ? 'var(--color-primary)' : 'rgba(32, 205, 141, 0.4)',
-                              color: '#ffffff',
-                              fontWeight: 800,
-                              fontSize: '0.8rem',
-                              cursor: reflectionKey ? 'pointer' : 'not-allowed',
-                            }}
-                          >
-                            저장
-                          </button>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(30, 1fr)', gap: 2, flex: 1, minWidth: 160, maxWidth: 360 }}>
+                            {days.map((d) => (
+                              <span
+                                key={d.key}
+                                title={`${d.key}${d.hasNote ? ' · 기록됨' : ''}${d.isToday ? ' (오늘)' : ''}`}
+                                style={{
+                                  height: 10,
+                                  borderRadius: 2,
+                                  background: d.hasNote ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.12)',
+                                  outline: d.isToday ? '1px solid rgba(255, 255, 255, 0.6)' : 'none',
+                                  outlineOffset: 1,
+                                }}
+                              />
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 </>
               ) : (
@@ -594,153 +647,90 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
           )}
 
 
-          {false && activeCommunity ? (
-            <>
-              <section id="notice" style={{ ...cardBase, display: 'grid', gap: '1rem' }}>
-                <h2 style={sectionTitle}>알림 일정</h2>
-                <p style={helperText}>오늘의 모임과 교회 일정을 빠르게 확인하세요.</p>
-                <div style={{ display: 'grid', gap: '0.75rem' }}>
-                  <div style={{ padding: '1rem 1.1rem', borderRadius: 12, background: '#CCF4E5', border: '1px solid #E7F3EE', borderLeft: '4px solid #20CD8D' }}>
-                    <p style={{ margin: 0, color: '#20CD8D', fontWeight: 700 }}>이번주 {activeCommunity?.name} 소모임</p>
-                    <span style={{ color: '#2D4048', fontSize: '0.92rem' }}>수요일 저녁 8시 / A조</span>
-                  </div>
-                </div>
-              </section>
-            </>
-          ) : (
-            <>
-              <section style={cardBase}>
-                <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>📅 이번주 교회일정 목록</h2>
-                <p style={{ ...helperText, marginTop: '0.55rem' }}>
-                  <a href="/schedule" style={{ color: 'var(--color-primary-deep)', textDecoration: 'underline', fontWeight: 700 }}>전체 일정 보기 →</a>
-                </p>
-              </section>
+          <section style={cardBase}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+              <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>📅 이번주 교회일정</h2>
+              <a href="/schedule" style={{ color: 'var(--color-primary-deep)', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none' }}>전체 →</a>
+            </div>
+            {weekEvents === null ? (
+              <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>불러오는 중…</p>
+            ) : weekEvents.length === 0 ? (
+              <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>이번주 등록된 일정이 없습니다.</p>
+            ) : (
+              <ul style={{ listStyle: 'none', margin: '0.6rem 0 0', padding: 0, display: 'grid', gap: '0.45rem' }}>
+                {weekEvents.slice(0, 6).map((ev) => {
+                  const s = new Date(ev.startAt);
+                  const pad = (n: number) => String(n).padStart(2, '0');
+                  const labels = ['일', '월', '화', '수', '목', '금', '토'];
+                  const dateStr = `${pad(s.getMonth() + 1)}/${pad(s.getDate())} (${labels[s.getDay()]})`;
+                  const allDay = isAllDayEvent(ev.startAt, ev.endAt);
+                  const timeStr = allDay ? '종일' : `${pad(s.getHours())}:${pad(s.getMinutes())}`;
+                  return (
+                    <li key={ev.id} style={{ padding: '0.55rem 0.75rem', borderRadius: 10, background: '#ECFDF5', border: '1px solid #A7F3D0', display: 'flex', gap: '0.5rem', alignItems: 'baseline', flexWrap: 'wrap', fontSize: '0.88rem' }}>
+                      <span style={{ color: '#065F46', fontWeight: 800 }}>{dateStr}</span>
+                      <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>{timeStr}</span>
+                      <span style={{ color: 'var(--color-ink)' }}>· {ev.title}</span>
+                      {ev.location && <span style={{ color: 'var(--color-ink-2)', fontSize: '0.8rem' }}>📍 {ev.location}</span>}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
 
-              <section style={cardBase}>
-                <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>📍 나의 장소예약</h2>
-                <p style={{ ...helperText, marginTop: '0.55rem' }}>
-                  예약된 장소가 없습니다. <a href="/reservation" style={{ color: 'var(--color-primary-deep)', textDecoration: 'underline', fontWeight: 700 }}>장소 예약하기 →</a>
-                </p>
-              </section>
+          <section style={cardBase}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+              <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>📍 다가오는 나의 장소예약</h2>
+              <a href="/reservation" style={{ color: 'var(--color-primary-deep)', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none' }}>새 예약 →</a>
+            </div>
+            {!profileId ? (
+              <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>로그인 후 이용해 주세요.</p>
+            ) : myReservations === null ? (
+              <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>불러오는 중…</p>
+            ) : myReservations.length === 0 ? (
+              <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>다가오는 예약이 없습니다. <a href="/reservation" style={{ color: 'var(--color-primary-deep)', textDecoration: 'underline', fontWeight: 700 }}>장소 예약하기 →</a></p>
+            ) : (
+              <ul style={{ listStyle: 'none', margin: '0.6rem 0 0', padding: 0, display: 'grid', gap: '0.45rem' }}>
+                {myReservations.slice(0, 5).map((r) => {
+                  const s = new Date(r.startAt);
+                  const e = new Date(r.endAt);
+                  const pad = (n: number) => String(n).padStart(2, '0');
+                  const labels = ['일', '월', '화', '수', '목', '금', '토'];
+                  const dateStr = `${pad(s.getMonth() + 1)}/${pad(s.getDate())} (${labels[s.getDay()]})`;
+                  const timeStr = `${pad(s.getHours())}:${pad(s.getMinutes())}~${pad(e.getHours())}:${pad(e.getMinutes())}`;
+                  return (
+                    <li key={r.id} style={{ padding: '0.55rem 0.75rem', borderRadius: 10, background: '#ECFCCB', border: '1px solid #D9F09E', display: 'flex', gap: '0.5rem', alignItems: 'baseline', flexWrap: 'wrap', fontSize: '0.88rem' }}>
+                      <span style={{ color: '#3F6212', fontWeight: 800 }}>{dateStr}</span>
+                      <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>{timeStr}</span>
+                      <span style={{ color: 'var(--color-ink)' }}>· {r.title}</span>
+                      {r.location && <span style={{ color: 'var(--color-ink-2)', fontSize: '0.8rem' }}>📍 {r.location}</span>}
+                    </li>
+                  );
+                })}
+                {myReservations.length > 5 && (
+                  <li style={{ fontSize: '0.78rem', color: 'var(--color-ink-2)', textAlign: 'center' }}>
+                    <a href={`/reservations/my${profileId ? `?profileId=${encodeURIComponent(profileId)}` : ''}`} style={{ color: 'var(--color-primary-deep)', textDecoration: 'underline', fontWeight: 700 }}>전체 {myReservations.length}건 보기 →</a>
+                  </li>
+                )}
+              </ul>
+            )}
+          </section>
 
-              <section style={cardBase}>
-                <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>📖 오늘의 큐티</h2>
-                <p style={{ ...helperText, marginTop: '0.55rem' }}>
-                  <a href="/qt/notes" style={{ color: 'var(--color-primary-deep)', textDecoration: 'underline', fontWeight: 700 }}>큐티 묵상노트 열기 →</a>
-                </p>
-              </section>
-
-              <section style={cardBase}>
-                <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>📕 오늘의 성경통독</h2>
-                <p style={{ ...helperText, marginTop: '0.55rem' }}>
-                  오늘 읽을 말씀을 확인하고 함께 통독을 진행합니다. (준비 중)
-                </p>
-              </section>
-
-              <section style={cardBase}>
-                <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>🌱 셀그룹 생성</h2>
-                <p style={{ ...helperText, marginTop: '0.55rem' }}>
-                  공동체 셀 모임을 개설하고 구성원과 자료를 관리합니다. (준비 중)
-                </p>
-              </section>
-            </>
-          )}
-
-          {false && (
-            <section>
-              <div style={{ display: 'none' }}>
-                <input
-                  type="text"
-                  value={newCommunityName}
-                  onChange={(e) => setNewCommunityName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') createCommunity(); }}
-                  placeholder={t('dashboard.communityNamePlaceholder')}
-                  style={{ padding: '0.9rem 1rem', borderRadius: 12, border: '1px solid var(--color-gray)', background: 'var(--color-surface)', fontSize: '0.95rem', color: 'var(--color-ink)' }}
-                />
-                <button
-                  type="button"
-                  onClick={createCommunity}
-                  disabled={creatingCommunity || !profileId}
-                  style={{ padding: '0.6rem 1.1rem', borderRadius: 'var(--radius-lg)', border: 'none', background: creatingCommunity || !profileId ? 'rgba(32, 205, 141, 0.5)' : 'var(--color-primary)', color: '#ffffff', fontWeight: 800, fontSize: '0.9rem', cursor: creatingCommunity || !profileId ? 'not-allowed' : 'pointer', boxShadow: 'var(--shadow-button)', whiteSpace: 'nowrap' }}
-                >
-                  {creatingCommunity ? t('dashboard.creating') : t('dashboard.createBtn')}
-                </button>
-              </div>
-              <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-ink)' }}>{t('dashboard.joinApproval')}</span>
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.9rem', color: 'var(--color-ink)', cursor: 'pointer' }}>
-                  <input
-                    type="radio"
-                    name="joinApprovalMode"
-                    value="auto"
-                    checked={newCommunityApproval === 'auto'}
-                    onChange={() => setNewCommunityApproval('auto')}
-                  />
-                  {t('dashboard.joinAuto')}
-                </label>
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.9rem', color: 'var(--color-ink)', cursor: 'pointer' }}>
-                  <input
-                    type="radio"
-                    name="joinApprovalMode"
-                    value="admin"
-                    checked={newCommunityApproval === 'admin'}
-                    onChange={() => setNewCommunityApproval('admin')}
-                  />
-                  {t('dashboard.joinAdmin')}
-                </label>
-              </div>
-              <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-ink)' }}>{t('dashboard.requireRealName')}</span>
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.9rem', color: 'var(--color-ink)', cursor: 'pointer' }}>
-                  <input
-                    type="radio"
-                    name="requireRealName"
-                    checked={newCommunityRequireRealName}
-                    onChange={() => setNewCommunityRequireRealName(true)}
-                  />
-                  {t('dashboard.yes')}
-                </label>
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.9rem', color: 'var(--color-ink)', cursor: 'pointer' }}>
-                  <input
-                    type="radio"
-                    name="requireRealName"
-                    checked={!newCommunityRequireRealName}
-                    onChange={() => setNewCommunityRequireRealName(false)}
-                  />
-                  {t('dashboard.no')}
-                </label>
-              </div>
-              <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-ink)' }}>공동체 타임존</span>
-                <select
-                  value={newCommunityTimezone}
-                  onChange={(e) => setNewCommunityTimezone(e.target.value)}
-                  style={{ padding: '0.6rem 0.85rem', borderRadius: 10, border: '1px solid var(--color-gray)', background: 'var(--color-surface)', fontSize: '0.9rem', color: 'var(--color-ink)' }}
-                >
-                  {['Asia/Seoul', 'Asia/Singapore', 'Asia/Tokyo', 'Asia/Shanghai', 'America/Los_Angeles', 'America/New_York', 'America/Chicago', 'Europe/London', 'Europe/Berlin', 'Australia/Sydney', 'UTC'].includes(newCommunityTimezone) ? null : (
-                    <option value={newCommunityTimezone}>{newCommunityTimezone} (현재)</option>
-                  )}
-                  <option value="Asia/Seoul">한국 (Asia/Seoul)</option>
-                  <option value="Asia/Singapore">싱가포르 (Asia/Singapore)</option>
-                  <option value="Asia/Tokyo">일본 (Asia/Tokyo)</option>
-                  <option value="Asia/Shanghai">중국 (Asia/Shanghai)</option>
-                  <option value="America/Los_Angeles">미 서부 (America/Los_Angeles)</option>
-                  <option value="America/New_York">미 동부 (America/New_York)</option>
-                  <option value="America/Chicago">미 중부 (America/Chicago)</option>
-                  <option value="Europe/London">영국 (Europe/London)</option>
-                  <option value="Europe/Berlin">독일 (Europe/Berlin)</option>
-                  <option value="Australia/Sydney">호주 (Australia/Sydney)</option>
-                  <option value="UTC">UTC</option>
-                </select>
-              </div>
-              {createMsg && (
-                <p style={{ margin: '0.65rem 0 0', color: '#b91c1c', fontSize: '0.88rem' }}>{createMsg}</p>
-              )}
-              {!profileId && (
-                <p style={{ margin: '0.65rem 0 0', color: '#2D4048', fontSize: '0.85rem' }}>로그인 후 공동체를 생성할 수 있습니다.</p>
-              )}
-            </section>
-          )}
+          <section style={cardBase}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+              <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>📖 묵상노트</h2>
+              {(() => {
+                const params = new URLSearchParams();
+                if (profileId) params.set('profileId', profileId);
+                if (nickname) params.set('nickname', nickname);
+                if (email) params.set('email', email);
+                return (
+                  <a href={`/qt/notes${params.toString() ? `?${params.toString()}` : ''}`} style={{ color: 'var(--color-primary-deep)', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none' }}>전체 →</a>
+                );
+              })()}
+            </div>
+            <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>오늘의 큐티 영상과 본문을 보고, 받은 은혜·결단·기도를 기록합니다.</p>
+          </section>
 
           {profileId && !profileDone && !activeCommunity && (
             <section style={{ padding: profileExpanded ? (isMobile ? '1.1rem' : '1.5rem') : '1rem 1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', transition: 'padding 0.2s ease' }}>
@@ -857,20 +847,7 @@ export const getServerSideProps: GetServerSideProps<DashboardProps> = async (con
         : false,
     }));
 
-  let systemAdminHref: string | null = null;
-  try {
-    const parsed = (await getSystemAdmins()) as { profileIds?: string[] };
-    const allowed = Array.isArray(parsed?.profileIds) && profileId ? parsed.profileIds.includes(profileId) : false;
-    const token = process.env.ADMIN_ACCESS_TOKEN;
-    if (allowed && token && profileId) {
-      const qs = new URLSearchParams({ profileId, k: token });
-      if (myNickname) qs.set('nickname', myNickname);
-      if (myEmail) qs.set('email', myEmail);
-      systemAdminHref = `/admin/system?${qs.toString()}`;
-    }
-  } catch {
-    systemAdminHref = null;
-  }
+  const systemAdminHref = await getSystemAdminHref(profileId, { nickname: myNickname, email: myEmail });
 
   return {
     props: {

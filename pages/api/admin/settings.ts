@@ -4,6 +4,8 @@ import { getSettings, setSettings } from '../../../lib/dataStore';
 
 type SignupField = 'realName' | 'contact';
 
+type ContactPerson = { name: string; role: string; phone: string; email: string };
+
 type Settings = {
   venueSlotMin: number;
   signupApproval: 'auto' | 'admin';
@@ -12,6 +14,7 @@ type Settings = {
   venueAvailableEnd: string;
   reservationLimitMode: 'unlimited' | 'perUser';
   reservationLimitPerUser: number; // 1..10 (valid when mode='perUser')
+  contactPersons: ContactPerson[]; // 담당자 연락처 (최대 2명)
 };
 
 const sanitizeFields = (v: any): SignupField[] => {
@@ -34,6 +37,21 @@ const sanitizePerUser = (v: any): number => {
   return Math.max(1, Math.min(10, n));
 };
 
+const sanitizeContactPersons = (v: any): ContactPerson[] => {
+  if (!Array.isArray(v)) return [];
+  const out: ContactPerson[] = [];
+  for (const item of v.slice(0, 2)) {
+    if (!item || typeof item !== 'object') continue;
+    out.push({
+      name: typeof item.name === 'string' ? item.name.trim().slice(0, 40) : '',
+      role: typeof item.role === 'string' ? item.role.trim().slice(0, 40) : '',
+      phone: typeof item.phone === 'string' ? item.phone.trim().slice(0, 40) : '',
+      email: typeof item.email === 'string' ? item.email.trim().slice(0, 80) : '',
+    });
+  }
+  return out;
+};
+
 const readSettings = async (): Promise<Settings> => {
   try {
     const parsed = (await getSettings()) || {};
@@ -45,6 +63,7 @@ const readSettings = async (): Promise<Settings> => {
       venueAvailableEnd: sanitizeHHMM(parsed.venueAvailableEnd, '22:00'),
       reservationLimitMode: parsed.reservationLimitMode === 'perUser' ? 'perUser' : 'unlimited',
       reservationLimitPerUser: sanitizePerUser(parsed.reservationLimitPerUser),
+      contactPersons: sanitizeContactPersons(parsed.contactPersons),
     };
   } catch {
     return {
@@ -55,6 +74,7 @@ const readSettings = async (): Promise<Settings> => {
       venueAvailableEnd: '22:00',
       reservationLimitMode: 'unlimited',
       reservationLimitPerUser: 3,
+      contactPersons: [],
     };
   }
 };
@@ -69,7 +89,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   if (req.method === 'PATCH') {
     const current = await readSettings();
-    const { venueSlotMin, signupApproval, signupRequiredFields, venueAvailableStart, venueAvailableEnd, reservationLimitMode, reservationLimitPerUser } = req.body as Partial<Settings>;
+    const { venueSlotMin, signupApproval, signupRequiredFields, venueAvailableStart, venueAvailableEnd, reservationLimitMode, reservationLimitPerUser, contactPersons } = req.body as Partial<Settings>;
     const next: Settings = {
       ...current,
       ...(typeof venueSlotMin === 'number' && (venueSlotMin === 30 || venueSlotMin === 60) ? { venueSlotMin } : {}),
@@ -79,6 +99,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       ...(typeof venueAvailableEnd === 'string' && /^\d{2}:\d{2}$/.test(venueAvailableEnd) ? { venueAvailableEnd } : {}),
       ...(reservationLimitMode === 'unlimited' || reservationLimitMode === 'perUser' ? { reservationLimitMode } : {}),
       ...(typeof reservationLimitPerUser !== 'undefined' ? { reservationLimitPerUser: sanitizePerUser(reservationLimitPerUser) } : {}),
+      ...(Array.isArray(contactPersons) ? { contactPersons: sanitizeContactPersons(contactPersons) } : {}),
     };
     await setSettings(next);
     return res.status(200).json({ settings: next });

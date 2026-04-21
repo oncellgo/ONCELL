@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getQtNotes, setQtNotes } from '../../lib/dataStore';
+import { db } from '../../lib/db';
 
 type QtNote = {
   profileId: string;
@@ -56,6 +57,22 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       if (idx >= 0) notes[idx] = next;
       else notes.push(next);
       await setQtNotes(notes);
+
+      // 3항목 중 하나라도 작성됐으면 QT 완료 기록 (upsert), 모두 비면 삭제
+      const hasAny = !!((next.feelings && next.feelings.trim()) || (next.decision && next.decision.trim()) || (next.prayer && next.prayer.trim()));
+      try {
+        if (hasAny) {
+          await db.from('kcis_user_completions').upsert(
+            { profile_id: profileId, type: 'qt', date, completed_at: new Date().toISOString() },
+            { onConflict: 'profile_id,type,date' },
+          );
+        } else {
+          await db.from('kcis_user_completions').delete().eq('profile_id', profileId).eq('type', 'qt').eq('date', date);
+        }
+      } catch (e) {
+        console.error('[qt-notes] completion sync failed:', e);
+      }
+
       return res.status(200).json({ note: next });
     }
 
@@ -65,6 +82,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       if (!profileId || !date) return res.status(400).json({ error: 'profileId와 date가 필요합니다.' });
       const filtered = notes.filter((n) => !(n.profileId === profileId && n.date === date));
       await setQtNotes(filtered);
+      try {
+        await db.from('kcis_user_completions').delete().eq('profile_id', profileId).eq('type', 'qt').eq('date', date);
+      } catch {}
       return res.status(200).json({ ok: true });
     }
 

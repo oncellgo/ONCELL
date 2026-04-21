@@ -178,11 +178,3 @@ export const setSystemAdmins = async (val: any): Promise<void> => kvSet(KV_KEYS.
 
 export const getWorshipTemplates = async (): Promise<any> => (await kvGet(KV_KEYS.worshipTemplates)) || null;
 export const setWorshipTemplates = async (val: any): Promise<void> => kvSet(KV_KEYS.worshipTemplates, val);
-
-export const getUsageLogs = async (): Promise<any[]> => (await kvGet<any[]>(KV_KEYS.usageLogs)) || [];
-export const setUsageLogs = async (val: any[]): Promise<void> => kvSet(KV_KEYS.usageLogs, val);
-
-export const getTranslationsCache = async (): Promise<Record<string, any>> =>
-  (await kvGet<Record<string, any>>(KV_KEYS.translationsCache)) || {};
-export const setTranslationsCache = async (val: Record<string, any>): Promise<void> =>
-  kvSet(KV_KEYS.translationsCache, val);

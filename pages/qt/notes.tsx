@@ -2,12 +2,14 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useEffect, useMemo, useState } from 'react';
 import AppShell from '../../components/AppShell';
+import { useRequireLogin } from '../../lib/useRequireLogin';
 
 type ReflectionRecord = { text: string; savedAt: string; reference?: string | null };
 
 const QtNotesPage = () => {
   const router = useRouter();
   const profileId = typeof router.query.profileId === 'string' ? router.query.profileId : null;
+  useRequireLogin(profileId);
   const nickname = typeof router.query.nickname === 'string' ? router.query.nickname : null;
   const email = typeof router.query.email === 'string' ? router.query.email : null;
 

@@ -17,6 +17,9 @@ export type Block = {
   startAt: string;
   endAt: string | null;
   reason?: string;
+  kind?: 'event' | 'reservation' | 'block';  // event=교회행사(관리자), reservation=사용자예약, block=관리자 차단(기본)
+  reserverName?: string;   // reservation kind 전용 — 예약자 실명
+  reserverContact?: string;  // reservation kind 전용 — 연락처
 };
 
 export type BlockGroup = {
@@ -106,12 +109,13 @@ type Props = {
   availableStart?: string;
   availableEnd?: string;
   selectedSlots?: Map<string, Set<number>>;
+  alternateSlots?: Map<string, Set<number>>;  // picker에서 함께 선택된 "대체" 장소 — 비활성 표시, 클릭 시 swap
   onSlotClick?: (venue: Venue, slotMin: number, blocked: boolean) => void;
   renderRowExtra?: (venue: Venue) => React.ReactNode;
   showActionColumn?: boolean;
 };
 
-const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate, slotMin = SLOT_MIN, availableStart = '06:00', availableEnd = '22:00', selectedSlots, onSlotClick, renderRowExtra, showActionColumn = false }: Props) => {
+const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate, slotMin = SLOT_MIN, availableStart = '06:00', availableEnd = '22:00', selectedSlots, alternateSlots, onSlotClick, renderRowExtra, showActionColumn = false }: Props) => {
   const isMobile = useIsMobile();
   const blockedByVenue = computeBlockedSlotsForDate(groups, selectedDate);
 
@@ -179,10 +183,10 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
           <tr style={{ background: '#ECFCCB' }}>
             <th colSpan={2} style={{ padding: '0.25rem 0.4rem', position: 'sticky', left: 0, background: '#ECFCCB', textAlign: 'center', borderRight: '1px solid #D9F09E', zIndex: 2, fontSize: '0.72rem', fontWeight: 800 }}>시간</th>
             {venues.map((v) => (
-              <th key={v.id} style={{ padding: '0.2rem 0.15rem', borderRight: '1px solid #F1F5F9', color: '#4D7C0F', fontWeight: 700, minWidth: VENUE_MIN_W, verticalAlign: 'bottom', lineHeight: 1.1 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.08rem' }}>
+              <th key={v.id} style={{ padding: '0.25rem 0.15rem', borderRight: '1px solid #F1F5F9', color: '#4D7C0F', fontWeight: 700, minWidth: VENUE_MIN_W, verticalAlign: 'middle', lineHeight: 1.1 }}>
+                <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: '0.3rem', whiteSpace: 'nowrap' }}>
                   <span style={{ fontSize: '0.62rem', color: '#334155', fontWeight: 700 }}>{v.floor}</span>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-ink)', whiteSpace: 'nowrap' }}>{v.name}</span>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-ink)' }}>{v.name}</span>
                   <span style={{ fontSize: '0.6rem', color: 'var(--color-ink-2)', fontFamily: 'monospace' }}>{v.code}</span>
                 </div>
               </th>
@@ -191,8 +195,8 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
         </thead>
         <tbody>
           {(() => {
-            // 각 venue별 슬롯 정보 사전계산: 연속된 같은 reason의 블럭은 첫 행에서 rowSpan으로 묶음
-            type SlotInfo = { blocked: boolean; reason: string; isStart: boolean; span: number };
+            // 각 venue별 슬롯 정보 사전계산: 연속된 같은 (reason, kind, 예약자)의 블럭을 rowSpan으로 묶음
+            type SlotInfo = { blocked: boolean; reason: string; kind: 'event' | 'reservation' | 'block'; reserverName?: string; reserverContact?: string; isStart: boolean; span: number };
             const venueSlotInfos = new Map<string, SlotInfo[]>();
             for (const v of venues) {
               const infos: SlotInfo[] = slotMins.map((mm) => {
@@ -202,6 +206,9 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                 const groupReason = groupReasonByVenue.get(v.id)?.get(mm) || (slotMin === 60 ? groupReasonByVenue.get(v.id)?.get(mm + 30) : undefined);
                 let blocked = groupSlot;
                 let reason = groupReason || '';
+                let kind: 'event' | 'reservation' | 'block' = 'block';
+                let reserverName: string | undefined;
+                let reserverContact: string | undefined;
                 for (const b of blocks) {
                   if (b.venueId !== v.id) continue;
                   const bs = new Date(b.startAt).getTime();
@@ -209,17 +216,22 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                   if (bs < se.getTime() && be > ss.getTime()) {
                     blocked = true;
                     if (b.reason) reason = b.reason;
+                    if (b.kind) kind = b.kind;
+                    reserverName = b.reserverName;
+                    reserverContact = b.reserverContact;
                     break;
                   }
                 }
-                return { blocked, reason, isStart: false, span: 1 };
+                return { blocked, reason, kind, reserverName, reserverContact, isStart: false, span: 1 };
               });
               for (let i = 0; i < infos.length; i++) {
                 if (!infos[i].blocked) continue;
-                if (i === 0 || !infos[i - 1].blocked || infos[i - 1].reason !== infos[i].reason) {
+                const prev = infos[i - 1];
+                const samePrev = i > 0 && prev.blocked && prev.reason === infos[i].reason && prev.kind === infos[i].kind && prev.reserverName === infos[i].reserverName;
+                if (!samePrev) {
                   infos[i].isStart = true;
                   let span = 1;
-                  while (i + span < infos.length && infos[i + span].blocked && infos[i + span].reason === infos[i].reason) span++;
+                  while (i + span < infos.length && infos[i + span].blocked && infos[i + span].reason === infos[i].reason && infos[i + span].kind === infos[i].kind && infos[i + span].reserverName === infos[i].reserverName) span++;
                   infos[i].span = span;
                 }
               }
@@ -266,20 +278,49 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                   const blocked = info?.blocked || false;
                   const reason = info?.reason || '';
                   const span = info?.span || 1;
+                  const kind = info?.kind || 'block';
+                  const reserverName = info?.reserverName;
+                  const reserverContact = info?.reserverContact;
                   const isSelected = !!selectedSlots?.get(v.id)?.has(m);
-                  const bg = isSelected ? '#20CD8D' : (!inAvailable ? '#E5E7EB' : blocked ? '#6B7280' : '#F7FEE7');
-                  const color = isSelected ? '#fff' : (!inAvailable ? '#9CA3AF' : blocked ? '#F3F4F6' : '#4D7C0F');
+                  const isAlternate = !isSelected && !blocked && inAvailable && !!alternateSlots?.get(v.id)?.has(m);
+                  // 사용자 선택이 기존 예약/블럭과 겹치면 "예약불가" 경고 상태
+                  const isConflict = isSelected && blocked;
+                  // 색상: 충돌=주황경고, 선택=민트, 대체=반투명민트+점선, 불가시간=연회색, 교회일정=진빨강, 사용자예약=중간회색, 관리자블럭=어두운회색, 예약가능=연녹
+                  const kindBg = kind === 'event' ? '#DC2626' : kind === 'reservation' ? '#9CA3AF' : '#4B5563';
+                  const kindFg = '#FFFFFF';
+                  const bg = isConflict ? '#F59E0B' : isSelected ? '#20CD8D' : isAlternate ? 'rgba(32, 205, 141, 0.18)' : (!inAvailable ? '#E5E7EB' : blocked ? kindBg : '#F7FEE7');
+                  const color = isConflict ? '#FFFFFF' : isSelected ? '#fff' : isAlternate ? '#3F6212' : (!inAvailable ? '#9CA3AF' : blocked ? kindFg : '#4D7C0F');
                   const clickable = !!onSlotClick && inAvailable;
+                  const kindLabel = kind === 'event' ? '교회일정' : kind === 'reservation' ? '예약됨' : '블럭';
+                  const titleParts = [`${v.floor} ${v.name} ${toHHMM(m)}`];
+                  if (!inAvailable) titleParts.push('예약 불가 시간대');
+                  else if (blocked) {
+                    titleParts.push(`${kindLabel}: ${reason}`);
+                    if (kind === 'reservation' && reserverName) titleParts.push(`예약자: ${reserverName}`);
+                    if (kind === 'reservation' && reserverContact) titleParts.push(`연락처: ${reserverContact}`);
+                  } else if (isSelected) titleParts.push('선택됨 (클릭하여 해제)');
+                  else if (isAlternate) titleParts.push('후보 (클릭하여 이 장소로 전환)');
+                  else titleParts.push('예약 가능 — 클릭하여 선택');
+                  // 셀 내부: reservation kind이고 rowSpan≥2면 3줄 표시, 그 외엔 reason만
+                  const showStacked = blocked && kind === 'reservation' && span >= 2 && (reserverName || reserverContact);
                   return (
                     <td key={v.id} rowSpan={blocked ? span : 1} style={{ padding: 0, borderRight: '1px solid #F4F4F0', minWidth: VENUE_MIN_W }}>
                       <button
                         type="button"
                         disabled={!clickable}
                         onClick={() => onSlotClick && onSlotClick(v, m, blocked)}
-                        title={`${v.floor} ${v.name} ${toHHMM(m)} ${!inAvailable ? '예약 불가 시간대' : blocked ? `블럭: ${reason}` : '예약 가능'}`}
-                        style={{ width: '100%', height: blocked ? span * 20 : 20, border: 'none', background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: '0.6rem', fontWeight: 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle' }}
+                        title={titleParts.join(' | ')}
+                        style={{ width: '100%', height: blocked ? span * 20 : 20, border: isAlternate ? '1.5px dashed #20CD8D' : 'none', background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: '0.6rem', fontWeight: 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box' }}
                       >
-                        {isSelected ? '●' : (blocked ? (reason || '블럭') : '')}
+                        {isConflict ? '예약불가' : isSelected ? '예약가능' : isAlternate ? '○' : (blocked ? (
+                          showStacked ? (
+                            <span style={{ display: 'grid', gap: 1, lineHeight: 1.1 }}>
+                              <span style={{ fontWeight: 800 }}>{reason || kindLabel}</span>
+                              {reserverName && <span style={{ fontWeight: 600, opacity: 0.95 }}>{reserverName}</span>}
+                              {reserverContact && <span style={{ fontWeight: 500, opacity: 0.9, fontSize: '0.55rem' }}>{reserverContact}</span>}
+                            </span>
+                          ) : (reason || kindLabel)
+                        ) : '')}
                       </button>
                     </td>
                   );

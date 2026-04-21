@@ -3,12 +3,17 @@ import type { GetServerSidePropsContext } from 'next';
 import { getSystemAdmins } from './dataStore';
 import { kvGet, kvSet } from './db';
 
-const loadAdmins = async (): Promise<string[]> => {
+type AdminsFile = { profileIds: string[]; emails: string[] };
+
+const loadAdmins = async (): Promise<AdminsFile> => {
   try {
-    const parsed = await getSystemAdmins();
-    return Array.isArray(parsed?.profileIds) ? parsed.profileIds : [];
+    const parsed = (await getSystemAdmins()) as any;
+    return {
+      profileIds: Array.isArray(parsed?.profileIds) ? parsed.profileIds : [],
+      emails: Array.isArray(parsed?.emails) ? (parsed.emails as string[]).map((e) => String(e).trim().toLowerCase()) : [],
+    };
   } catch {
-    return [];
+    return { profileIds: [], emails: [] };
   }
 };
 
@@ -31,11 +36,19 @@ const pickString = (v: unknown): string | null => (typeof v === 'string' && v.le
 
 export type SystemAdminCheck = { ok: true; profileId: string } | { ok: false };
 
+const isAdminByEither = (admins: AdminsFile, profileId: string | null, email: string | null): boolean => {
+  if (profileId && admins.profileIds.includes(profileId)) return true;
+  if (email && admins.emails.includes(email.trim().toLowerCase())) return true;
+  return false;
+};
+
 export const checkSystemAdmin = async (
   profileIdRaw: unknown,
   tokenRaw: unknown,
+  emailRaw?: unknown,
 ): Promise<SystemAdminCheck> => {
   const profileId = pickString(profileIdRaw);
+  const email = pickString(emailRaw);
   const token = pickString(tokenRaw);
   const expected = await getActiveAdminToken();
 
@@ -43,12 +56,12 @@ export const checkSystemAdmin = async (
   if (token !== expected) return { ok: false };
 
   const admins = await loadAdmins();
-  if (!admins.includes(profileId)) return { ok: false };
+  if (!isAdminByEither(admins, profileId, email)) return { ok: false };
   return { ok: true, profileId };
 };
 
 export const requireSystemAdminSSR = async (ctx: GetServerSidePropsContext) => {
-  const result = await checkSystemAdmin(ctx.query.profileId, ctx.query.k);
+  const result = await checkSystemAdmin(ctx.query.profileId, ctx.query.k, ctx.query.email);
   if (!result.ok) return { notFound: true as const };
   return { ok: true as const, profileId: result.profileId };
 };
@@ -61,7 +74,7 @@ export const getSystemAdminHref = async (
   const token = await getActiveAdminToken();
   if (!token) return null;
   const admins = await loadAdmins();
-  if (!admins.includes(profileId)) return null;
+  if (!isAdminByEither(admins, profileId, extras?.email || null)) return null;
   const qs = new URLSearchParams({ profileId, k: token });
   if (extras?.nickname) qs.set('nickname', extras.nickname);
   if (extras?.email) qs.set('email', extras.email);
@@ -73,8 +86,9 @@ export const requireSystemAdminApi = async (
   res: NextApiResponse,
 ): Promise<string | null> => {
   const profileId = req.headers['x-profile-id'] ?? (req.query.profileId as string | undefined) ?? (req.body?.profileId as string | undefined);
+  const email = req.headers['x-email'] ?? (req.query.email as string | undefined) ?? (req.body?.email as string | undefined);
   const token = req.headers['x-admin-token'] ?? (req.query.k as string | undefined) ?? (req.body?.k as string | undefined);
-  const result = await checkSystemAdmin(profileId, token);
+  const result = await checkSystemAdmin(profileId, token, email);
   if (!result.ok) {
     res.status(404).end();
     return null;

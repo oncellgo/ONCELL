@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { ReactNode, useEffect, useState } from 'react';
 import { useIsMobile } from '../lib/useIsMobile';
+import ProfileModal from './ProfileModal';
 
 /**
  * 하위(서브) 페이지 공통 헤더.
@@ -20,15 +21,17 @@ export type SubHeaderProps = {
 
 const NAV_ITEMS: Array<{ label: string; href: string; requireLogin?: boolean }> = [
   { label: '장소예약', href: '/reservation', requireLogin: true },
-  { label: '큐티', href: '/qt' },
-  { label: '예배', href: '#' },
-  { label: '일정', href: '/schedule', requireLogin: true },
+  { label: '예배 및 모임교안', href: '/cell-teaching', requireLogin: true },
+  { label: '큐티', href: '/qt', requireLogin: true },
+  { label: '말씀통독', href: '/reading', requireLogin: true },
 ];
 
 const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, systemAdminHref }: SubHeaderProps) => {
   const router = useRouter();
   const currentPath = router?.pathname || '';
   const isMobile = useIsMobile();
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [currentDisplayName, setCurrentDisplayName] = useState<string | null>(displayName || null);
 
   const [lsProfileId, setLsProfileId] = useState<string | null>(null);
   const [lsNickname, setLsNickname] = useState<string | null>(null);
@@ -55,7 +58,7 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
   const effEmail = email || lsEmail;
 
   const providerLabel = effProfileId?.startsWith('kakao-') ? '카카오 사용자' : effProfileId?.startsWith('google-') ? 'Google 사용자' : '사용자';
-  const userLabel = displayName || effNickname || (effEmail ? effEmail.split('@')[0] : providerLabel);
+  const userLabel = currentDisplayName || displayName || effNickname || (effEmail ? effEmail.split('@')[0] : providerLabel);
 
   const authQs = effProfileId
     ? new URLSearchParams({
@@ -175,7 +178,12 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
               whiteSpace: 'nowrap',
             }}
           >
-            {userLabel}
+            <button
+              type="button"
+              onClick={() => setProfileModalOpen(true)}
+              title="내 정보 수정"
+              style={{ background: 'none', border: 'none', padding: 0, margin: 0, font: 'inherit', color: 'inherit', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'underline', textUnderlineOffset: 3, textDecorationColor: 'var(--color-gray)' }}
+            >{userLabel}</button>
             {systemAdminHref && (
               <Link
                 href={systemAdminHref}
@@ -202,8 +210,48 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
             )}
           </span>
         )}
+        {effProfileId && (
+          <button
+            type="button"
+            aria-label="로그아웃"
+            title="로그아웃"
+            onClick={() => {
+              try {
+                window.localStorage.removeItem('kcisProfileId');
+                window.localStorage.removeItem('kcisNickname');
+                window.localStorage.removeItem('kcisEmail');
+              } catch {}
+              window.location.href = '/';
+            }}
+            style={{
+              padding: isMobile ? '0.35rem 0.6rem' : '0.4rem 0.8rem',
+              borderRadius: 999,
+              border: '1px solid var(--color-surface-border)',
+              background: '#fff',
+              color: 'var(--color-ink-2)',
+              fontWeight: 700,
+              fontSize: '0.78rem',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              flex: '0 0 auto',
+            }}
+          >
+            로그아웃
+          </button>
+        )}
         {rightExtras}
       </div>
+
+      {profileModalOpen && effProfileId && (
+        <ProfileModal
+          profileId={effProfileId}
+          nickname={effNickname}
+          email={effEmail}
+          initialRealName={currentDisplayName || displayName || null}
+          onClose={() => setProfileModalOpen(false)}
+          onSaved={(next) => setCurrentDisplayName(next.realName)}
+        />
+      )}
     </header>
   );
 };

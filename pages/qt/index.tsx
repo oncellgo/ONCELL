@@ -1,11 +1,13 @@
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import SubHeader from '../../components/SubHeader';
+import BiblePassageCard from '../../components/BiblePassageCard';
 import { getSystemAdminHref } from '../../lib/adminGuard';
 import { getProfiles, getUsers } from '../../lib/dataStore';
 import { useIsMobile } from '../../lib/useIsMobile';
+import { useRequireLogin } from '../../lib/useRequireLogin';
 
 type Video = { videoId: string; title: string; publishedAt: string; dow: number; dateKey: string };
 
@@ -25,6 +27,7 @@ const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickname, email, systemAdminHref }: Props) => {
   const router = useRouter();
   const isMobile = useIsMobile();
+  useRequireLogin(profileId);
   // 일요일 기준 dow별 실제 날짜 계산 (일=0..토=6). weekOffset은 주 단위 이동(일 단위).
   const [weekOffset, setWeekOffset] = useState<number>(0);
   const dateForDow = (dow: number): { m: number; d: number } => {
@@ -295,7 +298,7 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
               </div>
 
               {selectedVideoId ? (
-                <div style={{ position: 'relative', width: '50%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', background: '#000', margin: '0 auto' }}>
+                <div style={{ position: 'relative', width: '75%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', background: '#000', margin: '0 auto' }}>
                   <iframe
                     src={`https://www.youtube.com/embed/${selectedVideoId}`}
                     title="새벽기도 영상"
@@ -306,7 +309,7 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                 </div>
               ) : (
                 <div style={{
-                  position: 'relative', width: '50%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12,
+                  position: 'relative', width: '75%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12,
                   background: '#F3F4F6', border: '1px dashed var(--color-gray)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: 'var(--color-ink-2)', fontSize: '1rem', fontWeight: 700,
@@ -324,127 +327,75 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                 border: '1px solid #D9F09E',
                 fontFamily: '"Noto Sans KR", "Nanum Gothic", "Malgun Gothic", system-ui, sans-serif',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.02em', color: '#65A30D', textTransform: 'uppercase' }}>
+                <div style={{
+                  display: 'flex',
+                  flexDirection: isMobile ? 'column' : 'row',
+                  alignItems: isMobile ? 'stretch' : 'center',
+                  gap: isMobile ? '0.4rem' : '0.5rem',
+                  flexWrap: isMobile ? 'nowrap' : 'wrap',
+                }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.02em', color: '#65A30D', textTransform: 'uppercase', flexShrink: 0 }}>
                     {isTodaySelected ? '오늘의 QT말씀' : `${selectedDateKey.slice(5).replace('-', '/')} QT말씀`}
                   </span>
-                  {qtLoading ? (
-                    <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>불러오는 중…</span>
-                  ) : qtRef ? (
-                    <button
-                      type="button"
-                      onClick={() => setPassageOpen((v) => !v)}
-                      style={{
-                        padding: '0.38rem 0.85rem',
-                        borderRadius: 999,
-                        border: '1px solid #65A30D',
-                        background: '#fff',
-                        color: '#3F6212',
-                        fontSize: '0.86rem',
-                        fontWeight: 700,
-                        fontFamily: 'inherit',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.35rem',
-                      }}
-                    >
-                      <span>📖</span>
-                      <span>{qtRef}</span>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--color-ink-2)' }}>{passageOpen ? '▾' : '▸'}</span>
-                    </button>
-                  ) : (
-                    <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>{qtError || '오늘의 QT말씀 정보가 없습니다.'}</span>
-                  )}
-                  {qtRef && (
-                    <button
-                      type="button"
-                      onClick={openNoteModal}
-                      style={{
-                        marginLeft: 'auto',
-                        padding: '0.38rem 0.85rem',
-                        borderRadius: 999,
-                        border: '1px solid #65A30D',
-                        background: '#fff',
-                        color: '#3F6212',
-                        fontSize: '0.86rem',
-                        fontWeight: 700,
-                        fontFamily: 'inherit',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.35rem',
-                      }}
-                    >
-                      <span>✍️</span>
-                      <span>나의 묵상노트</span>
-                    </button>
-                  )}
-                </div>
-
-                {passageOpen && qtPassageText && (() => {
-                  const lines = qtPassageText.split('\n');
-                  const blocks: Array<{ chapter?: string; verse?: string; text?: string }> = [];
-                  for (const line of lines) {
-                    const chMatch = /^\[(\d+)장\]$/.exec(line.trim());
-                    if (chMatch) { blocks.push({ chapter: chMatch[1] }); continue; }
-                    const vMatch = /^(\d+)\s+(.+)$/.exec(line.trim());
-                    if (vMatch) { blocks.push({ verse: vMatch[1], text: vMatch[2] }); continue; }
-                    if (line.trim()) blocks.push({ text: line.trim() });
-                  }
-                  return (
-                    <div style={{ padding: isMobile ? '0.85rem 0.85rem' : '1.1rem 1.2rem', borderRadius: 10, background: '#fff', border: '1px solid #D9F09E' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.75rem', paddingBottom: '0.6rem', borderBottom: '1px solid #ECFCCB', flexWrap: 'wrap' }}>
-                        <strong style={{ fontSize: isMobile ? '0.92rem' : '0.98rem', color: 'var(--color-ink)', fontWeight: 800 }}>{qtRef}</strong>
-                        <span style={{
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', flex: isMobile ? undefined : 1 }}>
+                    {qtLoading ? (
+                      <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>불러오는 중…</span>
+                    ) : qtRef ? (
+                      <button
+                        type="button"
+                        onClick={() => setPassageOpen((v) => !v)}
+                        style={{
+                          padding: '0.38rem 0.85rem',
+                          borderRadius: 999,
+                          border: '1px solid #65A30D',
+                          background: '#fff',
+                          color: '#3F6212',
+                          fontSize: '0.86rem',
+                          fontWeight: 700,
+                          fontFamily: 'inherit',
+                          cursor: 'pointer',
                           display: 'inline-flex',
                           alignItems: 'center',
-                          padding: '0.25rem 0.7rem',
+                          gap: '0.35rem',
+                        }}
+                      >
+                        <span>📖</span>
+                        <span>{qtRef}</span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--color-ink-2)' }}>{passageOpen ? '▾' : '▸'}</span>
+                      </button>
+                    ) : (
+                      <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>{qtError || '오늘의 QT말씀 정보가 없습니다.'}</span>
+                    )}
+                    {qtRef && (
+                      <button
+                        type="button"
+                        onClick={openNoteModal}
+                        style={{
+                          marginLeft: 'auto',
+                          padding: '0.38rem 0.85rem',
                           borderRadius: 999,
-                          border: '1px solid #D9F09E',
-                          background: '#ECFCCB',
+                          border: '1px solid #65A30D',
+                          background: '#fff',
                           color: '#3F6212',
-                          fontSize: '0.7rem',
+                          fontSize: '0.86rem',
                           fontWeight: 700,
-                          letterSpacing: '0.02em',
-                        }}>
-                          개역한글 · 공공영역
-                        </span>
-                      </div>
-                      <div style={{ display: 'grid', gap: '0.5rem', color: 'var(--color-ink)', fontSize: isMobile ? '0.92rem' : '0.97rem', lineHeight: isMobile ? 1.75 : 1.85 }}>
-                        {blocks.map((b, i) => {
-                          if (b.chapter) {
-                            return (
-                              <div key={i} style={{ marginTop: i === 0 ? 0 : '0.8rem', marginBottom: '0.2rem' }}>
-                                <span style={{
-                                  display: 'inline-block',
-                                  padding: '0.25rem 0.9rem',
-                                  borderRadius: 999,
-                                  background: '#65A30D',
-                                  color: '#fff',
-                                  fontSize: '0.78rem',
-                                  fontWeight: 800,
-                                  letterSpacing: '0.02em',
-                                }}>
-                                  {b.chapter}장
-                                </span>
-                              </div>
-                            );
-                          }
-                          if (b.verse) {
-                            return (
-                              <div key={i} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1.5rem 1fr' : '2rem 1fr', columnGap: isMobile ? '0.3rem' : '0.4rem', alignItems: 'baseline' }}>
-                                <span style={{ fontSize: isMobile ? '0.7rem' : '0.75rem', color: '#65A30D', fontWeight: 700, textAlign: 'right' }}>{b.verse}</span>
-                                <p style={{ margin: 0 }}>{b.text}</p>
-                              </div>
-                            );
-                          }
-                          return <p key={i} style={{ margin: 0, paddingLeft: isMobile ? '1.8rem' : '2.4rem' }}>{b.text}</p>;
-                        })}
-                      </div>
-                    </div>
-                  );
-                })()}
+                          fontFamily: 'inherit',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                        }}
+                      >
+                        <span>✍️</span>
+                        <span>나의 묵상노트</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {passageOpen && qtPassageText && qtRef && (
+                  <BiblePassageCard reference={qtRef} passageText={qtPassageText} />
+                )}
                 {passageOpen && !qtPassageText && qtPassage && (
                   <div style={{ padding: '0.9rem 1.1rem', borderRadius: 10, background: '#fff', border: '1px solid #D9F09E', fontSize: '0.9rem', color: 'var(--color-ink)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
                     <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-ink-2)', marginBottom: '0.45rem' }}>※ 개역한글 본문 번들 미포함 — 매일성경 해설</div>

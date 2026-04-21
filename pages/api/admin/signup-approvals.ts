@@ -8,6 +8,7 @@ type Approval = {
   nickname: string;
   email: string;
   realName?: string;
+  contact?: string;
   firstLoginAt: string;
   lastLoginAt: string;
   loginCount: number;

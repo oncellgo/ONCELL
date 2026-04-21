@@ -201,6 +201,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
   const [calCommunityId, setCalCommunityId] = useState<string>('');
   const [calEvents, setCalEvents] = useState<CalendarEvent[]>([]);
   const [calForm, setCalForm] = useState({ title: '', startAt: '', endAt: '', location: '', description: '' });
+  const [calAllDay, setCalAllDay] = useState(false);
   const [locationMode, setLocationMode] = useState<'select' | 'custom'>('select');
   const [venueList, setVenueList] = useState<Array<{ id: string; floor: string; name: string; code: string }>>([]);
   useEffect(() => {
@@ -229,14 +230,23 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
   useEffect(() => {
     if (!calCommunityId) { setCalEvents([]); return; }
     let cancelled = false;
-    const qs = new URLSearchParams({ communityId: calCommunityId, type: 'event' });
+    // 뷰 월 기준 ±1개월 범위로 펼침 — 캘린더 그리드 양쪽 끝 overflow 날짜 + 이전/다음 버튼 프리페치 포함
+    const now = new Date();
+    const viewYear = calView ? calView.year : now.getFullYear();
+    const viewMonth = calView ? calView.month : now.getMonth() + 1; // 1-12
+    const from = new Date(viewYear, viewMonth - 2, 1);
+    const to = new Date(viewYear, viewMonth + 1, 0, 23, 59, 59);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const fromStr = `${from.getFullYear()}-${pad(from.getMonth() + 1)}-${pad(from.getDate())}`;
+    const toStr = `${to.getFullYear()}-${pad(to.getMonth() + 1)}-${pad(to.getDate())}`;
+    const qs = new URLSearchParams({ communityId: calCommunityId, type: 'event', from: fromStr, to: toStr });
     if (profileId) qs.set('profileId', profileId);
     fetch(`/api/events?${qs.toString()}`)
       .then((r) => r.json())
       .then((data) => { if (!cancelled) setCalEvents(data.events || []); })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [calCommunityId, profileId]);
+  }, [calCommunityId, profileId, calView?.year, calView?.month]);
 
   // Auto-update count/until when startAt changes while recurring (worship: 3mo horizon, community: 12mo)
   useEffect(() => {
@@ -303,7 +313,13 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
         });
         if (!patchRes.ok) { const j = await patchRes.json().catch(() => ({})); setCalMsg(j.error || '수정 실패'); return; }
         try {
-          const qs = new URLSearchParams({ communityId: targetCommunityId, type: 'event' });
+          const now2 = new Date();
+          const vy = calView ? calView.year : now2.getFullYear();
+          const vm = calView ? calView.month : now2.getMonth() + 1;
+          const fr = new Date(vy, vm - 2, 1);
+          const toD = new Date(vy, vm + 1, 0, 23, 59, 59);
+          const p2 = (n: number) => String(n).padStart(2, '0');
+          const qs = new URLSearchParams({ communityId: targetCommunityId, type: 'event', from: `${fr.getFullYear()}-${p2(fr.getMonth() + 1)}-${p2(fr.getDate())}`, to: `${toD.getFullYear()}-${p2(toD.getMonth() + 1)}-${p2(toD.getDate())}` });
           if (profileId) qs.set('profileId', profileId);
           const r = await fetch(`/api/events?${qs.toString()}`);
           if (r.ok) { const d = await r.json(); setCalEvents(d.events || []); }
@@ -359,7 +375,13 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
       }
       // 반복 rule row는 서버에서 펼쳐야 캘린더에 보이므로 재조회
       try {
-        const qs = new URLSearchParams({ communityId: targetCommunityId, type: 'event' });
+        const now3 = new Date();
+        const vy3 = calView ? calView.year : now3.getFullYear();
+        const vm3 = calView ? calView.month : now3.getMonth() + 1;
+        const fr3 = new Date(vy3, vm3 - 2, 1);
+        const toD3 = new Date(vy3, vm3 + 1, 0, 23, 59, 59);
+        const p3 = (n: number) => String(n).padStart(2, '0');
+        const qs = new URLSearchParams({ communityId: targetCommunityId, type: 'event', from: `${fr3.getFullYear()}-${p3(fr3.getMonth() + 1)}-${p3(fr3.getDate())}`, to: `${toD3.getFullYear()}-${p3(toD3.getMonth() + 1)}-${p3(toD3.getDate())}` });
         if (profileId) qs.set('profileId', profileId);
         const r = await fetch(`/api/events?${qs.toString()}`);
         if (r.ok) {
