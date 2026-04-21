@@ -503,7 +503,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                 </div>
               ) : (
                 <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-ink-2)', lineHeight: 1.55 }}>
-                  💡 <strong>팁:</strong> 빈 시간(연라임)을 <strong>클릭</strong>하거나 <strong>드래그</strong>해서 원하는 시간대를 선택하세요. 예약된 시간은 건너뛸 수 없습니다.
+                  💡 <strong>팁:</strong> 빈 시간(연라임)을 {isMobile ? '순서대로 탭해서' : '클릭 또는 드래그해서'} 원하는 시간대를 선택하세요. 예약된 시간은 건너뛸 수 없습니다.
                 </p>
               )}
               <p style={{ margin: 0, fontSize: '0.76rem', color: 'var(--color-ink-2)' }}>

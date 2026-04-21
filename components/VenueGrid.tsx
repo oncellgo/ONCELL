@@ -312,13 +312,17 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                         disabled={!clickable}
                         onClick={() => onSlotClick && onSlotClick(v, m, blocked)}
                         onPointerDown={onSlotPointerDown ? (e) => {
-                          // 터치/마우스 드래그 시 브라우저 기본 selection/scroll 방지
+                          // 모바일(터치)은 드래그 선택을 건너뛰고 페이지 스크롤을 우선 — onClick 만으로 토글
+                          if (e.pointerType === 'touch') return;
                           try { (e.currentTarget as HTMLButtonElement).releasePointerCapture(e.pointerId); } catch {}
                           onSlotPointerDown(v, m, blocked);
                         } : undefined}
-                        onPointerEnter={onSlotPointerEnter ? () => onSlotPointerEnter(v, m, blocked) : undefined}
+                        onPointerEnter={onSlotPointerEnter ? (e) => {
+                          if (e.pointerType === 'touch') return;
+                          onSlotPointerEnter(v, m, blocked);
+                        } : undefined}
                         title={titleParts.join(' | ')}
-                        style={{ width: '100%', height: blocked ? span * 20 : 20, border: isAlternate ? '1.5px dashed #20CD8D' : 'none', background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: '0.6rem', fontWeight: 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box', touchAction: 'none', userSelect: 'none' }}
+                        style={{ width: '100%', height: blocked ? span * 20 : 20, border: isAlternate ? '1.5px dashed #20CD8D' : 'none', background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: '0.6rem', fontWeight: 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box', touchAction: 'manipulation', userSelect: 'none' }}
                       >
                         {isConflict ? '예약불가' : isSelected ? '예약가능' : isAlternate ? '○' : (blocked ? (
                           showStacked ? (
