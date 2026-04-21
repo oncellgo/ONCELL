@@ -134,20 +134,22 @@ const MenuBar = ({ profileId, nickname, email }: Props) => {
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              // 모바일 터치 타겟 44px 확보 (padding 상하 0.55rem ≈ 약 9px → 내용 포함 44px+)
+              // 모바일 터치 타겟 44px 확보
               minHeight: 44,
-              padding: isMobile ? '0.55rem 0.75rem' : '0.5rem 1rem',
-              borderRadius: 999,
+              // 메뉴 라벨 길이에 따라 모양이 달라 보이지 않도록 고정 padding + 고정 borderRadius
+              padding: isMobile ? '0 0.85rem' : '0 1.1rem',
+              borderRadius: 10,
               background: active ? 'var(--color-primary)' : 'var(--color-primary-tint)',
               color: active ? '#fff' : 'var(--color-primary-deep)',
               border: `1px solid ${active ? 'var(--color-primary)' : 'var(--color-primary-tint)'}`,
-              fontSize: isMobile ? '0.82rem' : '0.9rem',
+              fontSize: isMobile ? '0.84rem' : '0.9rem',
               fontWeight: active ? 800 : 700,
               textDecoration: 'none',
               whiteSpace: 'nowrap',
               flexShrink: 0,
-              boxShadow: active ? '0 4px 10px rgba(32, 205, 141, 0.28)' : 'none',
+              boxShadow: active ? '0 2px 8px rgba(32, 205, 141, 0.22)' : 'none',
               transition: 'background 0.15s ease, color 0.15s ease',
+              letterSpacing: '-0.01em',
             }}
           >
             {item.label}
