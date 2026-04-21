@@ -381,7 +381,10 @@ const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId
                   return (
                     <button key={idx} type="button" onClick={() => setSelectedCalDay(isSelected ? null : key)} title={hasEvent ? ds.map((e) => e.title).join(', ') : ''}
                       style={{ minHeight: isMobile ? (hasWorship ? 52 : 40) : (hasWorship ? 64 : 44), position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: 8, background: isSelected ? 'var(--color-primary)' : hasWorship ? '#DBEAFE' : isToday ? 'var(--color-primary-tint)' : hasEvent ? '#f0fdf4' : 'transparent', border: isSelected ? '1px solid var(--color-primary)' : hasWorship ? '1.5px solid #2563eb' : isToday ? '1px solid var(--color-primary)' : hasEvent ? '1px solid #bbf7d0' : '1px solid transparent', fontSize: isMobile ? '0.7rem' : '0.74rem', color: isSelected ? '#ffffff' : hasWorship ? '#1E3A8A' : dow === 0 ? '#dc2626' : dow === 6 ? '#2563eb' : 'var(--color-ink)', fontWeight: isToday || isSelected || hasWorship ? 800 : 600, cursor: 'pointer', padding: '2px 0', overflow: 'hidden' }}>
-                      <span style={{ lineHeight: 1 }}>{d.getDate()}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', lineHeight: 1 }}>
+                        <span>{d.getDate()}</span>
+                        {isToday && <span style={{ fontSize: isMobile ? '0.5rem' : '0.56rem', fontWeight: 800, color: isSelected ? 'var(--color-primary)' : '#fff', background: isSelected ? '#fff' : 'var(--color-primary)', padding: '0.04rem 0.28rem', borderRadius: 999, lineHeight: 1 }}>오늘</span>}
+                      </span>
                       {hasWorship && !isSelected && (<span style={{ fontSize: isMobile ? '0.55rem' : '0.62rem', fontWeight: 700, color: '#1E40AF', lineHeight: 1, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '0 2px' }}>⛪ {worshipEvent!.title}</span>)}
                       {hasEvent && !hasWorship && !isSelected && <span style={{ width: 3, height: 3, borderRadius: 999, background: 'var(--color-primary)' }} />}
                     </button>

@@ -1347,7 +1347,10 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                                 })}
                               </span>
                             )}
-                            <span style={{ lineHeight: 1, position: 'relative', zIndex: 1 }}>{d.getDate()}</span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.15rem', lineHeight: 1, position: 'relative', zIndex: 1 }}>
+                              <span>{d.getDate()}</span>
+                              {isToday && <span style={{ fontSize: '0.52rem', fontWeight: 800, color: isSelected ? 'var(--color-primary)' : '#fff', background: isSelected ? '#fff' : 'var(--color-primary)', padding: '0.04rem 0.26rem', borderRadius: 999, lineHeight: 1 }}>오늘</span>}
+                            </span>
                             {isSelected && (
                               <span
                                 onClick={(e) => {
@@ -2235,7 +2238,10 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                             const dow = cell.date.getDay();
                             return (
                               <div key={idx} style={{ minHeight: 56, padding: '0.25rem', borderRadius: 6, border: isToday ? '1.5px solid var(--color-primary)' : '1px solid var(--color-surface-border)', background: has ? '#CCF4E5' : '#fff', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                <span style={{ fontSize: '0.74rem', fontWeight: isToday ? 800 : 600, color: dow === 0 ? '#dc2626' : dow === 6 ? '#2563eb' : 'var(--color-ink)' }}>{cell.date.getDate()}</span>
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.74rem', fontWeight: isToday ? 800 : 600, color: dow === 0 ? '#dc2626' : dow === 6 ? '#2563eb' : 'var(--color-ink)' }}>
+                                  <span>{cell.date.getDate()}</span>
+                                  {isToday && <span style={{ fontSize: '0.54rem', fontWeight: 800, color: '#fff', background: 'var(--color-primary)', padding: '0.04rem 0.26rem', borderRadius: 999, lineHeight: 1 }}>오늘</span>}
+                                </span>
                                 {dayServices.map((s) => {
                                   const isStub = !s.bulletin && !!s.bulletinTemplateId;
                                   const isPublished = !!(s as any).published;

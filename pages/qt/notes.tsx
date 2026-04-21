@@ -116,6 +116,7 @@ const QtNotesPage = () => {
                   type="button"
                   onClick={() => openDate(d)}
                   style={{
+                    position: 'relative',
                     aspectRatio: '1',
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -131,6 +132,7 @@ const QtNotesPage = () => {
                   }}
                 >
                   {d.getDate()}
+                  {isToday && <span style={{ position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)', fontSize: '0.48rem', fontWeight: 800, color: hasEntry ? '#fff' : 'var(--color-primary-deep)', lineHeight: 1 }}>오늘</span>}
                 </button>
               );
             })}

@@ -81,6 +81,7 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
   const [qtRef, setQtRef] = useState<string | null>(null);
   const [qtPassage, setQtPassage] = useState<string | null>(null);
   const [qtPassageText, setQtPassageText] = useState<string | null>(null);
+  const [qtPassageTextEn, setQtPassageTextEn] = useState<string | null>(null);
   const [qtLoading, setQtLoading] = useState(false);
   const [qtError, setQtError] = useState<string | null>(null);
   const [passageOpen, setPassageOpen] = useState(true);
@@ -175,6 +176,7 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
         if (cancelled) return;
         setQtRef(d?.reference || null);
         setQtPassageText(d?.passageText || null);
+        setQtPassageTextEn(d?.passageTextEn || null);
         setQtPassage(d?.passage || null);
         if (d?.error) setQtError(d.error);
       })
@@ -393,16 +395,16 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                   </div>
                 </div>
 
-                {passageOpen && qtPassageText && qtRef && (
-                  <BiblePassageCard reference={qtRef} passageText={qtPassageText} />
+                {passageOpen && (qtPassageText || qtPassageTextEn) && qtRef && (
+                  <BiblePassageCard reference={qtRef} koText={qtPassageText} enText={qtPassageTextEn} />
                 )}
-                {passageOpen && !qtPassageText && qtPassage && (
+                {passageOpen && !qtPassageText && !qtPassageTextEn && qtPassage && (
                   <div style={{ padding: '0.9rem 1.1rem', borderRadius: 10, background: '#fff', border: '1px solid #D9F09E', fontSize: '0.9rem', color: 'var(--color-ink)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
                     <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-ink-2)', marginBottom: '0.45rem' }}>※ 개역한글 본문 번들 미포함 — 매일성경 해설</div>
                     {qtPassage}
                   </div>
                 )}
-                {passageOpen && !qtPassageText && !qtPassage && !qtLoading && (
+                {passageOpen && !qtPassageText && !qtPassageTextEn && !qtPassage && !qtLoading && (
                   <div style={{ padding: '0.85rem 1rem', borderRadius: 10, background: '#fff', border: '1px solid #D9F09E', fontSize: '0.88rem', color: 'var(--color-ink-2)' }}>
                     본문을 불러오지 못했습니다.
                   </div>

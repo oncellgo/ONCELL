@@ -21,9 +21,10 @@ export type SubHeaderProps = {
 
 const NAV_ITEMS: Array<{ label: string; href: string; requireLogin?: boolean }> = [
   { label: '장소예약', href: '/reservation', requireLogin: true },
-  { label: '예배 및 모임교안', href: '/cell-teaching', requireLogin: true },
   { label: '큐티', href: '/qt', requireLogin: true },
-  { label: '말씀통독', href: '/reading', requireLogin: true },
+  { label: '성경통독', href: '/reading', requireLogin: true },
+  { label: '주일예배', href: '/sunday-worship', requireLogin: true },
+  { label: '구역모임교안', href: '/cell-teaching', requireLogin: true },
 ];
 
 const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, systemAdminHref }: SubHeaderProps) => {

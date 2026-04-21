@@ -126,6 +126,7 @@ const DateTimePicker = ({ value, onChange, placeholder, style, buttonStyle, date
                       type="button"
                       onClick={() => selectDate(d)}
                       style={{
+                        position: 'relative',
                         height: 36,
                         borderRadius: 8,
                         border: isToday && !isSelected ? '1px solid var(--color-primary)' : '1px solid transparent',
@@ -138,6 +139,7 @@ const DateTimePicker = ({ value, onChange, placeholder, style, buttonStyle, date
                       }}
                     >
                       {d}
+                      {isToday && <span style={{ position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)', fontSize: '0.54rem', fontWeight: 800, color: isSelected ? '#fff' : 'var(--color-primary-deep)', lineHeight: 1 }}>오늘</span>}
                     </button>
                   );
                 })}
@@ -189,6 +191,7 @@ const DateTimePicker = ({ value, onChange, placeholder, style, buttonStyle, date
                     type="button"
                     onClick={() => selectDate(d)}
                     style={{
+                      position: 'relative',
                       height: 28,
                       borderRadius: 6,
                       border: isToday && !isSelected ? '1px solid var(--color-primary)' : '1px solid transparent',
@@ -201,6 +204,7 @@ const DateTimePicker = ({ value, onChange, placeholder, style, buttonStyle, date
                     }}
                   >
                     {d}
+                    {isToday && <span style={{ position: 'absolute', bottom: 1, left: '50%', transform: 'translateX(-50%)', fontSize: '0.48rem', fontWeight: 800, color: isSelected ? '#fff' : 'var(--color-primary-deep)', lineHeight: 1 }}>오늘</span>}
                   </button>
                 );
               })}

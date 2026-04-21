@@ -138,7 +138,10 @@ const StatsPanel = ({ profileId, k, email }: Props) => {
                     opacity: isFuture ? 0.45 : 1,
                   }}
                 >
-                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: isFuture ? '#9CA3AF' : dowColor }}>{cell.day}</div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.2rem', fontSize: '0.72rem', fontWeight: 700, color: isFuture ? '#9CA3AF' : dowColor }}>
+                    <span>{cell.day}</span>
+                    {isToday && <span style={{ fontSize: '0.58rem', fontWeight: 800, color: '#fff', background: '#20CD8D', padding: '0.04rem 0.3rem', borderRadius: 999 }}>오늘</span>}
+                  </div>
                   {!isFuture && (
                     <div style={{ fontSize: isMobile ? '0.95rem' : '1.1rem', fontWeight: 800, color: count > 0 ? (tab === 'qt' ? '#3F6212' : '#1E40AF') : '#D1D5DB' }}>
                       {count}

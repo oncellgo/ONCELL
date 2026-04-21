@@ -1,10 +1,15 @@
 import { readFile } from 'fs/promises';
 import path from 'path';
+import { KO_TO_EN } from './bibleBooks';
 
 /**
- * 개역한글 성경 본문 조회 유틸.
+ * 한글(개역한글)·영문(KJV) 성경 본문 조회 유틸.
  *
- * 아래 네 가지 JSON 포맷 중 무엇이든 `data/bible.json`에 넣으면 인식한다.
+ * 언어별 번들 파일:
+ *   - ko: data/bible.json  (개역한글, 공공영역)
+ *   - en: data/bible-kjv.json  (King James Version, 공공영역)
+ *
+ * 지원 JSON 포맷 4종:
  *
  * A. 중첩 객체 (권장):
  *    { "books": { "창세기": { "1": { "1": "태초에…" } } } }
@@ -19,16 +24,27 @@ import path from 'path';
  *    { "books": [{ "name": "창세기", "chapters": [{ "verses": [{ "number": 1, "text": "태초에..." }] }] }] }
  */
 
+export type BibleLang = 'ko' | 'en';
+
 type Bundle = any;
 
-let cache: { data: Map<string, Record<string, Record<string, string>>> | null; at: number } | null = null;
+const caches: Record<BibleLang, { data: Map<string, Record<string, Record<string, string>>> | null; at: number } | null> = {
+  ko: null,
+  en: null,
+};
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
-const loadBundle = async (): Promise<Map<string, Record<string, Record<string, string>>> | null> => {
+const BUNDLE_FILES: Record<BibleLang, string> = {
+  ko: 'bible.json',
+  en: 'bible-kjv.json',
+};
+
+const loadBundle = async (lang: BibleLang = 'ko'): Promise<Map<string, Record<string, Record<string, string>>> | null> => {
   const now = Date.now();
+  const cache = caches[lang];
   if (cache && now - cache.at < CACHE_TTL_MS) return cache.data;
   try {
-    const raw = await readFile(path.join(process.cwd(), 'data', 'bible.json'), 'utf8');
+    const raw = await readFile(path.join(process.cwd(), 'data', BUNDLE_FILES[lang]), 'utf8');
     const parsed: Bundle = JSON.parse(raw);
     const map = new Map<string, Record<string, Record<string, string>>>();
 
@@ -87,7 +103,7 @@ const loadBundle = async (): Promise<Map<string, Record<string, Record<string, s
     }
 
     if (map.size > 0) {
-      cache = { data: map, at: now };
+      caches[lang] = { data: map, at: now };
       return map;
     }
     // 번들을 읽었지만 비어있으면 캐시하지 않는다 (파일이 나중에 채워질 수 있음).
@@ -184,14 +200,31 @@ export type Verse = { chapter: number; verse: number; text: string };
 
 /**
  * Reference 문자열에 해당하는 본문을 배열로 반환.
+ * 한글 참조("요한복음 20:1")로도 영문 번들(KJV)에서 조회 가능 (내부에서 ko→en 책명 매핑).
  * 번들이 비어있거나 해당 구절이 없으면 빈 배열.
  */
-export const lookupPassage = async (reference: string): Promise<Verse[]> => {
+export const lookupPassage = async (reference: string, lang: BibleLang = 'ko'): Promise<Verse[]> => {
   const parsed = parseReference(reference);
   if (!parsed) return [];
-  const bundle = await loadBundle();
+  const bundle = await loadBundle(lang);
   if (!bundle) return [];
-  const chapters = bundle.get(parsed.book);
+
+  // 영문 번들이면 한글 책명을 영문 canonical로 바꿔서 조회. (일부 번들이
+  // "1 Samuel" / "1Samuel" / "I Samuel" 중 무엇을 쓰는지 알 수 없어 폴백도 함께 시도.)
+  const lookupKeys: string[] = [parsed.book];
+  if (lang === 'en') {
+    const en = KO_TO_EN[parsed.book];
+    if (en) {
+      lookupKeys.unshift(en);
+      lookupKeys.push(en.replace(/\s/g, '')); // "1Samuel"
+    }
+  }
+
+  let chapters: Record<string, Record<string, string>> | undefined;
+  for (const key of lookupKeys) {
+    chapters = bundle.get(key);
+    if (chapters) break;
+  }
   if (!chapters) return [];
 
   const out: Verse[] = [];

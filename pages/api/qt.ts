@@ -27,6 +27,7 @@ type QtResult = {
   reference: string | null;
   passage: string | null;       // 매일성경 해설 텍스트
   passageText: string | null;   // 개역한글 성경 본문 (번들에서 조회)
+  passageTextEn: string | null; // KJV 영문 본문
   hymn: { number: string; title: string | null } | null;
   audioUrl: string | null;
   title: string | null;
@@ -192,7 +193,7 @@ const fetchDateSpecific = async (dateStr: string): Promise<QtResult> => {
   }
   if (!Array.isArray(rows) || rows.length === 0) {
     return {
-      reference: null, passage: null, passageText: null,
+      reference: null, passage: null, passageText: null, passageTextEn: null,
       hymn: null, audioUrl: null, title: null,
       source: AJAX_BIBLE_URL, fetchedAt: new Date().toISOString(),
     };
@@ -208,16 +209,22 @@ const fetchDateSpecific = async (dateStr: string): Promise<QtResult> => {
       : `${bookName} ${sC}:${sV}-${eC}:${eV}`;
   }
   let passageText: string | null = null;
+  let passageTextEn: string | null = null;
   if (reference) {
     try {
-      const verses = await lookupPassage(reference);
-      if (verses.length > 0) passageText = formatVerses(verses);
+      const [koV, enV] = await Promise.all([
+        lookupPassage(reference, 'ko'),
+        lookupPassage(reference, 'en'),
+      ]);
+      if (koV.length > 0) passageText = formatVerses(koV);
+      if (enV.length > 0) passageTextEn = formatVerses(enV);
     } catch {}
   }
   return {
     reference,
     passage: null,
     passageText,
+    passageTextEn,
     hymn: null,
     audioUrl: null,
     title: null,
@@ -254,7 +261,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     } catch (error: any) {
       console.error(`QT fetch (date=${dateParam}) failed:`, error?.message || error);
       return res.status(200).json({
-        reference: null, passage: null, passageText: null,
+        reference: null, passage: null, passageText: null, passageTextEn: null,
         hymn: null, audioUrl: null, title: null,
         source: AJAX_BIBLE_URL, fetchedAt: new Date().toISOString(),
         error: '해당 날짜의 말씀을 불러오지 못했습니다.',
@@ -300,12 +307,17 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const title = ogTitle || (metaDescription ? metaDescription.split(/[·\-|]/)[0].trim() : null);
 
-    // 개역한글 번들에서 본문 조회 (없으면 null)
+    // 개역한글·KJV 번들에서 본문 조회 (없으면 null)
     let passageText: string | null = null;
+    let passageTextEn: string | null = null;
     if (reference) {
       try {
-        const verses = await lookupPassage(reference);
-        if (verses.length > 0) passageText = formatVerses(verses);
+        const [koV, enV] = await Promise.all([
+          lookupPassage(reference, 'ko'),
+          lookupPassage(reference, 'en'),
+        ]);
+        if (koV.length > 0) passageText = formatVerses(koV);
+        if (enV.length > 0) passageTextEn = formatVerses(enV);
       } catch {}
     }
 
@@ -313,6 +325,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       reference,
       passage: commentary,
       passageText,
+      passageTextEn,
       hymn,
       audioUrl,
       title,
@@ -331,6 +344,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       reference: null,
       passage: null,
       passageText: null,
+      passageTextEn: null,
       hymn: null,
       audioUrl: null,
       title: null,

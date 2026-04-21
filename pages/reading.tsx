@@ -48,8 +48,8 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
   const todayKey = keyFor(today);
   const reading = useMemo(() => planForDate(selectedDate), [selectedKey]);
 
-  // 선택된 날짜의 각 범위별 성경 본문
-  const [passageTexts, setPassageTexts] = useState<Record<string, string>>({});
+  // 선택된 날짜의 각 범위별 성경 본문 (한글·KJV 양쪽 동시 로드)
+  const [passageTexts, setPassageTexts] = useState<Record<string, { ko: string; en: string }>>({});
   const [passageLoading, setPassageLoading] = useState(false);
   useEffect(() => {
     let cancelled = false;
@@ -58,14 +58,14 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
     Promise.all(reading.map(async (r) => {
       const ref = r.startCh === r.endCh ? `${r.book} ${r.startCh}장` : `${r.book} ${r.startCh}-${r.endCh}장`;
       try {
-        const res = await fetch(`/api/bible-text?ref=${encodeURIComponent(ref)}`);
-        if (!res.ok) return [ref, ''] as const;
+        const res = await fetch(`/api/bible-text?ref=${encodeURIComponent(ref)}&lang=both`);
+        if (!res.ok) return [ref, { ko: '', en: '' }] as const;
         const d = await res.json();
-        return [ref, d?.found ? (d.text as string) : ''] as const;
-      } catch { return [ref, ''] as const; }
+        return [ref, { ko: d?.ko?.text || '', en: d?.en?.text || '' }] as const;
+      } catch { return [ref, { ko: '', en: '' }] as const; }
     })).then((pairs) => {
       if (cancelled) return;
-      const map: Record<string, string> = {};
+      const map: Record<string, { ko: string; en: string }> = {};
       for (const [k, v] of pairs) map[k] = v;
       setPassageTexts(map);
     }).finally(() => { if (!cancelled) setPassageLoading(false); });
@@ -89,7 +89,7 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
   useEffect(() => { loadCompletions(); /* eslint-disable-next-line */ }, [profileId, weekOffset]);
 
   const isCompleted = completedSet.has(selectedKey);
-  const canToggle = selectedKey === todayKey; // 오늘만 완료 가능
+  const canToggle = true; // 과거·오늘·미래 모두 완료 처리 가능 (catch-up 허용)
 
   const toggleComplete = async () => {
     if (!profileId || busy || !canToggle) return;
@@ -102,7 +102,7 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
         const r = await fetch('/api/completions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ profileId, type: 'reading', date: selectedKey }),
+          body: JSON.stringify({ profileId, type: 'reading', date: selectedKey, allowPast: true }),
         });
         if (r.ok) setCompletedSet((prev) => new Set(prev).add(selectedKey));
       }
@@ -207,24 +207,61 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
               {isCompleted && (
                 <span style={{ padding: '0.15rem 0.55rem', borderRadius: 999, background: '#20CD8D', color: '#fff', fontSize: '0.72rem', fontWeight: 800 }}>✓ 완료</span>
               )}
-              <div style={{ marginLeft: 'auto', display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
+              <div style={{ marginLeft: 'auto', display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={isCompleted}
+                  aria-label={isCompleted ? '통독 완료됨 — 취소' : '통독 전 — 완료 처리'}
                   onClick={toggleComplete}
                   disabled={!canToggle || busy}
-                  title={canToggle ? '' : '오늘 날짜만 완료 처리할 수 있습니다.'}
                   style={{
-                    padding: '0.4rem 0.9rem', borderRadius: 999,
-                    border: isCompleted ? '1px solid #20CD8D' : '1px solid var(--color-primary)',
-                    background: isCompleted ? '#fff' : 'var(--color-primary)',
-                    color: isCompleted ? 'var(--color-primary-deep)' : '#fff',
-                    fontSize: '0.82rem', fontWeight: 800,
+                    position: 'relative',
+                    width: 128,
+                    height: 34,
+                    padding: 0,
+                    borderRadius: 999,
+                    border: `1px solid ${isCompleted ? '#20CD8D' : 'var(--color-gray)'}`,
+                    background: isCompleted ? '#20CD8D' : '#E5E7EB',
                     cursor: canToggle && !busy ? 'pointer' : 'not-allowed',
-                    opacity: canToggle ? 1 : 0.5,
+                    opacity: busy ? 0.65 : canToggle ? 1 : 0.55,
+                    transition: 'background 0.2s ease, border-color 0.2s ease',
+                    flexShrink: 0,
                   }}
-                >{busy ? '...' : isCompleted ? '✓ 통독 완료 (취소)' : '통독 전'}</button>
+                >
+                  <span
+                    aria-hidden
+                    style={{
+                      position: 'absolute',
+                      top: 2,
+                      left: isCompleted ? 'calc(100% - 30px)' : 2,
+                      width: 28,
+                      height: 28,
+                      borderRadius: 999,
+                      background: '#fff',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                      transition: 'left 0.2s ease',
+                    }}
+                  />
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      height: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '0.76rem',
+                      fontWeight: 800,
+                      letterSpacing: '0.02em',
+                      color: isCompleted ? '#fff' : 'var(--color-ink-2)',
+                      ...(isCompleted ? { left: 12 } : { right: 12 }),
+                    }}
+                  >
+                    {busy ? '...' : isCompleted ? '✓ 완료' : '통독 전'}
+                  </span>
+                </button>
                 {!isCompleted && (
-                  <span style={{ fontSize: '0.68rem', color: 'var(--color-ink-2)', fontWeight: 600 }}>통독완료 후 클릭해주세요</span>
+                  <span style={{ fontSize: '0.68rem', color: 'var(--color-ink-2)', fontWeight: 600 }}>통독 후 토글하세요</span>
                 )}
               </div>
             </div>
@@ -241,14 +278,15 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
               <div style={{ display: 'grid', gap: '0.75rem' }}>
                 {reading.map((r, i) => {
                   const ref = r.startCh === r.endCh ? `${r.book} ${r.startCh}장` : `${r.book} ${r.startCh}-${r.endCh}장`;
-                  const text = passageTexts[ref];
-                  if (!text) return (
+                  const texts = passageTexts[ref];
+                  const noText = !texts || (!texts.ko && !texts.en);
+                  if (noText) return (
                     <div key={i} style={{ padding: '0.9rem 1rem', borderRadius: 16, background: '#fff', border: '1px solid #D9F09E', display: 'grid', gap: '0.4rem' }}>
                       <strong style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--color-ink)' }}>{ref}</strong>
                       <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>본문을 찾을 수 없습니다.</span>
                     </div>
                   );
-                  return <BiblePassageCard key={i} reference={ref} passageText={text} />;
+                  return <BiblePassageCard key={i} reference={ref} koText={texts.ko || null} enText={texts.en || null} />;
                 })}
               </div>
             )

@@ -68,6 +68,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
     bulletinTitle?: string | null;
     pdfText?: string | null;
     bibleText?: string | null;
+    bibleTextEn?: string | null;
     hymn?: { number: string; title: string | null } | null;
     questions?: string[];
     prayer?: Array<{ label: string; text: string }>;
@@ -75,7 +76,6 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
   const [guide, setGuide] = useState<CellGuide | null>(null);
   const [guideLoading, setGuideLoading] = useState(false);
   const [guideError, setGuideError] = useState<string | null>(null);
-  const [passageOpen, setPassageOpen] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -107,7 +107,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
   return (
     <>
       <Head>
-        <title>KCIS | 예배 및 모임교안</title>
+        <title>KCIS | 구역모임교안</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
@@ -116,7 +116,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
       <main style={{ maxWidth: 1040, margin: '0 auto', padding: isMobile ? '1rem 0.6rem 4rem' : '1.5rem 1rem 5rem', display: 'grid', gap: isMobile ? '1rem' : '1.25rem' }}>
         <section style={{ padding: isMobile ? '0.85rem' : '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: isMobile ? '0.75rem' : '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>예배 및 모임교안</h2>
+            <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>구역모임교안</h2>
             <span style={{ fontSize: '0.8rem', color: 'var(--color-ink-2)' }}>KoreanChurchInSingapore</span>
           </div>
 
@@ -164,60 +164,29 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
             })}
           </div>
 
-          {/* 영상 */}
-          {selectedVideo ? (
-            <div style={{ position: 'relative', width: '75%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', background: '#000', margin: '0 auto' }}>
-              <iframe
-                src={`https://www.youtube.com/embed/${selectedVideo.videoId}`}
-                title={selectedVideo.title}
-                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
-              />
-            </div>
-          ) : (
-            <div style={{
-              position: 'relative', width: '75%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12,
-              background: '#F3F4F6', border: '1px dashed var(--color-gray)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--color-ink-2)', fontSize: '1rem', fontWeight: 700,
-              margin: '0 auto',
-            }}>
-              이 주일 영상 없음
-            </div>
-          )}
-
           {/* 날짜 + 설교제목 + 성경구절 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', padding: isMobile ? '0.7rem 0.85rem' : '0.85rem 1.1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <span style={{ fontSize: isMobile ? '0.88rem' : '0.98rem', fontWeight: 800, color: 'var(--color-ink)' }}>{selectedLabel}</span>
               {sermonTitle && <span style={{ fontSize: isMobile ? '0.88rem' : '0.98rem', fontWeight: 700, color: 'var(--color-ink)' }}>· "{sermonTitle}"</span>}
               {preacher && <span style={{ fontSize: '0.82rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>/ {preacher}</span>}
-              {guide?.bulletinIdx && (
-                <a
-                  href={`https://koreanchurch.sg/noticeandnews/?bmode=view&idx=${guide.bulletinIdx}&t=board`}
-                  target="_blank" rel="noopener noreferrer"
-                  title={guide.bulletinTitle || '주보 원문 보기'}
-                  style={{ marginLeft: 'auto', padding: '0.3rem 0.7rem', borderRadius: 999, border: '1px solid #DC2626', background: '#FEE2E2', color: '#991B1B', fontSize: '0.78rem', fontWeight: 800, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
-                >
-                  <span>📄</span><span>주보보기</span>
-                </a>
-              )}
             </div>
             {guide?.found && (guide.normalizedRef || guide.biblePassage) && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.95rem', fontWeight: 800, color: '#3F6212' }}>
-                <span>📖</span>
-                <span>{guide.normalizedRef || guide.biblePassage}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.95rem', fontWeight: 800, color: '#3F6212' }}>
+                  <span>📖</span>
+                  <span>{guide.normalizedRef || guide.biblePassage}</span>
+                </span>
+                {guide.idx && (
+                  <a
+                    href={`https://koreanchurch.sg/noticeandnews/?bmode=view&idx=${guide.idx}&t=board`}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ marginLeft: 'auto', padding: '0.3rem 0.7rem', borderRadius: 999, border: '1px solid #1E40AF', background: '#EFF6FF', color: '#1E40AF', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                  >
+                    <span>📘</span><span>구역예배지 원문</span>
+                  </a>
+                )}
               </div>
-            )}
-            {guide?.found && guide.idx && (
-              <a
-                href={`https://koreanchurch.sg/noticeandnews/?bmode=view&idx=${guide.idx}&t=board`}
-                target="_blank" rel="noopener noreferrer"
-                style={{ alignSelf: 'flex-start', padding: '0.3rem 0.7rem', borderRadius: 999, border: '1px solid #1E40AF', background: '#EFF6FF', color: '#1E40AF', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.15rem' }}
-              >
-                <span>📘</span><span>구역예배지 원문</span>
-              </a>
             )}
           </div>
 
@@ -239,10 +208,11 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
           )}
 
           {/* 말씀 본문 — design.md §2.3 Bible passage rule 준수 (BiblePassageCard) */}
-          {guide?.found && guide.bibleText && (
+          {guide?.found && (guide.bibleText || guide.bibleTextEn) && (
             <BiblePassageCard
               reference={guide.normalizedRef || guide.biblePassage || '말씀'}
-              passageText={guide.bibleText}
+              koText={guide.bibleText || null}
+              enText={guide.bibleTextEn || null}
             />
           )}
 

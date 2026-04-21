@@ -73,7 +73,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
     router.push('/reservation');
   };
 
-  // 로그인 필요 메뉴(큐티·예배 및 모임교안·문의)의 공통 가드
+  // 로그인 필요 메뉴(큐티·구역모임교안·문의)의 공통 가드
   const handleProtectedClick = (href: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     if (!effectiveProfileId) {
@@ -120,7 +120,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
             </p>
 
             <div className={styles.menuGrid}>
-              <a className={styles.menuCard} href="/reservation" onClick={handleReservationClick}>
+              <a className={styles.menuCard} style={{ gridColumn: '1 / -1' }} href="/reservation" onClick={handleReservationClick}>
                 <span className={styles.menuIcon} aria-hidden>
                   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 21s-7-7.5-7-12a7 7 0 1 1 14 0c0 4.5-7 12-7 12z" />
@@ -128,15 +128,6 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
                   </svg>
                 </span>
                 <span className={styles.menuLabel}>장소예약</span>
-              </a>
-              <a className={styles.menuCard} href="/cell-teaching" onClick={handleProtectedClick('/cell-teaching')}>
-                <span className={styles.menuIcon} aria-hidden>
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="5" width="18" height="14" rx="2.5" />
-                    <path d="M10 9.5v5l4.5-2.5z" fill="currentColor" stroke="none" />
-                  </svg>
-                </span>
-                <span className={styles.menuLabel}>예배 및 모임교안</span>
               </a>
               <a className={styles.menuCard} href="/qt" onClick={handleProtectedClick('/qt')}>
                 <span className={styles.menuIcon} aria-hidden>
@@ -154,7 +145,24 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
                     <path d="M8 7h8M8 11h8M8 15h5" />
                   </svg>
                 </span>
-                <span className={styles.menuLabel}>말씀통독</span>
+                <span className={styles.menuLabel}>성경통독</span>
+              </a>
+              <a className={styles.menuCard} href="/sunday-worship" onClick={handleProtectedClick('/sunday-worship')}>
+                <span className={styles.menuIcon} aria-hidden>
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 3l2.5 5 5.5.8-4 3.9 1 5.5L12 15.8 7 18.2l1-5.5-4-3.9L9.5 8z" />
+                  </svg>
+                </span>
+                <span className={styles.menuLabel}>주일예배</span>
+              </a>
+              <a className={styles.menuCard} href="/cell-teaching" onClick={handleProtectedClick('/cell-teaching')}>
+                <span className={styles.menuIcon} aria-hidden>
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="5" width="18" height="14" rx="2.5" />
+                    <path d="M10 9.5v5l4.5-2.5z" fill="currentColor" stroke="none" />
+                  </svg>
+                </span>
+                <span className={styles.menuLabel}>구역모임교안</span>
               </a>
             </div>
 

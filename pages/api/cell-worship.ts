@@ -227,14 +227,19 @@ const fetchDetail = async (idx: string): Promise<{ body: string; attachmentName:
     }
   }
 
-  // 성경 본문 조회 (개역한글 번들)
+  // 성경 본문 조회 (개역한글 + KJV 둘 다)
   let bibleText: string | null = null;
+  let bibleTextEn: string | null = null;
   let normalizedRef: string | null = null;
   if (biblePassage) {
     normalizedRef = normalizeBibleRef(biblePassage);
     try {
-      const verses = await lookupPassage(normalizedRef);
-      if (verses.length > 0) bibleText = formatVerses(verses, true);
+      const [koV, enV] = await Promise.all([
+        lookupPassage(normalizedRef, 'ko'),
+        lookupPassage(normalizedRef, 'en'),
+      ]);
+      if (koV.length > 0) bibleText = formatVerses(koV, true);
+      if (enV.length > 0) bibleTextEn = formatVerses(enV, true);
     } catch {}
   }
 
@@ -242,7 +247,7 @@ const fetchDetail = async (idx: string): Promise<{ body: string; attachmentName:
   const sections = pdfText ? parsePdfSections(pdfText) : { questions: [], prayer: [] };
   const hymn = pdfText ? parseHymn(pdfText) : null;
 
-  const data = { body, attachmentName, biblePassage, normalizedRef, sermonTitle, pdfText, pdfError, bibleText, hymn, questions: sections.questions, prayer: sections.prayer };
+  const data = { body, attachmentName, biblePassage, normalizedRef, sermonTitle, pdfText, pdfError, bibleText, bibleTextEn, hymn, questions: sections.questions, prayer: sections.prayer };
   detailCache.set(idx, { data, at: now });
   return data;
 };
