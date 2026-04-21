@@ -655,12 +655,10 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
               {/* 일시·장소 */}
               <div style={{ padding: '0.75rem 0.9rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E', display: 'grid', gap: '0.4rem' }}>
                 <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#3F6212', letterSpacing: '0.02em' }}>📅 예약 일시 · 장소</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr', gap: '0.4rem', fontSize: '0.92rem' }}>
-                  <span style={{ color: '#3F6212', fontWeight: 800 }}>날짜</span>
-                  <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>{selectedDate} ({WEEK_LABELS[selDow]})</span>
-                  <span style={{ color: '#3F6212', fontWeight: 800 }}>시간</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr', gap: '0.4rem 0.5rem', fontSize: '0.92rem', alignItems: 'baseline' }}>
+                  <span style={{ color: '#3F6212', fontWeight: 800 }}>일시</span>
                   <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>
-                    {selection.startLabel}~{selection.endLabel}
+                    {selectedDate} ({WEEK_LABELS[selDow]}) {selection.startLabel}~{selection.endLabel}
                     <span style={{ marginLeft: '0.35rem', color: 'var(--color-ink-2)', fontWeight: 600 }}>({selection.totalLabel})</span>
                   </span>
                   <span style={{ color: '#3F6212', fontWeight: 800 }}>장소</span>
