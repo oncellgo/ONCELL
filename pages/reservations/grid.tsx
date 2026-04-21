@@ -1,6 +1,6 @@
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import SubHeader from '../../components/SubHeader';
 import VenueGrid, { Venue, Block, BlockGroup, dateKey } from '../../components/VenueGrid';
 import DateTimePicker from '../../components/DateTimePicker';
@@ -43,6 +43,41 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
   const [selectedDate, setSelectedDate] = useState<string>(todayKey);
   const [selectedVenueIds, setSelectedVenueIds] = useState<Set<string>>(new Set());
   const [venueOpen, setVenueOpen] = useState(false);
+  // 빈 시간 셀 선택(토글): venueId → Set<startMin>. 빈 셀을 연속으로 클릭해서 선택/해제.
+  const [selectedSlots, setSelectedSlots] = useState<Map<string, Set<number>>>(new Map());
+  // 날짜·장소가 바뀌면 이전 선택은 모두 해제
+  useEffect(() => { setSelectedSlots(new Map()); }, [selectedDate, selectedVenueIds]);
+
+  const handleSlotClick = (venue: Venue, startMin: number, blocked: boolean) => {
+    if (blocked) return;  // 이미 예약/교회일정/블럭 셀은 토글 불가
+    setSelectedSlots((prev) => {
+      const next = new Map(prev);
+      const cur = new Set(next.get(venue.id) || []);
+      if (cur.has(startMin)) cur.delete(startMin); else cur.add(startMin);
+      if (cur.size === 0) next.delete(venue.id);
+      else next.set(venue.id, cur);
+      return next;
+    });
+  };
+  const totalSelectedSlots = Array.from(selectedSlots.values()).reduce((a, s) => a + s.size, 0);
+  const clearSelectedSlots = () => setSelectedSlots(new Map());
+
+  // 선택을 '장소예약' 페이지로 넘길 수 있는 deep-link (연속·단일 구간 기준 첫 venue만 사용)
+  const reservationDeepLink = (() => {
+    if (totalSelectedSlots === 0) return null;
+    const firstEntry = Array.from(selectedSlots.entries())[0];
+    const [vid, mins] = firstEntry;
+    const sortedMins = Array.from(mins).sort((a, b) => a - b);
+    const startMin = sortedMins[0];
+    const endMin = sortedMins[sortedMins.length - 1] + 30;  // slotMin fallback은 끝에서 adjust
+    const qs = new URLSearchParams();
+    if (profileId) qs.set('profileId', profileId);
+    qs.set('date', selectedDate);
+    qs.set('venueId', vid);
+    qs.set('start', String(startMin));
+    qs.set('end', String(endMin));
+    return `/reservation?${qs.toString()}`;
+  })();
 
   const selDow = useMemo(() => {
     const [y, m, d] = selectedDate.split('-').map(Number);
@@ -229,10 +264,41 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                 slotMin={slotMin}
                 availableStart={availableStart}
                 availableEnd={availableEnd}
+                selectedSlots={selectedSlots}
+                onSlotClick={handleSlotClick}
               />
 
-              <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--color-ink-2)' }}>
-                {dateSummary} · {selectedVenueIds.size}곳 현황 · 예약은 상단 “장소예약” 메뉴에서 진행
+              {/* 선택 요약 + 예약하기 바로가기 */}
+              {totalSelectedSlots > 0 ? (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'wrap',
+                  padding: '0.7rem 0.9rem', borderRadius: 12,
+                  background: '#ECFDF5', border: '1px solid #20CD8D',
+                }}>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-primary-deep)' }}>
+                    ✓ {totalSelectedSlots}개 시간대 선택됨 ({selectedSlots.size}곳)
+                  </span>
+                  <div style={{ marginLeft: 'auto', display: 'inline-flex', gap: '0.35rem' }}>
+                    <button
+                      type="button"
+                      onClick={clearSelectedSlots}
+                      style={{ padding: '0.45rem 0.85rem', minHeight: 40, borderRadius: 999, border: '1px solid #6B7280', background: '#fff', color: '#374151', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
+                    >선택 해제</button>
+                    {reservationDeepLink && (
+                      <a
+                        href={reservationDeepLink}
+                        style={{ padding: '0.45rem 0.9rem', minHeight: 40, display: 'inline-flex', alignItems: 'center', borderRadius: 999, border: 'none', background: 'var(--color-primary)', color: '#fff', fontSize: '0.82rem', fontWeight: 800, textDecoration: 'none' }}
+                      >📍 이 시간으로 예약</a>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-ink-2)', lineHeight: 1.55 }}>
+                  💡 <strong>팁:</strong> 빈 시간(연라임)을 클릭해서 토글 선택할 수 있어요. 선택 후 상단 ‘장소예약’ 메뉴에서 바로 예약하세요.
+                </p>
+              )}
+              <p style={{ margin: 0, fontSize: '0.76rem', color: 'var(--color-ink-2)' }}>
+                {dateSummary} · {selectedVenueIds.size}곳 현황
               </p>
             </>
           ) : (
