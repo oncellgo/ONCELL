@@ -287,8 +287,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       bulletinTitle: bulletinMatch?.title || null,
       ...detail,
     });
-  } catch (e) {
-    console.error(e);
-    return res.status(500).json({ error: 'failed' });
+  } catch (e: any) {
+    console.error('[cell-worship] handler error:', e);
+    return res.status(500).json({ error: 'failed', errorReason: e?.message || String(e) });
   }
 }
