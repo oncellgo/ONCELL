@@ -43,40 +43,100 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
   const [selectedDate, setSelectedDate] = useState<string>(todayKey);
   const [selectedVenueIds, setSelectedVenueIds] = useState<Set<string>>(new Set());
   const [venueOpen, setVenueOpen] = useState(false);
-  // 빈 시간 셀 선택(토글): venueId → Set<startMin>. 빈 셀을 연속으로 클릭해서 선택/해제.
-  const [selectedSlots, setSelectedSlots] = useState<Map<string, Set<number>>>(new Map());
-  // 날짜·장소가 바뀌면 이전 선택은 모두 해제
-  useEffect(() => { setSelectedSlots(new Map()); }, [selectedDate, selectedVenueIds]);
+  // 선택 상태 — 단일 장소 + 연속된 시간 슬롯만 허용 (원본 장소예약과 동일한 정책)
+  const [activeVenueId, setActiveVenueId] = useState<string | null>(null);
+  const [activeSlots, setActiveSlots] = useState<Set<number>>(new Set());
+  // 날짜·장소(선택 집합)가 바뀌면 셀 선택 초기화
+  useEffect(() => { setActiveVenueId(null); setActiveSlots(new Set()); }, [selectedDate, selectedVenueIds]);
+
+  // VenueGrid 에 전달할 Map 형태 (단일 장소만 담음)
+  const selectedSlotsMap = useMemo(() => {
+    const m = new Map<string, Set<number>>();
+    if (activeVenueId && activeSlots.size > 0) m.set(activeVenueId, activeSlots);
+    return m;
+  }, [activeVenueId, activeSlots]);
 
   const handleSlotClick = (venue: Venue, startMin: number, blocked: boolean) => {
-    if (blocked) return;  // 이미 예약/교회일정/블럭 셀은 토글 불가
-    setSelectedSlots((prev) => {
-      const next = new Map(prev);
-      const cur = new Set(next.get(venue.id) || []);
-      if (cur.has(startMin)) cur.delete(startMin); else cur.add(startMin);
-      if (cur.size === 0) next.delete(venue.id);
-      else next.set(venue.id, cur);
-      return next;
-    });
-  };
-  const totalSelectedSlots = Array.from(selectedSlots.values()).reduce((a, s) => a + s.size, 0);
-  const clearSelectedSlots = () => setSelectedSlots(new Map());
+    if (blocked) return;  // 예약/교회일정/블럭 셀은 클릭 무효
 
-  // 선택을 '장소예약' 페이지로 넘길 수 있는 deep-link (연속·단일 구간 기준 첫 venue만 사용)
+    // 다른 장소 클릭 → 새 선택으로 교체 (첫 셀부터 시작)
+    if (activeVenueId !== venue.id) {
+      setActiveVenueId(venue.id);
+      setActiveSlots(new Set([startMin]));
+      return;
+    }
+
+    // 같은 장소 내 처리
+    if (activeSlots.size === 0) {
+      setActiveSlots(new Set([startMin]));
+      return;
+    }
+
+    // 이미 선택된 셀 클릭 → 그 셀까지만 남기고 잘라내기 (9:00-11:00 상태에서 10:00 클릭 → 9:00-10:30)
+    if (activeSlots.has(startMin)) {
+      const sorted = Array.from(activeSlots).sort((a, b) => a - b);
+      const first = sorted[0];
+      if (startMin === first) {
+        // 시작 셀 다시 클릭 → 전체 해제
+        setActiveSlots(new Set());
+        setActiveVenueId(null);
+      } else {
+        const next = new Set<number>();
+        for (let mm = first; mm <= startMin; mm += slotMin) next.add(mm);
+        setActiveSlots(next);
+      }
+      return;
+    }
+
+    // 비어있는 셀 클릭 — 연속 여부 판정
+    const sorted = Array.from(activeSlots).sort((a, b) => a - b);
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+
+    if (startMin === last + slotMin) {
+      // 바로 뒤 연속 → 확장
+      const next = new Set(activeSlots);
+      next.add(startMin);
+      setActiveSlots(next);
+    } else if (startMin === first - slotMin) {
+      // 바로 앞 연속 → 확장
+      const next = new Set(activeSlots);
+      next.add(startMin);
+      setActiveSlots(next);
+    } else {
+      // 연속 불가 (떨어진 셀) → 기존 선택 버리고 새로 시작 (사용자가 뛰어넘어 클릭하면 앞쪽 연속 구간 기준 재시작)
+      setActiveSlots(new Set([startMin]));
+    }
+  };
+
+  const totalSelectedSlots = activeSlots.size;
+  const clearSelectedSlots = () => { setActiveVenueId(null); setActiveSlots(new Set()); };
+
+  // 선택을 '장소예약' 페이지로 넘기는 deep-link
   const reservationDeepLink = (() => {
-    if (totalSelectedSlots === 0) return null;
-    const firstEntry = Array.from(selectedSlots.entries())[0];
-    const [vid, mins] = firstEntry;
-    const sortedMins = Array.from(mins).sort((a, b) => a - b);
+    if (!activeVenueId || totalSelectedSlots === 0) return null;
+    const sortedMins = Array.from(activeSlots).sort((a, b) => a - b);
     const startMin = sortedMins[0];
-    const endMin = sortedMins[sortedMins.length - 1] + 30;  // slotMin fallback은 끝에서 adjust
+    const endMin = sortedMins[sortedMins.length - 1] + slotMin;
     const qs = new URLSearchParams();
     if (profileId) qs.set('profileId', profileId);
     qs.set('date', selectedDate);
-    qs.set('venueId', vid);
+    qs.set('venueId', activeVenueId);
     qs.set('start', String(startMin));
     qs.set('end', String(endMin));
     return `/reservation?${qs.toString()}`;
+  })();
+
+  // 선택 구간 텍스트 요약 (예: "17:00~18:30")
+  const selectionLabel = (() => {
+    if (totalSelectedSlots === 0 || !activeVenueId) return null;
+    const v = venues.find((x) => x.id === activeVenueId);
+    const sorted = Array.from(activeSlots).sort((a, b) => a - b);
+    const startMin = sorted[0];
+    const endMin = sorted[sorted.length - 1] + slotMin;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const hhmm = (m: number) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+    return v ? `${v.floor} ${v.name} · ${hhmm(startMin)}~${hhmm(endMin)}` : `${hhmm(startMin)}~${hhmm(endMin)}`;
   })();
 
   const selDow = useMemo(() => {
@@ -264,7 +324,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                 slotMin={slotMin}
                 availableStart={availableStart}
                 availableEnd={availableEnd}
-                selectedSlots={selectedSlots}
+                selectedSlots={selectedSlotsMap}
                 onSlotClick={handleSlotClick}
               />
 
@@ -276,7 +336,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                   background: '#ECFDF5', border: '1px solid #20CD8D',
                 }}>
                   <span style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-primary-deep)' }}>
-                    ✓ {totalSelectedSlots}개 시간대 선택됨 ({selectedSlots.size}곳)
+                    ✓ {selectionLabel}
                   </span>
                   <div style={{ marginLeft: 'auto', display: 'inline-flex', gap: '0.35rem' }}>
                     <button
@@ -294,7 +354,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                 </div>
               ) : (
                 <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-ink-2)', lineHeight: 1.55 }}>
-                  💡 <strong>팁:</strong> 빈 시간(연라임)을 클릭해서 토글 선택할 수 있어요. 선택 후 상단 ‘장소예약’ 메뉴에서 바로 예약하세요.
+                  💡 <strong>팁:</strong> 빈 시간(연라임)을 클릭해서 연속 선택하세요. 떨어진 셀을 클릭하면 이전 선택은 해제되고 그 셀부터 새로 시작합니다.
                 </p>
               )}
               <p style={{ margin: 0, fontSize: '0.76rem', color: 'var(--color-ink-2)' }}>
