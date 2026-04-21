@@ -95,7 +95,7 @@ const BottomNav = () => {
       </div>
       <div style={{ width: '100%', maxWidth: 1040, margin: '0.25rem auto 0', display: 'flex', justifyContent: 'flex-end', paddingRight: '0.25rem' }}>
         <span style={{ fontSize: '0.68rem', color: 'rgba(255, 255, 255, 0.55)', fontWeight: 600, letterSpacing: '0.02em' }}>
-          by Steward<span style={{ color: 'var(--color-primary)' }}>+AI.</span>
+          KCIS
         </span>
       </div>
     </nav>

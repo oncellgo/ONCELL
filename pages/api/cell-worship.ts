@@ -46,6 +46,23 @@ const parseHymn = (text: string): { number: string; title: string | null } | nul
   return null;
 };
 
+// PDF 상단에서 설교 제목(나눔 내용 최상단 타이틀)을 추출.
+// 보통 "YYYY년 M월 N째 주 구역예배지" 헤더 다음 줄에 나온다.
+// 실패 시 null (filename에서 추출한 sermonTitle을 폴백으로 사용).
+const extractSermonTitleFromPdf = (text: string): string | null => {
+  if (!text) return null;
+  const clean = text.replace(/--\s*\d+\s*of\s*\d+\s*--/g, '').trim();
+  // 헤더 라인 뒤의 첫 번째 주요 텍스트
+  const m = clean.match(/구역예배지[^\n]*\n+\s*([^\n]{2,60})\s*(?:\n|$)/);
+  if (m) {
+    const candidate = m[1].replace(/\s+/g, ' ').trim();
+    // 성경구절 라인(책명+숫자)은 제목이 아니므로 스킵
+    if (/^[가-힣]{1,5}\s*\d/.test(candidate)) return null;
+    if (candidate.length >= 2) return candidate;
+  }
+  return null;
+};
+
 // PDF 텍스트를 내용나눔(Q)·기도 섹션으로 분리
 const parsePdfSections = (text: string): { questions: string[]; prayer: Array<{ label: string; text: string }> } => {
   const out = { questions: [] as string[], prayer: [] as Array<{ label: string; text: string }> };
@@ -107,20 +124,16 @@ const ORDINAL_MAP: Record<string, number> = { '첫': 1, '둘': 2, '셋': 3, '넷
 const pad = (n: number) => String(n).padStart(2, '0');
 const toKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-// "M월 N째 주 구역예배지" 게시글 → 실제 사용되는 설교 주일 날짜
-// 규칙: 해당 게시글은 그 주 금요일 구역모임용이고, 내용은 그 주 **월요일 이전의 주일**(=전주 일요일)을 다룬다.
-// 예: "4월 둘째 주 구역예배지"(4월 둘째 주 금요일 ≈ 4/10)는 "4월 첫째 주일"(4/5)의 설교를 다룸.
-// 따라서 N번째 주일에서 한 주(7일) 전으로 당긴다.
+// "M월 N째 주 구역예배지" 게시글 → 해당 월의 N번째 일요일 (그대로 매칭).
+// 사용자 UI는 선택된 날짜의 `Math.ceil(date/7)` 을 "첫째주/둘째주/..."로 라벨링하므로,
+// 게시글 이름의 N째와 UI의 N째가 동일하게 일치하도록 시프트 없이 매칭한다.
 const nthSundayOf = (year: number, month: number, nth: number): string | null => {
   const first = new Date(year, month - 1, 1);
   const shift = (7 - first.getDay()) % 7;
   const day = 1 + shift + (nth - 1) * 7;
-  const original = new Date(year, month - 1, day);
-  if (original.getMonth() !== month - 1) return null;
-  // 한 주 전 주일로 이동 (설교 주일)
-  const sermonSun = new Date(original);
-  sermonSun.setDate(original.getDate() - 7);
-  return toKey(sermonSun);
+  const sun = new Date(year, month - 1, day);
+  if (sun.getMonth() !== month - 1) return null;
+  return toKey(sun);
 };
 
 const decodeEntities = (s: string): string =>
@@ -246,8 +259,11 @@ const fetchDetail = async (idx: string): Promise<{ body: string; attachmentName:
   // PDF 섹션 파싱 (내용 나눔 · 기도 · 찬송가)
   const sections = pdfText ? parsePdfSections(pdfText) : { questions: [], prayer: [] };
   const hymn = pdfText ? parseHymn(pdfText) : null;
+  // 설교 제목 — PDF 본문 상단에서 우선 추출, 없으면 filename 기반 폴백
+  const pdfSermonTitle = pdfText ? extractSermonTitleFromPdf(pdfText) : null;
+  const finalSermonTitle = pdfSermonTitle || sermonTitle || null;
 
-  const data = { body, attachmentName, biblePassage, normalizedRef, sermonTitle, pdfText, pdfError, bibleText, bibleTextEn, hymn, questions: sections.questions, prayer: sections.prayer };
+  const data = { body, attachmentName, biblePassage, normalizedRef, sermonTitle: finalSermonTitle, pdfText, pdfError, bibleText, bibleTextEn, hymn, questions: sections.questions, prayer: sections.prayer };
   detailCache.set(idx, { data, at: now });
   return data;
 };

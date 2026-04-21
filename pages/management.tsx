@@ -849,6 +849,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
         isAdmin={scopedAdminCommunities.length > 0}
         adminAccent={!!systemAdminHref}
         systemAdminHref={systemAdminHref || undefined}
+        showMenuBar={false}
         brandExtras={mgmtCommunityId ? (
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
             <CommunityBadge profileId={profileId} communityId={mgmtCommunityId} joinedCommunities={joinedCommunities} />
@@ -1069,9 +1070,9 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                 <>
                 <section style={{ padding: '1.25rem 1.5rem', borderRadius: 16, background: '#fff', border: '1px solid #D9F09E', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <h2 style={{ margin: 0, fontSize: '1.1rem', color: '#3F6212', letterSpacing: '-0.01em', fontWeight: 800 }}>⛪ 예배/기도회 일정 ({weekLabel})</h2>
+                    <h2 style={{ margin: 0, fontSize: '1.1rem', color: '#3F6212', letterSpacing: '-0.01em', fontWeight: 800 }}>⛪ 교회일정 ({weekLabel})</h2>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <span style={{ fontSize: '0.82rem', color: '#65A30D' }}>{weekRangeText}</span>
+                      <span style={{ padding: '0.3rem 0.7rem', borderRadius: 999, background: '#ECFCCB', color: '#3F6212', fontSize: isMobile ? '0.88rem' : '0.95rem', fontWeight: 800, letterSpacing: '0.01em' }}>{weekRangeText}</span>
                       {worshipWeekOffset !== 0 && (
                         <button
                           type="button"
@@ -1180,6 +1181,36 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                       aria-label="다음주"
                       style={{ padding: '0 0.7rem', borderRadius: 10, border: '1px solid #D9F09E', background: '#fff', color: '#65A30D', fontSize: '1.2rem', fontWeight: 800, cursor: 'pointer' }}
                     >›</button>
+                  </div>
+                </section>
+
+                {/* 전체 교회일정 — 연간 모든 이벤트를 시간순으로 */}
+                <section style={{ padding: isMobile ? '1rem' : '1.25rem 1.5rem', borderRadius: 16, background: '#fff', border: '1px solid #D9F09E', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#3F6212' }}>📋 전체 교회일정</h3>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>{calEvents.filter((e: any) => (e.type || 'event') !== 'reservation').length}건</span>
+                  </div>
+                  <div style={{ maxHeight: 420, overflowY: 'auto', border: '1px solid #ECFCCB', borderRadius: 10 }}>
+                    <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid' }}>
+                      {calEvents
+                        .filter((e: any) => (e.type || 'event') !== 'reservation')
+                        .slice()
+                        .sort((a: any, b: any) => (a.startAt || '').localeCompare(b.startAt || ''))
+                        .map((ev: any) => {
+                          const k = (ev.startAt || '').slice(0, 10);
+                          const [y, m, d] = k.split('-');
+                          const cat = colorFor(ev.category);
+                          return (
+                            <li key={ev.id} style={{ padding: '0.5rem 0.8rem', borderBottom: '1px solid #ECFCCB', display: 'grid', gridTemplateColumns: isMobile ? '72px 1fr' : '96px 1fr auto', gap: '0.5rem', alignItems: 'center', fontSize: '0.88rem' }}>
+                              <span style={{ fontWeight: 800, color: '#3F6212', fontSize: isMobile ? '0.8rem' : '0.86rem' }}>{m}.{d}</span>
+                              <span style={{ color: 'var(--color-ink)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }}>{ev.title}</span>
+                              {!isMobile && ev.category && (
+                                <span style={{ padding: '0.1rem 0.5rem', borderRadius: 999, background: cat.bg, color: cat.fg, border: `1px solid ${cat.border}`, fontSize: '0.7rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{ev.category}</span>
+                              )}
+                            </li>
+                          );
+                        })}
+                    </ul>
                   </div>
                 </section>
 

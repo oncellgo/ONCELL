@@ -9,8 +9,9 @@ const BASE = 'https://koreanchurch.sg';
 const CACHE_TTL = 30 * 60 * 1000;
 
 type Entry = { href: string; name: string | null };
+type ParsedPost = { entries: Entry[]; misbaUrl: string | null };
 
-const listCache = new Map<string, { at: number; entries: Entry[] }>();
+const listCache = new Map<string, { at: number; parsed: ParsedPost }>();
 
 const decodeEntities = (s: string) =>
   s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
@@ -26,10 +27,10 @@ const guessMime = (name: string | null): string => {
   return 'application/octet-stream';
 };
 
-const fetchAttachments = async (idx: string): Promise<Entry[]> => {
+const fetchAttachments = async (idx: string): Promise<ParsedPost> => {
   const hit = listCache.get(idx);
   const now = Date.now();
-  if (hit && now - hit.at < CACHE_TTL) return hit.entries;
+  if (hit && now - hit.at < CACHE_TTL) return hit.parsed;
 
   const res = await fetch(POST_URL(idx), { headers: { 'User-Agent': 'Mozilla/5.0' } });
   const html = await res.text();
@@ -62,8 +63,28 @@ const fetchAttachments = async (idx: string): Promise<Entry[]> => {
     }
   }
 
-  listCache.set(idx, { at: now, entries });
-  return entries;
+  // 3) 게시물 본문에 삽입된 "미스바" 링크 추출 — anchor의 text나 href가 misba/미스바 포함.
+  //    게시글 하단에 미스바 앱/파일 링크가 있는 경우 우선 사용.
+  let misbaUrl: string | null = null;
+  const bodyMatch = html.match(/<div class="margin-top-xxl _comment_body_[^"]*">([\s\S]*?)<\/div>\s*<\/div>/);
+  const body = bodyMatch ? bodyMatch[1] : html;
+  const anchorRe = /<a\s+[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
+  let a: RegExpExecArray | null;
+  const candidates: Array<{ url: string; text: string }> = [];
+  while ((a = anchorRe.exec(body)) !== null) {
+    const url = decodeEntities(a[1]);
+    const text = decodeEntities(a[2].replace(/<[^>]+>/g, '')).trim();
+    if (!url || url.startsWith('#') || url.startsWith('javascript:')) continue;
+    if (/misba|미스바|mizpah/i.test(url) || /미스바|misba|mizpah/i.test(text)) {
+      candidates.push({ url, text });
+    }
+  }
+  // 후보 중 가장 마지막(게시물 하단에 가까운) 링크 사용
+  if (candidates.length > 0) misbaUrl = candidates[candidates.length - 1].url;
+
+  const parsed: ParsedPost = { entries, misbaUrl };
+  listCache.set(idx, { at: now, parsed });
+  return parsed;
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -71,7 +92,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!/^\d+$/.test(idx)) return res.status(400).json({ error: 'idx 필수' });
 
   try {
-    const entries = await fetchAttachments(idx);
+    const parsed = await fetchAttachments(idx);
+    const entries = parsed.entries;
 
     // 목록 조회 모드
     if (req.query.n === undefined) {
@@ -79,6 +101,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         idx,
         count: entries.length,
         files: entries.map((e, i) => ({ n: i, name: e.name, mime: guessMime(e.name) })),
+        misbaUrl: parsed.misbaUrl,
       });
     }
 

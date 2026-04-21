@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { ReactNode, useEffect, useState } from 'react';
 import { useIsMobile } from '../lib/useIsMobile';
 import ProfileModal from './ProfileModal';
+import MenuBar from './MenuBar';
 
 /**
  * 하위(서브) 페이지 공통 헤더.
@@ -18,14 +19,6 @@ export type SubHeaderProps = {
   email?: string | null;
   systemAdminHref?: string | null;
 };
-
-const NAV_ITEMS: Array<{ label: string; href: string; requireLogin?: boolean }> = [
-  { label: '장소예약', href: '/reservation', requireLogin: true },
-  { label: '큐티', href: '/qt', requireLogin: true },
-  { label: '성경통독', href: '/reading', requireLogin: true },
-  { label: '주일예배', href: '/sunday-worship', requireLogin: true },
-  { label: '구역모임교안', href: '/cell-teaching', requireLogin: true },
-];
 
 const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, systemAdminHref }: SubHeaderProps) => {
   const router = useRouter();
@@ -82,6 +75,7 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
   };
 
   return (
+    <>
     <header
       style={{
         position: 'sticky',
@@ -92,8 +86,7 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
         justifyContent: 'space-between',
         gap: isMobile ? '0.4rem' : '0.75rem',
         padding: isMobile ? '0.5rem 0.55rem' : '0.7rem 1rem',
-        background: 'rgba(255, 255, 255, 0.92)',
-        backdropFilter: 'saturate(180%) blur(10px)',
+        background: '#ffffff',
         borderBottom: '1px solid var(--color-surface-border)',
         flexWrap: 'nowrap',
       }}
@@ -115,51 +108,36 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
           alt="KCIS"
           style={{ width: isMobile ? 24 : 28, height: isMobile ? 24 : 28, objectFit: 'contain' }}
         />
-        {!isMobile && (
-          <strong style={{ fontWeight: 800, letterSpacing: '0.02em', fontSize: '1rem' }}>KCIS</strong>
-        )}
+        <strong style={{ fontWeight: 800, letterSpacing: '0.02em', fontSize: isMobile ? '0.88rem' : '1rem', color: '#0B3A2B' }}>KCIS</strong>
       </Link>
 
-      <nav
-        className="nav-scroll"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: isMobile ? '0.1rem' : '0.25rem',
-          flex: '1 1 auto',
-          minWidth: 0,
-          justifyContent: 'center',
-          flexWrap: 'nowrap',
-          overflowX: 'auto',
-        }}
-      >
-        {NAV_ITEMS.map((item) => {
-          const active = isActive(item.href);
-          return (
-            <Link
-              key={item.label}
-              href={withAuth(item.href)}
-              data-compact
-              style={{
-                padding: isMobile ? '0.35rem 0.65rem' : '0.4rem 0.85rem',
-                borderRadius: 999,
-                fontSize: isMobile ? '0.82rem' : '0.88rem',
-                fontWeight: active ? 800 : 600,
-                color: active ? 'var(--color-primary-deep)' : 'var(--color-ink-2)',
-                background: active ? 'var(--color-primary-tint)' : 'transparent',
-                textDecoration: 'none',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-                transition: 'background 0.15s ease, color 0.15s ease',
-              }}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
+      <div style={{ flex: '1 1 auto', minWidth: 0 }} />
 
       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', flex: '0 0 auto' }}>
+        {effProfileId && (
+          <Link
+            href={withAuth('/dashboard')}
+            title="내 대시보드"
+            aria-label="내 대시보드"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              padding: isMobile ? '0.3rem 0.55rem' : '0.35rem 0.7rem',
+              borderRadius: 999,
+              background: 'var(--color-primary-tint)',
+              border: '1px solid var(--color-primary-tint)',
+              color: 'var(--color-primary-deep)',
+              fontWeight: 800,
+              fontSize: isMobile ? '0.76rem' : '0.82rem',
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+          >
+            <span aria-hidden>📊</span>{!isMobile && <span>내 대시보드</span>}
+          </Link>
+        )}
         {effProfileId && (
           <span
             style={{
@@ -254,6 +232,8 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
         />
       )}
     </header>
+    <MenuBar profileId={effProfileId} nickname={effNickname} email={effEmail} />
+    </>
   );
 };
 

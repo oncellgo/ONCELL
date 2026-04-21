@@ -23,11 +23,13 @@ type Props = {
 const pad = (n: number) => String(n).padStart(2, '0');
 const keyFor = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-// 오늘 기준 가장 최근(지나간) 주일 — 오늘이 일요일이면 오늘
+// 현재 속한 주의 일요일 — 오늘이 일요일이면 오늘, 월~토이면 다음 주일.
+// (월요일 이후부터 이미 그 주의 주보/구역예배지가 대상이 됨)
 const mostRecentSunday = (now: Date): Date => {
   const d = new Date(now);
   d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - d.getDay());
+  const dow = d.getDay();
+  if (dow !== 0) d.setDate(d.getDate() + (7 - dow));
   return d;
 };
 
@@ -37,19 +39,30 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
   const today = new Date(todayISO);
   const defaultSunday = mostRecentSunday(today);
 
-  // 최근 4개 주일 (오늘이 주일이면 오늘이 마지막)
+  // 윈도우 오프셋 — 기본 0: 최근 4개 주일. ‹ / › 로 1주씩 이동.
+  const [windowOffset, setWindowOffset] = useState<number>(0);
   const recentSundays = useMemo(() => {
     const list: string[] = [];
     const base = new Date(defaultSunday);
+    base.setDate(base.getDate() + windowOffset * 7);
     for (let i = 3; i >= 0; i--) {
       const d = new Date(base);
       d.setDate(base.getDate() - i * 7);
       list.push(keyFor(d));
     }
     return list;
-  }, [defaultSunday]);
+  }, [defaultSunday, windowOffset]);
 
   const [selectedKey, setSelectedKey] = useState<string>(keyFor(defaultSunday));
+
+  const goPrevWeek = () => {
+    setWindowOffset((w) => w - 1);
+    setSelectedKey((k) => { const d = new Date(k); d.setDate(d.getDate() - 7); return keyFor(d); });
+  };
+  const goNextWeek = () => {
+    setWindowOffset((w) => w + 1);
+    setSelectedKey((k) => { const d = new Date(k); d.setDate(d.getDate() + 7); return keyFor(d); });
+  };
 
   // 선택된 주일의 영상 — SSR에서 이미 dateKey당 1개(2부 우선)로 정리됨
   const selectedVideo = useMemo(() => videos.find((v) => v.dateKey === selectedKey) || null, [videos, selectedKey]);
@@ -120,48 +133,41 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
             <span style={{ fontSize: '0.8rem', color: 'var(--color-ink-2)' }}>KoreanChurchInSingapore</span>
           </div>
 
-          {/* 최근 4개 주일 */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: isMobile ? '0.2rem' : '0.3rem' }}>
-            {recentSundays.map((key) => {
-              const d = new Date(key);
-              const isSelected = selectedKey === key;
-              const isToday = key === todayKey;
-              const v = videos.find((x) => x.dateKey === key);
-              return (
-                <button
-                  key={key} type="button" onClick={() => setSelectedKey(key)}
-                  style={{
-                    padding: isMobile ? '0.35rem 0.15rem' : '0.4rem 0.3rem',
-                    border: isSelected ? '2px solid #20CD8D' : isToday ? '1.5px solid #D9F09E' : '1px solid var(--color-gray)',
-                    borderRadius: 8,
-                    background: isToday ? '#ECFCCB' : '#fff',
-                    cursor: 'pointer',
-                    textAlign: 'center',
-                    boxShadow: isSelected ? '0 2px 6px rgba(32,205,141,0.2)' : 'none',
-                    display: 'grid', gap: isMobile ? '0.1rem' : '0.15rem',
-                    minHeight: isMobile ? 44 : 48, position: 'relative',
-                  }}
-                >
-                  <div style={{ fontSize: isMobile ? '0.78rem' : '0.9rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1 }}>
-                    {d.getMonth() + 1}/{d.getDate()}
-                  </div>
-                  <div style={{ fontSize: isMobile ? '0.58rem' : '0.64rem', fontWeight: 700, color: '#DC2626', lineHeight: 1 }}>
-                    {(() => {
-                      if (isToday) return '오늘';
-                      const ordinal = Math.ceil(d.getDate() / 7);
-                      const labels = ['첫째', '둘째', '셋째', '넷째', '다섯째'];
-                      return `${labels[ordinal - 1] || ''} 주일`;
-                    })()}
-                  </div>
-                  {v && (
-                    <svg viewBox="0 0 24 24" width={isMobile ? 12 : 14} height={isMobile ? 9 : 10} aria-label="YouTube" style={{ justifySelf: 'center' }}>
-                      <path fill="#FF0000" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31.3 31.3 0 0 0 0 12a31.3 31.3 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31.3 31.3 0 0 0 24 12a31.3 31.3 0 0 0-.5-5.8z" />
-                      <path fill="#fff" d="M9.6 15.6 15.8 12 9.6 8.4z" />
-                    </svg>
-                  )}
-                </button>
-              );
-            })}
+          {/* 최근 4개 주일 — 주 이동 네비 없음 */}
+          <div style={{ display: 'flex', alignItems: 'stretch', gap: isMobile ? '0.2rem' : '0.3rem' }}>
+            <div style={{ flex: 1, minWidth: 0, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: isMobile ? '0.15rem' : '0.25rem' }}>
+              {recentSundays.map((key) => {
+                const d = new Date(key);
+                const isSelected = selectedKey === key;
+                const isToday = key === todayKey;
+                return (
+                  <button
+                    key={key} type="button" onClick={() => setSelectedKey(key)}
+                    style={{
+                      padding: isMobile ? '0.25rem 0.05rem' : '0.3rem 0.2rem',
+                      border: isSelected ? '2px solid #20CD8D' : isToday ? '1.5px solid #D9F09E' : '1px solid var(--color-gray)',
+                      borderRadius: 8,
+                      background: isToday ? '#ECFCCB' : '#fff',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      boxShadow: isSelected ? '0 2px 6px rgba(32,205,141,0.2)' : 'none',
+                      display: 'grid', gap: isMobile ? '0.1rem' : '0.15rem',
+                      minHeight: isMobile ? 44 : 48, minWidth: 0, position: 'relative', overflow: 'hidden',
+                    }}
+                  >
+                    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '0.05rem' : '0.2rem', lineHeight: 1 }}>
+                      <span style={{ fontSize: isMobile ? '0.7rem' : '0.82rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1 }}>
+                        {d.getMonth() + 1}/{d.getDate()}
+                      </span>
+                      <span style={{ fontSize: isMobile ? '0.58rem' : '0.64rem', fontWeight: 700, color: '#DC2626', lineHeight: 1 }}>{(() => { const o = Math.ceil(d.getDate() / 7); return ['첫째주','둘째주','셋째주','넷째주','다섯째주'][o - 1] || '주일'; })()}</span>
+                    </div>
+                    {isToday && (
+                      <span style={{ fontSize: isMobile ? '0.55rem' : '0.6rem', fontWeight: 800, color: '#fff', background: '#20CD8D', padding: '0.05rem 0.35rem', borderRadius: 999, letterSpacing: '0.02em', justifySelf: 'center' }}>오늘</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* 날짜 + 설교제목 + 성경구절 */}
@@ -172,18 +178,26 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
               {preacher && <span style={{ fontSize: '0.82rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>/ {preacher}</span>}
             </div>
             {guide?.found && (guide.normalizedRef || guide.biblePassage) && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.95rem', fontWeight: 800, color: '#3F6212' }}>
-                  <span>📖</span>
-                  <span>{guide.normalizedRef || guide.biblePassage}</span>
-                </span>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'grid', gap: '0.15rem', flex: '1 1 auto', minWidth: 0 }}>
+                  {guide.sermonTitle && (
+                    <div style={{ fontSize: isMobile ? '1rem' : '1.08rem', fontWeight: 800, color: '#3F6212', lineHeight: 1.3 }}>
+                      {guide.sermonTitle}
+                    </div>
+                  )}
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: isMobile ? '0.82rem' : '0.88rem', fontWeight: 700, color: 'var(--color-ink-2)' }}>
+                    <span aria-hidden>📖</span>
+                    <span>{guide.normalizedRef || guide.biblePassage}</span>
+                  </div>
+                </div>
                 {guide.idx && (
                   <a
-                    href={`https://koreanchurch.sg/noticeandnews/?bmode=view&idx=${guide.idx}&t=board`}
+                    href={`/api/bulletin-file?idx=${encodeURIComponent(guide.idx)}&n=0`}
                     target="_blank" rel="noopener noreferrer"
+                    title="구역예배지 PDF 바로 열기"
                     style={{ marginLeft: 'auto', padding: '0.3rem 0.7rem', borderRadius: 999, border: '1px solid #1E40AF', background: '#EFF6FF', color: '#1E40AF', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
                   >
-                    <span>📘</span><span>구역예배지 원문</span>
+                    <span>📘</span><span>구역예배지 원문보기</span>
                   </a>
                 )}
               </div>

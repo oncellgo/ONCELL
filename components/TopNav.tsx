@@ -83,8 +83,7 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
       flexWrap: 'nowrap',
       padding: isMobile ? '0.5rem 0.65rem' : '0.6rem 0.9rem',
       borderRadius: 14,
-      background: 'rgba(255, 255, 255, 0.9)',
-      backdropFilter: 'saturate(180%) blur(10px)',
+      background: '#ffffff',
       border: '1px solid var(--color-gray)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0, flex: 1 }}>

@@ -85,6 +85,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
   const [newAdmin, setNewAdmin] = useState('');
   const [busy, setBusy] = useState(false);
   const [userFilter, setUserFilter] = useState<'all' | 'admin'>('all');
+  const [activeDays, setActiveDays] = useState<number>(30);
   const [userSort, setUserSort] = useState<'recent' | 'name'>('recent');
   const [communitySort, setCommunitySort] = useState<'createdDesc' | 'name' | 'members' | 'activity'>('createdDesc');
   type WorshipItem = { id: string; title: string; description?: string; presenter?: string; allTogether?: boolean; link?: string; passage?: string; members?: string; prayerNote?: string; songs?: { title: string; link: string }[] };
@@ -350,7 +351,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
         <title>{t('admin.title')}</title>
         <meta name="robots" content="noindex, nofollow" />
       </Head>
-      <AppShell profileId={profileId} displayName={displayName} nickname={nickname} email={email} isAdmin adminAccent>
+      <AppShell profileId={profileId} displayName={displayName} nickname={nickname} email={email} isAdmin adminAccent showMenuBar={false}>
         <div className="admin-scope" style={{ display: 'grid', gap: '1rem' }}>
           {error && (
             <div style={{ ...cardStyle, padding: isMobile ? '0.85rem' : cardStyle.padding, borderColor: '#fca5a5', background: '#fff1f2' }}>
@@ -375,8 +376,22 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
         {!sectionFilter && (
         <section style={{ ...cardStyle, padding: isMobile ? '0.85rem' : cardStyle.padding }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <h2 style={titleStyle}>접속자 관리 ({filteredUsers.length}/{users.length})</h2>
+            <h2 style={titleStyle}>접속자 관리 {(() => {
+              const cutoff = Date.now() - activeDays * 24 * 60 * 60 * 1000;
+              const activeCount = users.filter((u) => {
+                if (!u.registeredAt) return false;
+                const t = new Date(u.registeredAt).getTime();
+                return Number.isFinite(t) && t >= cutoff;
+              }).length;
+              return <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#2D4048' }}>(최근 {activeDays}일 <strong style={{ color: '#20CD8D' }}>{activeCount}</strong>명 / 전체 {users.length}명)</span>;
+            })()}</h2>
             <div style={{ display: 'inline-flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <select value={activeDays} onChange={(e) => setActiveDays(Number(e.target.value))} style={{ padding: '0.4rem 0.6rem', borderRadius: 8, border: '1px solid #cbd5d0', fontSize: '0.85rem' }}>
+                <option value={7}>최근 7일</option>
+                <option value={30}>최근 30일</option>
+                <option value={90}>최근 90일</option>
+                <option value={365}>최근 1년</option>
+              </select>
               <select value={userFilter} onChange={(e) => setUserFilter(e.target.value as 'all' | 'admin')} style={{ padding: '0.4rem 0.6rem', borderRadius: 8, border: '1px solid #cbd5d0', fontSize: '0.85rem' }}>
                 <option value="all">{t('admin.filterAll')}</option>
                 <option value="admin">{t('admin.filterAdmin')}</option>

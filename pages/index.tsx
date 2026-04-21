@@ -86,10 +86,10 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
   return (
     <>
       <Head>
-        <title>Steward+AI. — 교회 공동체 관리 플랫폼</title>
+        <title>KCIS — 싱가폴한인교회 관리 시스템</title>
         <meta
           name="description"
-          content="소모임·일정·양육·큐티·재정을 하나로. 교회 공동체를 위한 전문 AI 관리 플랫폼 Steward+AI."
+          content="싱가폴한인교회(KCIS) 관리 시스템 — 장소예약·큐티·성경통독·주일예배·구역모임 교안을 한 곳에서."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -127,7 +127,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
                     <circle cx="12" cy="9" r="2.6" />
                   </svg>
                 </span>
-                <span className={styles.menuLabel}>장소예약</span>
+                <span className={styles.menuLabel}>{t('landing.menuReservation')}</span>
               </a>
               <a className={styles.menuCard} href="/qt" onClick={handleProtectedClick('/qt')}>
                 <span className={styles.menuIcon} aria-hidden>
@@ -136,7 +136,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
                     <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5A1.5 1.5 0 0 0 20 17.5z" />
                   </svg>
                 </span>
-                <span className={styles.menuLabel}>큐티</span>
+                <span className={styles.menuLabel}>{t('landing.menuQT')}</span>
               </a>
               <a className={styles.menuCard} href="/reading" onClick={handleProtectedClick('/reading')}>
                 <span className={styles.menuIcon} aria-hidden>
@@ -145,7 +145,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
                     <path d="M8 7h8M8 11h8M8 15h5" />
                   </svg>
                 </span>
-                <span className={styles.menuLabel}>성경통독</span>
+                <span className={styles.menuLabel}>{t('landing.menuReading')}</span>
               </a>
               <a className={styles.menuCard} href="/sunday-worship" onClick={handleProtectedClick('/sunday-worship')}>
                 <span className={styles.menuIcon} aria-hidden>
@@ -153,7 +153,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
                     <path d="M12 3l2.5 5 5.5.8-4 3.9 1 5.5L12 15.8 7 18.2l1-5.5-4-3.9L9.5 8z" />
                   </svg>
                 </span>
-                <span className={styles.menuLabel}>주일예배</span>
+                <span className={styles.menuLabel}>{t('landing.menuBulletin')}</span>
               </a>
               <a className={styles.menuCard} href="/cell-teaching" onClick={handleProtectedClick('/cell-teaching')}>
                 <span className={styles.menuIcon} aria-hidden>
@@ -162,7 +162,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
                     <path d="M10 9.5v5l4.5-2.5z" fill="currentColor" stroke="none" />
                   </svg>
                 </span>
-                <span className={styles.menuLabel}>구역모임교안</span>
+                <span className={styles.menuLabel}>{t('landing.menuCellTeaching')}</span>
               </a>
             </div>
 

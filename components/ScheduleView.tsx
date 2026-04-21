@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useIsMobile } from '../lib/useIsMobile';
+import { isAllDayEvent, getSGDateKey } from '../lib/events';
 
 export type Community = { id: string; name: string; timezone?: string };
 
@@ -44,6 +45,7 @@ const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId
   const [origin, setOrigin] = useState('');
   const [copied, setCopied] = useState(false);
   const [scheduleTab, setScheduleTab] = useState<'week' | 'month'>('week');
+  const [scheduleWeekOffset, setScheduleWeekOffset] = useState(0);  // 주간 섹션 전용 주 이동
 
   useEffect(() => {
     if (typeof window !== 'undefined') setOrigin(window.location.origin);
@@ -86,6 +88,15 @@ const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId
 
   const eventsByDay = new Map<string, EventRow[]>();
   scopedEvents.forEach((ev) => {
+    // 종일 이벤트는 SG(UTC+8) 기준 start_at 날짜 하나에만 버킷팅 — 브라우저/커뮤니티 TZ와 무관.
+    if (isAllDayEvent(ev.startAt, ev.endAt)) {
+      const k = getSGDateKey(ev.startAt);
+      if (k) {
+        if (!eventsByDay.has(k)) eventsByDay.set(k, []);
+        eventsByDay.get(k)!.push(ev);
+      }
+      return;
+    }
     const startKey = toKey(new Date(ev.startAt));
     const endKey = toKey(new Date(ev.endAt));
     const [sy, sm, sd] = startKey.split('-').map(Number);
@@ -183,41 +194,6 @@ const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId
 
   return (
     <div style={{ display: 'grid', gap: '1rem' }}>
-      <section style={{
-        padding: isMobile ? '0.85rem 0.9rem' : '1.1rem 1.25rem',
-        borderRadius: 16,
-        background: 'linear-gradient(135deg, #ECFCCB 0%, #D9F09E 100%)',
-        border: '1px solid #D9F09E',
-        boxShadow: 'var(--shadow-card)',
-        display: 'grid',
-        gap: '0.65rem',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '1.05rem' }}>⛪</span>
-          <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#3F6212', letterSpacing: '-0.01em' }}>예배 일정</h2>
-          <span style={{ marginLeft: 'auto', fontSize: '0.78rem', fontWeight: 700, color: '#65A30D' }}>향후 2주</span>
-        </div>
-        {worshipUpcoming.length === 0 ? (
-          <p style={{ margin: 0, color: '#65A30D', fontSize: '0.88rem' }}>예정된 예배일정이 없습니다.</p>
-        ) : (
-          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: '0.35rem' }}>
-            {worshipUpcoming.map((w) => {
-              const d = new Date(w.startAt);
-              const dow = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
-              const dateStr = `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}(${dow})`;
-              const timeStr = d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-              return (
-                <li key={w.id + w.startAt} style={{ display: 'grid', gridTemplateColumns: isMobile ? '78px 56px 1fr' : '95px 70px 1fr', alignItems: 'center', gap: isMobile ? '0.35rem' : '0.5rem', padding: isMobile ? '0.45rem 0.55rem' : '0.5rem 0.7rem', borderRadius: 10, background: 'rgba(255,255,255,0.7)', fontSize: isMobile ? '0.82rem' : '0.9rem' }}>
-                  <span style={{ color: '#3F6212', fontWeight: 800, whiteSpace: 'nowrap' }}>{dateStr}</span>
-                  <span style={{ color: '#65A30D', fontWeight: 700, whiteSpace: 'nowrap' }}>{timeStr}</span>
-                  <span style={{ color: 'var(--color-ink)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.title}</span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
       {showCommunitySelector && communities.length > 1 && (
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <select
@@ -232,194 +208,69 @@ const ScheduleView = ({ communities, events, worshipServices, defaultCommunityId
         </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-      <div role="tablist" style={{ display: 'flex', gap: '0', marginBottom: -1, position: 'relative', zIndex: 2 }}>
-        {([
-          { key: 'week', label: '주단위 일정' },
-          { key: 'month', label: '월단위 일정' },
-        ] as const).map((t) => {
-          const active = scheduleTab === t.key;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => setScheduleTab(t.key)}
-              style={{
-                padding: isMobile ? '0.6rem 0.5rem' : '0.7rem 1.4rem',
-                flex: isMobile ? 1 : 'none',
-                borderTopLeftRadius: 12,
-                borderTopRightRadius: 12,
-                borderBottomLeftRadius: 0,
-                borderBottomRightRadius: 0,
-                border: active ? '1px solid var(--color-surface-border)' : '1px solid var(--color-primary)',
-                borderBottom: active ? '1px solid var(--color-surface)' : '1px solid var(--color-primary)',
-                background: active ? 'var(--color-surface)' : 'var(--color-primary)',
-                color: active ? 'var(--color-ink)' : '#fff',
-                fontSize: isMobile ? '0.85rem' : '0.95rem',
-                fontWeight: active ? 800 : 600,
-                cursor: 'pointer',
-                letterSpacing: '-0.01em',
-                transition: 'background 0.15s ease, color 0.15s ease',
-                marginRight: 2,
-                minHeight: 40,
-              }}
-            >
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {scheduleTab === 'week' && (
-      <section style={{ padding: isMobile ? '0.9rem 0.85rem' : '1.5rem', borderTopLeftRadius: 0, borderTopRightRadius: 16, borderBottomLeftRadius: 16, borderBottomRightRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: isMobile ? '0.75rem' : '1rem', position: 'relative', zIndex: 1 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <h2 style={{ margin: 0, fontSize: isMobile ? '1.05rem' : '1.2rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>주단위 일정</h2>
-          <span style={{ color: 'var(--color-ink)', fontSize: isMobile ? '0.8rem' : '0.92rem', fontWeight: 500 }}>{weekRangeLabel}</span>
-        </div>
-        {totalWeekEvents === 0 ? (
-          <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.9rem' }}>이번 주에 등록된 일정이 없습니다.</p>
-        ) : (
-          <div style={{ display: 'grid', gap: '0.5rem' }}>
-            {weekDays.filter((d) => d.events.length > 0).map((day) => {
-              const dow = ['일', '월', '화', '수', '목', '금', '토'][day.date.getDay()];
-              const isToday = day.key === todayKey;
-              return (
-                <div key={day.key} style={{ display: 'grid', gridTemplateColumns: isMobile ? '60px 1fr' : '90px 1fr', gap: isMobile ? '0.5rem' : '0.75rem', padding: isMobile ? '0.5rem 0.55rem' : '0.6rem 0.75rem', borderRadius: 10, background: isToday ? 'var(--color-primary-tint)' : '#F9FCFB', border: `1px solid ${isToday ? 'var(--color-primary)' : 'var(--color-surface-border)'}` }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-                    <span style={{ fontSize: isMobile ? '0.66rem' : '0.72rem', fontWeight: 700, color: isToday ? 'var(--color-primary-deep)' : day.date.getDay() === 0 ? '#dc2626' : day.date.getDay() === 6 ? '#2563eb' : 'var(--color-ink-2)' }}>{dow}요일</span>
-                    <span style={{ fontSize: isMobile ? '1rem' : '1.15rem', fontWeight: 800, color: isToday ? 'var(--color-primary-deep)' : 'var(--color-ink)', lineHeight: 1 }}>{day.date.getMonth() + 1}.{day.date.getDate()}</span>
-                    {isToday && <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'var(--color-primary-deep)' }}>오늘</span>}
-                  </div>
-                  <div style={{ display: 'grid', gap: '0.3rem', minWidth: 0 }}>
-                    {day.events.map((ev) => {
-                      const scopeLabel = (ev as any).scope === 'worship' ? '⛪ 예배' : ev.scope === 'community' ? '' : '개인';
-                      const scopeColor = (ev as any).scope === 'worship' ? '#20CD8D' : ev.scope === 'community' ? '#1E40AF' : '#92400E';
-                      const timeLabel = new Date(ev.startAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-                      return (
-                        <div key={ev.id} style={{ display: 'grid', gridTemplateColumns: isMobile ? '46px 50px 1fr' : '60px 60px 1fr', alignItems: 'center', gap: isMobile ? '0.35rem' : '0.5rem', fontSize: isMobile ? '0.8rem' : '0.85rem', minWidth: 0 }}>
-                          <span style={{ color: scopeColor, fontWeight: 700, fontSize: isMobile ? '0.68rem' : '0.74rem', whiteSpace: 'nowrap' }}>{scopeLabel}</span>
-                          <span style={{ color: 'var(--color-ink-2)', fontWeight: 600, fontSize: isMobile ? '0.72rem' : '0.78rem', whiteSpace: 'nowrap' }}>{timeLabel}</span>
-                          <span style={{ fontWeight: 700, color: 'var(--color-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{ev.title}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-      )}
-
-      {scheduleTab === 'month' && (
-      <section style={{ padding: isMobile ? '0.85rem 0.7rem' : '1.5rem', borderTopLeftRadius: 16, borderTopRightRadius: 16, borderBottomLeftRadius: 16, borderBottomRightRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: isMobile ? '0.75rem' : '1rem', position: 'relative', zIndex: 1 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-            <h2 style={{ margin: 0, fontSize: isMobile ? '1.05rem' : '1.2rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>월단위 일정</h2>
-            {addEventHref && (
-              <a
-                href={addEventHref}
-                style={{ padding: '0.35rem 0.8rem', borderRadius: 8, border: 'none', background: 'var(--color-primary)', color: '#fff', fontSize: '0.82rem', fontWeight: 800, textDecoration: 'none', boxShadow: 'var(--shadow-button)', whiteSpace: 'nowrap' }}
-              >
-                + 일정추가
-              </a>
-            )}
-          </div>
-          <span style={{ color: 'var(--color-ink)', fontSize: isMobile ? '0.8rem' : '0.92rem', fontWeight: 500 }}>{panelKey.replace(/-/g, '.')} ({dowLabel}){panelKey === todayKey ? ' · 오늘' : ''}</span>
-        </div>
-        <div style={{ display: 'grid', gap: isMobile ? '0.75rem' : '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'stretch', gap: isMobile ? '0.25rem' : '0.5rem' }}>
-            <style>{`
-              @keyframes calSlideLeft { from { transform: translateX(24px); opacity: 0.3; } to { transform: translateX(0); opacity: 1; } }
-              @keyframes calSlideRight { from { transform: translateX(-24px); opacity: 0.3; } to { transform: translateX(0); opacity: 1; } }
-            `}</style>
-            <button type="button" onClick={goPrev} aria-label="이전 달" style={{ flex: '0 0 auto', width: isMobile ? 30 : 40, borderRadius: 12, border: '1px solid var(--color-surface-border)', background: '#F9FCFB', color: 'var(--color-ink-2)', fontSize: '1.3rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, minHeight: 40 }}>‹</button>
-            <div key={`${year}-${monthIdx}`} style={{ flex: 1, minWidth: 0, padding: isMobile ? '0.45rem 0.4rem' : '0.55rem 0.75rem', borderRadius: 12, background: 'linear-gradient(180deg, #F0FDF4 0%, #F9FCFB 100%)', border: '1px solid var(--color-surface-border)', display: 'grid', gap: '0.25rem', animation: calSlideDir === 'left' ? 'calSlideLeft 0.25s ease' : calSlideDir === 'right' ? 'calSlideRight 0.25s ease' : undefined }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.15rem' }}>
-                <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <button type="button" onClick={() => setYearPickerOpen((v) => !v)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-ink)', fontSize: '0.82rem', fontWeight: 700, padding: '0.1rem 0.3rem' }}>{year}년 ▾</button>
-                  <button type="button" onClick={() => { const [y, m] = todayKey.split('-'); setCalView({ year: Number(y), month: Number(m) }); setSelectedCalDay(todayKey); setYearPickerOpen(false); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-primary-deep)', fontSize: '0.72rem', fontWeight: 700, padding: '0.1rem 0.3rem', textDecoration: 'underline' }}>오늘</button>
-                  {yearPickerOpen && (
-                    <>
-                      <div onClick={() => setYearPickerOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 30 }} />
-                      <ul style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 40, margin: 0, padding: '0.25rem', listStyle: 'none', background: '#fff', border: '1px solid var(--color-gray)', borderRadius: 8, boxShadow: 'var(--shadow-card)', maxHeight: 200, overflowY: 'auto', minWidth: 80 }}>
-                        {yearOptions.map((y) => (
-                          <li key={y}>
-                            <button type="button" onClick={() => { setCalView({ year: y, month: monthIdx + 1 }); setYearPickerOpen(false); }} style={{ width: '100%', textAlign: 'left', padding: '0.35rem 0.6rem', border: 'none', background: y === year ? 'var(--color-primary-tint)' : 'transparent', color: 'var(--color-ink)', fontWeight: y === year ? 800 : 600, fontSize: '0.8rem', cursor: 'pointer', borderRadius: 6 }}>{y}</button>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '0 0.25rem' }}>
-                  <button type="button" onClick={goPrev} style={{ background: 'transparent', border: 'none', color: 'var(--color-ink-2)', fontSize: '0.8rem', cursor: 'pointer', padding: '0.1rem 0.3rem', fontWeight: 600 }}>‹ {prevMonth}월</button>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 36, height: 36, padding: '0 0.6rem', borderRadius: 999, background: 'var(--color-primary)', color: '#ffffff', fontWeight: 800, fontSize: '0.95rem', boxShadow: '0 2px 6px rgba(32, 205, 141, 0.3)' }}>{monthIdx + 1}월</span>
-                  <button type="button" onClick={goNext} style={{ background: 'transparent', border: 'none', color: 'var(--color-ink-2)', fontSize: '0.8rem', cursor: 'pointer', padding: '0.1rem 0.3rem', fontWeight: 600 }}>{nextMonth}월 ›</button>
-                </div>
+      {/* === 이번주 일정 (사용자 상단 뷰) — 일~토 세로 나열 + 주 이동 === */}
+      {(() => {
+        // 선택된 주의 일요일 기준 (scheduleWeekOffset 만큼 이동)
+        const base = new Date();
+        base.setHours(0, 0, 0, 0);
+        base.setDate(base.getDate() - base.getDay() + scheduleWeekOffset * 7);
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const kOf = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        const days: Array<{ key: string; date: Date; dow: number }> = [];
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(base);
+          d.setDate(base.getDate() + i);
+          days.push({ key: kOf(d), date: d, dow: i });
+        }
+        const DOWS = ['일', '월', '화', '수', '목', '금', '토'];
+        const weekLabel = scheduleWeekOffset === 0 ? '이번주' : scheduleWeekOffset === -1 ? '지난주' : scheduleWeekOffset === 1 ? '다음주' : scheduleWeekOffset > 0 ? `+${scheduleWeekOffset}주` : `${scheduleWeekOffset}주`;
+        const rangeText = `${days[0].date.getMonth() + 1}/${days[0].date.getDate()} ~ ${days[6].date.getMonth() + 1}/${days[6].date.getDate()}`;
+        return (
+          <section style={{ padding: isMobile ? '0.9rem 0.85rem' : '1.25rem 1.5rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '0.85rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <h2 style={{ margin: 0, fontSize: isMobile ? '1.05rem' : '1.15rem', fontWeight: 800, color: '#3F6212', letterSpacing: '-0.01em' }}>📅 {weekLabel} 일정</h2>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                <button type="button" onClick={() => setScheduleWeekOffset((w) => w - 1)} aria-label="이전주"
+                  style={{ padding: '0.3rem 0.7rem', borderRadius: 10, border: '1px solid #D9F09E', background: '#fff', color: '#65A30D', fontSize: '1.05rem', fontWeight: 800, cursor: 'pointer' }}>‹</button>
+                <span style={{ padding: '0.3rem 0.8rem', borderRadius: 999, background: '#ECFCCB', color: '#3F6212', fontSize: isMobile ? '0.85rem' : '0.9rem', fontWeight: 800 }}>{rangeText}</span>
+                <button type="button" onClick={() => setScheduleWeekOffset((w) => w + 1)} aria-label="다음주"
+                  style={{ padding: '0.3rem 0.7rem', borderRadius: 10, border: '1px solid #D9F09E', background: '#fff', color: '#65A30D', fontSize: '1.05rem', fontWeight: 800, cursor: 'pointer' }}>›</button>
+                {scheduleWeekOffset !== 0 && (
+                  <button type="button" onClick={() => setScheduleWeekOffset(0)}
+                    style={{ padding: '0.25rem 0.6rem', borderRadius: 999, border: '1px solid #65A30D', background: '#fff', color: '#65A30D', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer' }}>오늘</button>
+                )}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: isMobile ? '0.15rem' : '0.3rem', padding: isMobile ? '0 0.15rem' : '0 0.35rem' }}>
-                {['일', '월', '화', '수', '목', '금', '토'].map((w, i) => (
-                  <span key={w} style={{ textAlign: 'center', fontSize: isMobile ? '0.7rem' : '0.8rem', fontWeight: 700, padding: '0.3rem 0', color: i === 0 ? '#dc2626' : i === 6 ? '#2563eb' : 'var(--color-ink-2)' }}>{w}</span>
-                ))}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: isMobile ? '0.15rem' : '0.3rem', padding: isMobile ? '0 0.15rem 0.15rem' : '0 0.35rem 0.35rem' }}>
-                {cells.map((cell, idx) => {
-                  if (!cell) return <span key={idx} />;
-                  const d = cell.date;
-                  const key = cell.key;
-                  const ds = eventsByDay.get(key) || [];
-                  const hasEvent = ds.length > 0;
-                  const worshipEvent = ds.find((e: any) => e.scope === 'worship');
-                  const hasWorship = !!worshipEvent;
-                  const isToday = key === todayKey;
-                  const isSelected = selectedCalDay === key;
-                  const dow = d.getDay();
-                  return (
-                    <button key={idx} type="button" onClick={() => setSelectedCalDay(isSelected ? null : key)} title={hasEvent ? ds.map((e) => e.title).join(', ') : ''}
-                      style={{ minHeight: isMobile ? (hasWorship ? 52 : 40) : (hasWorship ? 64 : 44), position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: 8, background: isSelected ? 'var(--color-primary)' : hasWorship ? '#DBEAFE' : isToday ? 'var(--color-primary-tint)' : hasEvent ? '#f0fdf4' : 'transparent', border: isSelected ? '1px solid var(--color-primary)' : hasWorship ? '1.5px solid #2563eb' : isToday ? '1px solid var(--color-primary)' : hasEvent ? '1px solid #bbf7d0' : '1px solid transparent', fontSize: isMobile ? '0.7rem' : '0.74rem', color: isSelected ? '#ffffff' : hasWorship ? '#1E3A8A' : dow === 0 ? '#dc2626' : dow === 6 ? '#2563eb' : 'var(--color-ink)', fontWeight: isToday || isSelected || hasWorship ? 800 : 600, cursor: 'pointer', padding: '2px 0', overflow: 'hidden' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', lineHeight: 1 }}>
-                        <span>{d.getDate()}</span>
-                        {isToday && <span style={{ fontSize: isMobile ? '0.5rem' : '0.56rem', fontWeight: 800, color: isSelected ? 'var(--color-primary)' : '#fff', background: isSelected ? '#fff' : 'var(--color-primary)', padding: '0.04rem 0.28rem', borderRadius: 999, lineHeight: 1 }}>오늘</span>}
-                      </span>
-                      {hasWorship && !isSelected && (<span style={{ fontSize: isMobile ? '0.55rem' : '0.62rem', fontWeight: 700, color: '#1E40AF', lineHeight: 1, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '0 2px' }}>⛪ {worshipEvent!.title}</span>)}
-                      {hasEvent && !hasWorship && !isSelected && <span style={{ width: 3, height: 3, borderRadius: 999, background: 'var(--color-primary)' }} />}
-                    </button>
-                  );
-                })}
-              </div>
-              <div style={{ textAlign: 'right', marginTop: '0.2rem' }}><span style={{ fontSize: '0.6rem', color: 'var(--color-ink-2)', fontWeight: 500 }}>{communityTz}</span></div>
             </div>
-            <button type="button" onClick={goNext} aria-label="다음 달" style={{ flex: '0 0 auto', width: isMobile ? 30 : 40, borderRadius: 12, border: '1px solid var(--color-surface-border)', background: '#F9FCFB', color: 'var(--color-ink-2)', fontSize: '1.3rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, minHeight: 40 }}>›</button>
-          </div>
-          <div style={{ padding: isMobile ? '0.6rem 0.7rem' : '0.75rem 1rem', borderRadius: 12, background: '#ffffff', border: '1px solid var(--color-surface-border)', display: 'grid', gap: '0.6rem' }}>
-            <div style={{ fontSize: isMobile ? '0.82rem' : '0.88rem', fontWeight: 800, color: 'var(--color-ink)', paddingBottom: '0.4rem', borderBottom: '1px solid var(--color-surface-border)' }}>📅 {dateLabel}</div>
-            {dayEvents.length === 0 ? (
-              <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.85rem' }}>등록된 일정이 없습니다.</p>
-            ) : (
-              <div style={{ display: 'grid', gap: '0.35rem' }}>
-                {dayEvents.map((ev) => {
-                  const scopeLabel = (ev as any).scope === 'worship' ? '⛪ 예배' : ev.scope === 'community' ? '' : (ev.createdByName || '개인');
-                  const scopeColor = (ev as any).scope === 'worship' ? '#20CD8D' : ev.scope === 'community' ? '#1E40AF' : '#92400E';
-                  const timeLabel = new Date(ev.startAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-                  return (
-                    <div key={ev.id} style={{ display: 'grid', gridTemplateColumns: isMobile ? '54px 48px 1fr' : '72px 60px 1fr', alignItems: 'center', gap: isMobile ? '0.4rem' : '0.6rem', padding: isMobile ? '0.4rem 0.5rem' : '0.5rem 0.6rem', borderRadius: 8, background: '#F9FCFB', border: '1px solid var(--color-surface-border)', fontSize: isMobile ? '0.8rem' : '0.85rem', minWidth: 0 }}>
-                      <span style={{ color: scopeColor, fontWeight: 700, fontSize: isMobile ? '0.7rem' : '0.76rem', whiteSpace: 'nowrap' }}>{scopeLabel}</span>
-                      <span style={{ color: 'var(--color-ink-2)', fontWeight: 600, whiteSpace: 'nowrap', fontSize: isMobile ? '0.74rem' : '0.85rem' }}>{timeLabel}</span>
-                      <span style={{ fontWeight: 700, color: 'var(--color-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{ev.title}</span>
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: '0.35rem' }}>
+              {days.map((d) => {
+                const list = (eventsByDay.get(d.key) || []).filter((e: any) => (e.type || 'event') !== 'reservation');
+                const isToday = d.key === todayKey;
+                const dowColor = d.dow === 0 ? '#DC2626' : d.dow === 6 ? '#2563EB' : 'var(--color-ink)';
+                return (
+                  <li key={d.key} style={{ display: 'grid', gridTemplateColumns: isMobile ? '72px 1fr' : '96px 1fr', gap: isMobile ? '0.5rem' : '0.75rem', padding: isMobile ? '0.5rem 0.6rem' : '0.6rem 0.8rem', borderRadius: 10, background: isToday ? '#F7FEE7' : '#F9FCFB', border: `1px solid ${isToday ? '#D9F09E' : 'var(--color-surface-border)'}` }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.15rem' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: dowColor }}>{DOWS[d.dow]}요일</span>
+                      <span style={{ fontSize: isMobile ? '1rem' : '1.1rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1 }}>{d.date.getMonth() + 1}.{d.date.getDate()}</span>
+                      {isToday && <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#fff', background: 'var(--color-primary)', padding: '0.05rem 0.35rem', borderRadius: 999 }}>오늘</span>}
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-      )}
-      </div>
+                    <div style={{ display: 'grid', gap: '0.25rem', alignContent: 'center' }}>
+                      {list.length === 0 ? (
+                        <span style={{ fontSize: '0.82rem', color: 'var(--color-ink-2)' }}>—</span>
+                      ) : list.map((ev: any) => (
+                        <div key={ev.id} style={{ fontSize: isMobile ? '0.85rem' : '0.9rem', color: 'var(--color-ink)', fontWeight: 600 }}>
+                          · {ev.title}
+                          {ev.location && <span style={{ color: 'var(--color-ink-2)', fontSize: '0.78rem', marginLeft: '0.35rem' }}>📍 {ev.location}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            <p style={{ margin: 0, fontSize: '0.74rem', color: 'var(--color-ink-2)', lineHeight: 1.5 }}>※ 교회의 사정에 따라 일정은 변경될 수 있습니다.</p>
+          </section>
+        );
+      })()}
 
       {showIcsSubscription && icsUrl && (
         <section style={{ padding: isMobile ? '0.9rem 0.85rem' : '1.5rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>

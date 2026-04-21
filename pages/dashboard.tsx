@@ -217,24 +217,44 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
   type MyReservation = { id: string; title: string; startAt: string; endAt: string; location?: string };
   const [weekEvents, setWeekEvents] = useState<WeekEvent[] | null>(null);
   const [myReservations, setMyReservations] = useState<MyReservation[] | null>(null);
+  // 이번달 목회일정 (미스바 PDF에서 추출)
+  type MonthlyItem = { date: string; label: string; title: string };
+  const [monthlySchedule, setMonthlySchedule] = useState<{ month: number; items: MonthlyItem[] } | null>(null);
+  // 이번주(월~일) 큐티·통독 완료 dateKey 집합
+  const [weekQtDates, setWeekQtDates] = useState<Set<string>>(new Set());
+  const [weekReadingDates, setWeekReadingDates] = useState<Set<string>>(new Set());
+  const [weekExpanded, setWeekExpanded] = useState(false);
+  const [weekOffset, setWeekOffset] = useState(0);  // 0=이번주, -1=지난주, +1=다음주
+
+  // 선택된 주(weekOffset)의 일요일~토요일 범위
+  const weekRange = (() => {
+    const now = new Date();
+    const day = now.getDay();  // 0=일
+    const sunday = new Date(now);
+    sunday.setDate(now.getDate() - day + weekOffset * 7);
+    sunday.setHours(0, 0, 0, 0);
+    const saturday = new Date(sunday);
+    saturday.setDate(sunday.getDate() + 6);
+    saturday.setHours(23, 59, 59, 999);
+    return { sunday, saturday };
+  })();
+  const padN = (n: number) => String(n).padStart(2, '0');
+  const keyOf = (d: Date) => `${d.getFullYear()}-${padN(d.getMonth() + 1)}-${padN(d.getDate())}`;
+  const weekFromStr = keyOf(weekRange.sunday);
+  const weekToStr = keyOf(weekRange.saturday);
+  const weekLabel = weekOffset === 0 ? '이번주' : weekOffset === -1 ? '지난주' : weekOffset === 1 ? '다음주' : weekOffset > 0 ? `+${weekOffset}주` : `${weekOffset}주`;
+  const weekRangeText = `${weekRange.sunday.getMonth() + 1}/${weekRange.sunday.getDate()} ~ ${weekRange.saturday.getMonth() + 1}/${weekRange.saturday.getDate()}`;
 
   useEffect(() => {
-    // 이번주(월~일) 교회일정 - kcis 공동체 기준
-    const now = new Date();
-    const day = now.getDay(); // 0=일
-    const mondayOffset = day === 0 ? -6 : 1 - day;
-    const monday = new Date(now); monday.setDate(now.getDate() + mondayOffset); monday.setHours(0, 0, 0, 0);
-    const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6); sunday.setHours(23, 59, 59, 999);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const fromStr = `${monday.getFullYear()}-${pad(monday.getMonth() + 1)}-${pad(monday.getDate())}`;
-    const toStr = `${sunday.getFullYear()}-${pad(sunday.getMonth() + 1)}-${pad(sunday.getDate())}`;
-    const qs = new URLSearchParams({ communityId: 'kcis', type: 'event', from: fromStr, to: toStr });
+    // 선택된 주(일~토) 교회일정 - kcis 공동체 기준
+    const qs = new URLSearchParams({ communityId: 'kcis', type: 'event', from: weekFromStr, to: weekToStr });
     if (profileId) qs.set('profileId', profileId);
+    setWeekEvents(null);
     fetch(`/api/events?${qs.toString()}`)
       .then((r) => r.json())
       .then((d) => setWeekEvents(Array.isArray(d.events) ? d.events : []))
       .catch(() => setWeekEvents([]));
-  }, [profileId]);
+  }, [profileId, weekFromStr, weekToStr]);
 
   useEffect(() => {
     if (!profileId) { setMyReservations([]); return; }
@@ -250,6 +270,35 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
         setMyReservations(future);
       })
       .catch(() => setMyReservations([]));
+  }, [profileId]);
+
+  // 이번달 목회일정 fetch (미스바 PDF 캐싱 — Supabase KV)
+  useEffect(() => {
+    fetch('/api/monthly-schedule')
+      .then((r) => r.json())
+      .then((d) => { if (d && typeof d.month === 'number') setMonthlySchedule({ month: d.month, items: Array.isArray(d.items) ? d.items : [] }); })
+      .catch(() => {});
+  }, []);
+
+  // 오늘 포함 최근 7일 큐티·통독 완료 fetch
+  useEffect(() => {
+    if (!profileId) { setWeekQtDates(new Set()); setWeekReadingDates(new Set()); return; }
+    const now = new Date();
+    const end = new Date(now); end.setHours(0, 0, 0, 0);
+    const start = new Date(end); start.setDate(end.getDate() - 6);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const from = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`;
+    const to = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}`;
+    const load = async (type: 'qt' | 'reading', setter: (s: Set<string>) => void) => {
+      try {
+        const r = await fetch(`/api/completions?profileId=${encodeURIComponent(profileId)}&type=${type}&from=${from}&to=${to}`);
+        if (!r.ok) return;
+        const d = await r.json();
+        setter(new Set(Array.isArray(d?.dates) ? d.dates : []));
+      } catch {}
+    };
+    load('qt', setWeekQtDates);
+    load('reading', setWeekReadingDates);
   }, [profileId]);
 
   useEffect(() => {
@@ -648,35 +697,26 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
 
 
           <section style={cardBase}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-              <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>📅 이번주 교회일정</h2>
-              <a href="/schedule" style={{ color: 'var(--color-primary-deep)', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none' }}>전체 →</a>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <h2 style={{ ...sectionTitle, fontSize: '1.05rem', margin: 0 }}>📅 {monthlySchedule?.month || (new Date().getMonth() + 1)}월 교회일정</h2>
             </div>
-            {weekEvents === null ? (
-              <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>불러오는 중…</p>
-            ) : weekEvents.length === 0 ? (
-              <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>이번주 등록된 일정이 없습니다.</p>
+            {!monthlySchedule ? (
+              <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>목회일정 불러오는 중…</p>
+            ) : monthlySchedule.items.length === 0 ? (
+              <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>이번달 목회일정 정보가 아직 준비되지 않았습니다.</p>
             ) : (
-              <ul style={{ listStyle: 'none', margin: '0.6rem 0 0', padding: 0, display: 'grid', gap: '0.45rem' }}>
-                {weekEvents.slice(0, 6).map((ev) => {
-                  const s = new Date(ev.startAt);
-                  const pad = (n: number) => String(n).padStart(2, '0');
-                  const labels = ['일', '월', '화', '수', '목', '금', '토'];
-                  const dateStr = `${pad(s.getMonth() + 1)}/${pad(s.getDate())} (${labels[s.getDay()]})`;
-                  const allDay = isAllDayEvent(ev.startAt, ev.endAt);
-                  const timeStr = allDay ? '종일' : `${pad(s.getHours())}:${pad(s.getMinutes())}`;
-                  return (
-                    <li key={ev.id} style={{ padding: '0.55rem 0.75rem', borderRadius: 10, background: '#ECFDF5', border: '1px solid #A7F3D0', display: 'flex', gap: '0.5rem', alignItems: 'baseline', flexWrap: 'wrap', fontSize: '0.88rem' }}>
-                      <span style={{ color: '#065F46', fontWeight: 800 }}>{dateStr}</span>
-                      <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>{timeStr}</span>
-                      <span style={{ color: 'var(--color-ink)' }}>· {ev.title}</span>
-                      {ev.location && <span style={{ color: 'var(--color-ink-2)', fontSize: '0.8rem' }}>📍 {ev.location}</span>}
-                    </li>
-                  );
-                })}
+              <ul style={{ listStyle: 'none', margin: '0.6rem 0 0', padding: 0, display: 'grid', gap: '0.4rem' }}>
+                {monthlySchedule.items.map((ev, i) => (
+                  <li key={i} style={{ display: 'grid', gridTemplateColumns: '56px 1fr', gap: '0.5rem', padding: '0.45rem 0.7rem', borderRadius: 10, background: '#F9FCFB', border: '1px solid var(--color-surface-border)', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 800, color: '#065F46', fontSize: '0.88rem' }}>{ev.label}</span>
+                    <span style={{ color: 'var(--color-ink)', fontWeight: 600, fontSize: '0.88rem' }}>{ev.title}</span>
+                  </li>
+                ))}
               </ul>
             )}
+            <p style={{ margin: '0.55rem 0 0', fontSize: '0.74rem', color: 'var(--color-ink-2)', lineHeight: 1.5 }}>※ 교회의 사정에 따라 일정은 변경될 수 있습니다. (출처: 미스바 목회일정)</p>
           </section>
+
 
           <section style={cardBase}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
@@ -716,21 +756,87 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
             )}
           </section>
 
-          <section style={cardBase}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-              <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>📖 묵상노트</h2>
-              {(() => {
-                const params = new URLSearchParams();
-                if (profileId) params.set('profileId', profileId);
-                if (nickname) params.set('nickname', nickname);
-                if (email) params.set('email', email);
-                return (
-                  <a href={`/qt/notes${params.toString() ? `?${params.toString()}` : ''}`} style={{ color: 'var(--color-primary-deep)', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none' }}>전체 →</a>
-                );
-              })()}
-            </div>
-            <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>오늘의 큐티 영상과 본문을 보고, 받은 은혜·결단·기도를 기록합니다.</p>
-          </section>
+          {/* 이번주 영적 참여 — 큐티·통독 완료 수 기반 뱃지 + 응원 메세지 */}
+          {profileId && (() => {
+            const qt = weekQtDates.size;
+            const rd = weekReadingDates.size;
+            const total = Math.min(qt, 7) + Math.min(rd, 7);  // 최대 14
+            const level = total >= 14 ? 5 : total >= 12 ? 4 : total >= 8 ? 3 : total >= 4 ? 2 : total >= 1 ? 1 : 0;
+            const badges = [
+              { emoji: '🌱', title: '이번주 함께 시작해볼까요?', sub: '작은 한 걸음부터 시작이에요.', ring: '#E5E7EB', bg: '#F9FAFB', fg: '#6B7280' },
+              { emoji: '🌿', title: '시작이 좋아요!', sub: '오늘 한 걸음 더 내딛어봐요.', ring: '#BBF7D0', bg: '#F0FDF4', fg: '#15803D' },
+              { emoji: '✨', title: '꾸준함이 멋져요', sub: '이번주 마무리까지 화이팅!', ring: '#D9F09E', bg: '#F7FEE7', fg: '#3F6212' },
+              { emoji: '🔥', title: '대단합니다!', sub: '영적 근력이 자라고 있어요.', ring: '#FCD34D', bg: '#FEF3C7', fg: '#92400E' },
+              { emoji: '🏆', title: '정말 훌륭해요!', sub: '하루만 더하면 완벽한 주간이에요.', ring: '#FBBF24', bg: '#FEF3C7', fg: '#78350F' },
+              { emoji: '👑', title: '완벽한 한 주!', sub: '은혜가 가득한 기록이네요. 축복합니다 🙌', ring: '#F59E0B', bg: '#FEF3C7', fg: '#78350F' },
+            ];
+            const b = badges[level];
+            const pct = Math.round((total / 14) * 100);
+            return (
+              <section style={cardBase}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>🏆 최근 7일 큐티/성경통독</h2>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>
+                    {(() => {
+                      const DOWS = ['일', '월', '화', '수', '목', '금', '토'];
+                      const now = new Date();
+                      const end = new Date(now);
+                      const start = new Date(end); start.setDate(end.getDate() - 6);
+                      return `${start.getMonth() + 1}/${start.getDate()}(${DOWS[start.getDay()]}) ~ ${end.getMonth() + 1}/${end.getDate()}(${DOWS[end.getDay()]})`;
+                    })()} · 총 {total}/14
+                  </span>
+                </div>
+                <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '0.85rem 1rem', borderRadius: 14, background: b.bg, border: `1px solid ${b.ring}` }}>
+                  <span aria-hidden style={{ fontSize: '2.2rem', lineHeight: 1 }}>{b.emoji}</span>
+                  <div style={{ display: 'grid', gap: '0.15rem', flex: 1, minWidth: 0 }}>
+                    <strong style={{ fontSize: '1rem', color: b.fg, fontWeight: 800 }}>{b.title}</strong>
+                    <span style={{ fontSize: '0.82rem', color: b.fg, opacity: 0.85, fontWeight: 600 }}>{b.sub}</span>
+                  </div>
+                </div>
+                {/* 진척 bar */}
+                <div style={{ marginTop: '0.75rem', height: 8, borderRadius: 999, background: '#E5E7EB', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, #20CD8D 0%, #65A30D 100%)', transition: 'width 0.3s ease' }} />
+                </div>
+                {/* QT·통독 카운트 — 클릭 시 각 메뉴로 이동 */}
+                {(() => {
+                  const params = new URLSearchParams();
+                  if (profileId) params.set('profileId', profileId);
+                  if (nickname) params.set('nickname', nickname);
+                  if (email) params.set('email', email);
+                  const qs = params.toString();
+                  const suffix = qs ? `?${qs}` : '';
+                  return (
+                    <div style={{ marginTop: '0.65rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                      <a
+                        href={`/qt${suffix}`}
+                        title="큐티 메뉴로 이동"
+                        style={{ padding: '0.55rem 0.7rem', borderRadius: 10, background: '#F7FEE7', border: '1px solid #D9F09E', display: 'flex', alignItems: 'center', gap: '0.45rem', textDecoration: 'none', cursor: 'pointer', transition: 'transform 0.15s ease, box-shadow 0.15s ease' }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 3px 8px rgba(101, 163, 13, 0.2)'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
+                      >
+                        <span aria-hidden>📖</span>
+                        <span style={{ fontSize: '0.82rem', color: '#3F6212', fontWeight: 700 }}>큐티</span>
+                        <strong style={{ marginLeft: 'auto', fontSize: '0.95rem', color: '#3F6212', fontWeight: 800 }}>{qt}<span style={{ fontSize: '0.78rem', fontWeight: 700, opacity: 0.6 }}>/7</span></strong>
+                        <span aria-hidden style={{ color: '#3F6212', opacity: 0.6, fontSize: '0.82rem' }}>›</span>
+                      </a>
+                      <a
+                        href={`/reading${suffix}`}
+                        title="성경통독 메뉴로 이동"
+                        style={{ padding: '0.55rem 0.7rem', borderRadius: 10, background: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', gap: '0.45rem', textDecoration: 'none', cursor: 'pointer', transition: 'transform 0.15s ease, box-shadow 0.15s ease' }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 3px 8px rgba(30, 64, 175, 0.2)'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
+                      >
+                        <span aria-hidden>✝</span>
+                        <span style={{ fontSize: '0.82rem', color: '#1E40AF', fontWeight: 700 }}>성경통독</span>
+                        <strong style={{ marginLeft: 'auto', fontSize: '0.95rem', color: '#1E40AF', fontWeight: 800 }}>{rd}<span style={{ fontSize: '0.78rem', fontWeight: 700, opacity: 0.6 }}>/7</span></strong>
+                        <span aria-hidden style={{ color: '#1E40AF', opacity: 0.6, fontSize: '0.82rem' }}>›</span>
+                      </a>
+                    </div>
+                  );
+                })()}
+              </section>
+            );
+          })()}
 
           {profileId && !profileDone && !activeCommunity && (
             <section style={{ padding: profileExpanded ? (isMobile ? '1.1rem' : '1.5rem') : '1rem 1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', transition: 'padding 0.2s ease' }}>

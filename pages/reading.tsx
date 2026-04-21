@@ -22,7 +22,16 @@ const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
 const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, systemAdminHref }: Props) => {
   const isMobile = useIsMobile();
-  useRequireLogin(profileId);
+  // SSR 프롭에 profileId 가 없으면 localStorage에서 복구 — MenuBar 링크가 authQs 없이 이동했을 때도 동작.
+  const [effProfileId, setEffProfileId] = useState<string | null>(profileId);
+  useEffect(() => {
+    if (profileId) { setEffProfileId(profileId); return; }
+    try {
+      const p = window.localStorage.getItem('kcisProfileId');
+      if (p) setEffProfileId(p);
+    } catch {}
+  }, [profileId]);
+  useRequireLogin(effProfileId);
   const today = new Date(todayISO);
   const todayDow = today.getDay();
 
@@ -75,37 +84,51 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
   // 완료 기록 — 현재 주 범위로 조회
   const [completedSet, setCompletedSet] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
+  const [toggleError, setToggleError] = useState<string | null>(null);
   const loadCompletions = async () => {
-    if (!profileId) return;
+    if (!effProfileId) return;
     try {
       const from = keyFor(dateForDow(0));
       const to = keyFor(dateForDow(6));
-      const r = await fetch(`/api/completions?profileId=${encodeURIComponent(profileId)}&type=reading&from=${from}&to=${to}`);
+      const r = await fetch(`/api/completions?profileId=${encodeURIComponent(effProfileId)}&type=reading&from=${from}&to=${to}`);
       if (!r.ok) return;
       const d = await r.json();
       setCompletedSet(new Set(Array.isArray(d?.dates) ? d.dates : []));
     } catch {}
   };
-  useEffect(() => { loadCompletions(); /* eslint-disable-next-line */ }, [profileId, weekOffset]);
+  useEffect(() => { loadCompletions(); /* eslint-disable-next-line */ }, [effProfileId, weekOffset]);
 
   const isCompleted = completedSet.has(selectedKey);
   const canToggle = true; // 과거·오늘·미래 모두 완료 처리 가능 (catch-up 허용)
 
   const toggleComplete = async () => {
-    if (!profileId || busy || !canToggle) return;
-    setBusy(true);
+    if (!effProfileId) { setToggleError('로그인이 필요합니다.'); return; }
+    if (busy) return;
+    setBusy(true); setToggleError(null);
     try {
       if (isCompleted) {
-        await fetch(`/api/completions?profileId=${encodeURIComponent(profileId)}&type=reading&date=${selectedKey}`, { method: 'DELETE' });
+        const r = await fetch(`/api/completions?profileId=${encodeURIComponent(effProfileId)}&type=reading&date=${selectedKey}`, { method: 'DELETE' });
+        if (!r.ok) {
+          const d = await r.json().catch(() => ({}));
+          setToggleError(d?.error || `삭제 실패 (${r.status})`);
+          return;
+        }
         setCompletedSet((prev) => { const n = new Set(prev); n.delete(selectedKey); return n; });
       } else {
         const r = await fetch('/api/completions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ profileId, type: 'reading', date: selectedKey, allowPast: true }),
+          body: JSON.stringify({ profileId: effProfileId, type: 'reading', date: selectedKey, allowPast: true }),
         });
-        if (r.ok) setCompletedSet((prev) => new Set(prev).add(selectedKey));
+        if (!r.ok) {
+          const d = await r.json().catch(() => ({}));
+          setToggleError(d?.error || `저장 실패 (${r.status})`);
+          return;
+        }
+        setCompletedSet((prev) => new Set(prev).add(selectedKey));
       }
+    } catch (e: any) {
+      setToggleError(e?.message || '네트워크 오류');
     } finally {
       setBusy(false);
     }
@@ -174,7 +197,7 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                       <span style={{ fontSize: isMobile ? '0.72rem' : '0.85rem', fontWeight: 800, color: isDayCompleted ? '#fff' : dowColor, lineHeight: 1 }}>
                         {m}/{day}
                       </span>
-                      <span style={{ fontSize: isMobile ? '0.58rem' : '0.66rem', fontWeight: 700, color: isDayCompleted ? 'rgba(255,255,255,0.9)' : 'var(--color-ink-2)', lineHeight: 1 }}>
+                      <span style={{ fontSize: isMobile ? '0.58rem' : '0.66rem', fontWeight: 700, color: isDayCompleted ? 'rgba(255,255,255,0.9)' : dow === 0 ? '#DC2626' : dow === 6 ? '#2563EB' : 'var(--color-ink-2)', lineHeight: 1 }}>
                         {DAY_LABELS[dow]}
                       </span>
                     </div>
@@ -214,54 +237,58 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                   aria-checked={isCompleted}
                   aria-label={isCompleted ? '통독 완료됨 — 취소' : '통독 전 — 완료 처리'}
                   onClick={toggleComplete}
-                  disabled={!canToggle || busy}
+                  disabled={busy}
                   style={{
-                    position: 'relative',
-                    width: 128,
-                    height: 34,
-                    padding: 0,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    padding: '0.3rem 0.7rem 0.3rem 0.4rem',
                     borderRadius: 999,
                     border: `1px solid ${isCompleted ? '#20CD8D' : 'var(--color-gray)'}`,
-                    background: isCompleted ? '#20CD8D' : '#E5E7EB',
-                    cursor: canToggle && !busy ? 'pointer' : 'not-allowed',
-                    opacity: busy ? 0.65 : canToggle ? 1 : 0.55,
-                    transition: 'background 0.2s ease, border-color 0.2s ease',
-                    flexShrink: 0,
+                    background: isCompleted ? '#20CD8D' : '#fff',
+                    color: isCompleted ? '#fff' : 'var(--color-ink-2)',
+                    cursor: busy ? 'wait' : 'pointer',
+                    opacity: busy ? 0.7 : 1,
+                    fontSize: '0.8rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.02em',
+                    transition: 'background 0.15s ease, border-color 0.15s ease, color 0.15s ease',
                   }}
                 >
                   <span
                     aria-hidden
                     style={{
-                      position: 'absolute',
-                      top: 2,
-                      left: isCompleted ? 'calc(100% - 30px)' : 2,
-                      width: 28,
-                      height: 28,
+                      position: 'relative',
+                      display: 'inline-block',
+                      width: 30,
+                      height: 18,
                       borderRadius: 999,
-                      background: '#fff',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
-                      transition: 'left 0.2s ease',
-                    }}
-                  />
-                  <span
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      height: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      fontSize: '0.76rem',
-                      fontWeight: 800,
-                      letterSpacing: '0.02em',
-                      color: isCompleted ? '#fff' : 'var(--color-ink-2)',
-                      ...(isCompleted ? { left: 12 } : { right: 12 }),
+                      background: isCompleted ? 'rgba(255,255,255,0.28)' : '#E5E7EB',
+                      flexShrink: 0,
+                      transition: 'background 0.15s ease',
                     }}
                   >
-                    {busy ? '...' : isCompleted ? '✓ 완료' : '통독 전'}
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: 2,
+                        left: isCompleted ? 14 : 2,
+                        width: 14,
+                        height: 14,
+                        borderRadius: 999,
+                        background: '#fff',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.25)',
+                        transition: 'left 0.18s ease',
+                      }}
+                    />
                   </span>
+                  <span>{busy ? '처리 중…' : isCompleted ? '✓ 통독 완료' : '통독 전'}</span>
                 </button>
-                {!isCompleted && (
+                {!isCompleted && !toggleError && (
                   <span style={{ fontSize: '0.68rem', color: 'var(--color-ink-2)', fontWeight: 600 }}>통독 후 토글하세요</span>
+                )}
+                {toggleError && (
+                  <span style={{ fontSize: '0.7rem', color: '#B91C1C', fontWeight: 700 }}>⚠ {toggleError}</span>
                 )}
               </div>
             </div>

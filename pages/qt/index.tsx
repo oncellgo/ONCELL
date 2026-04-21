@@ -27,7 +27,16 @@ const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickname, email, systemAdminHref }: Props) => {
   const router = useRouter();
   const isMobile = useIsMobile();
-  useRequireLogin(profileId);
+  // localStorage fallback — MenuBar 하드 네비 시 SSR 프롭 없이 들어와도 동작
+  const [effProfileId, setEffProfileId] = useState<string | null>(profileId);
+  useEffect(() => {
+    if (profileId) { setEffProfileId(profileId); return; }
+    try { const p = window.localStorage.getItem('kcisProfileId'); if (p) setEffProfileId(p); } catch {}
+  }, [profileId]);
+  useRequireLogin(effProfileId);
+
+  // 현재 주간(weekOffset 적용)의 큐티 완료 날짜 집합
+  const [qtCompletedSet, setQtCompletedSet] = useState<Set<string>>(new Set());
   // 일요일 기준 dow별 실제 날짜 계산 (일=0..토=6). weekOffset은 주 단위 이동(일 단위).
   const [weekOffset, setWeekOffset] = useState<number>(0);
   const dateForDow = (dow: number): { m: number; d: number } => {
@@ -115,9 +124,15 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
       const j = await r.json();
       const n = j?.note || {};
       // 이전 스키마(text) 호환: text가 있고 3필드가 비어있으면 느낀점에 마이그레이션
-      setNoteFeelings(n.feelings || n.text || '');
-      setNoteDecision(n.decision || '');
-      setNotePrayer(n.prayer || '');
+      // 단일 필드 UI — 기존 3필드 레코드는 합쳐서 불러온다
+      const parts: string[] = [];
+      if (n.feelings && n.feelings.trim()) parts.push(`💭 느낀점\n${n.feelings.trim()}`);
+      if (n.decision && n.decision.trim()) parts.push(`🌱 나의 결단\n${n.decision.trim()}`);
+      if (n.prayer && n.prayer.trim()) parts.push(`🙏 기도제목\n${n.prayer.trim()}`);
+      const merged = parts.length > 0 ? parts.join('\n\n') : (n.text || '');
+      setNoteFeelings(merged);
+      setNoteDecision('');
+      setNotePrayer('');
     } catch {
       setNoteFeelings(''); setNoteDecision(''); setNotePrayer('');
     } finally {
@@ -146,6 +161,8 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
       });
       if (!r.ok) throw new Error('save failed');
       setNoteMsg('저장됐어요.');
+      // 저장 성공 후 잠시 메시지 보여주고 창 닫기
+      setTimeout(() => { setNoteOpen(false); setNoteMsg(null); }, 600);
     } catch {
       setNoteMsg('저장에 실패했습니다.');
     } finally {
@@ -164,6 +181,53 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
     return `${y}-${m}-${d}`;
   })();
   const isTodaySelected = weekOffset === 0 && selectedDow === todayDow;
+
+  // 해당 주간의 큐티 완료 fetch (weekOffset 이 바뀌면 재조회)
+  useEffect(() => {
+    if (!effProfileId) { setQtCompletedSet(new Set()); return; }
+    const from = dateKeyForDow(0);
+    const to = dateKeyForDow(6);
+    fetch(`/api/completions?profileId=${encodeURIComponent(effProfileId)}&type=qt&from=${from}&to=${to}`)
+      .then((r) => r.json())
+      .then((d) => setQtCompletedSet(new Set(Array.isArray(d?.dates) ? d.dates : [])))
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effProfileId, weekOffset]);
+
+  // 큐티 완료 토글 (성경통독과 동일한 UX) — 묵상노트와 독립적으로 완료 플래그만 기록
+  const [qtToggleBusy, setQtToggleBusy] = useState(false);
+  const [qtToggleError, setQtToggleError] = useState<string | null>(null);
+  const toggleQtComplete = async () => {
+    if (!effProfileId) { setQtToggleError('로그인이 필요합니다.'); return; }
+    if (qtToggleBusy) return;
+    const dkey = selectedDateKey;
+    // 미래 날짜는 큐티 선지급 금지
+    const p = (x: number) => String(x).padStart(2, '0');
+    const n = new Date();
+    const todayKeyLocal = `${n.getFullYear()}-${p(n.getMonth() + 1)}-${p(n.getDate())}`;
+    if (dkey > todayKeyLocal) { setQtToggleError('큐티는 오늘까지만 완료 처리할 수 있어요.'); return; }
+    const wasCompleted = qtCompletedSet.has(dkey);
+    setQtToggleBusy(true); setQtToggleError(null);
+    try {
+      if (wasCompleted) {
+        const r = await fetch(`/api/completions?profileId=${encodeURIComponent(effProfileId)}&type=qt&date=${dkey}`, { method: 'DELETE' });
+        if (!r.ok) { const d = await r.json().catch(() => ({})); setQtToggleError(d?.error || `삭제 실패 (${r.status})`); return; }
+        setQtCompletedSet((prev) => { const n = new Set(prev); n.delete(dkey); return n; });
+      } else {
+        const r = await fetch('/api/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profileId: effProfileId, type: 'qt', date: dkey, allowPast: true }),
+        });
+        if (!r.ok) { const d = await r.json().catch(() => ({})); setQtToggleError(d?.error || `저장 실패 (${r.status})`); return; }
+        setQtCompletedSet((prev) => new Set(prev).add(dkey));
+      }
+    } catch (e: any) {
+      setQtToggleError(e?.message || '네트워크 오류');
+    } finally {
+      setQtToggleBusy(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -227,18 +291,24 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                   const isSelected = dow === selectedDow;
                   const isLatest = !!(v && latestVideo && v.videoId === latestVideo.videoId);
                   const { m, d } = dateForDow(dow);
+                  const dk = dateKeyForDow(dow);
+                  const isDayCompleted = qtCompletedSet.has(dk);
+                  // 오늘 이후(미래) 날짜는 비활성화 — 큐티는 선지급 불가
+                  const todayKeyLocal = (() => { const n = new Date(); const p = (x: number) => String(x).padStart(2, '0'); return `${n.getFullYear()}-${p(n.getMonth() + 1)}-${p(n.getDate())}`; })();
+                  const isFuture = dk > todayKeyLocal;
                   return (
                     <button
                       key={dow}
                       type="button"
-                      onClick={() => setSelectedDow(dow)}
-                      title={isLatest ? '최신영상' : undefined}
+                      onClick={() => { if (!isFuture) setSelectedDow(dow); }}
+                      disabled={isFuture}
+                      title={isFuture ? '미래 날짜는 선택할 수 없습니다' : isLatest ? '최신영상' : undefined}
                       style={{
                         padding: isMobile ? '0.25rem 0.05rem' : '0.3rem 0.2rem',
-                        border: isSelected ? '2px solid #20CD8D' : isToday ? '1.5px solid #D9F09E' : '1px solid var(--color-gray)',
+                        border: isSelected ? '2px solid #20CD8D' : isDayCompleted ? '1.5px solid #20CD8D' : isToday ? '1.5px solid #D9F09E' : '1px solid var(--color-gray)',
                         borderRadius: 8,
-                        background: isToday ? '#ECFCCB' : '#fff',
-                        cursor: 'pointer',
+                        background: isFuture ? '#F9FAFB' : isDayCompleted ? '#20CD8D' : isToday ? '#ECFCCB' : '#fff',
+                        cursor: isFuture ? 'not-allowed' : 'pointer',
                         opacity: v ? 1 : 0.7,
                         textAlign: 'center',
                         boxShadow: isSelected ? '0 2px 6px rgba(32,205,141,0.2)' : 'none',
@@ -248,9 +318,10 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                         minWidth: 0,
                         position: 'relative',
                         overflow: 'hidden',
+                        opacity: isFuture ? 0.4 : 1,
                       }}
                     >
-                      {isLatest && (
+                      {isLatest && !isFuture && (
                         <span style={{
                           position: 'absolute', top: -4, right: -4,
                           width: 8, height: 8, borderRadius: 999, background: '#DC2626',
@@ -258,24 +329,17 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                         }} aria-label="최신영상" />
                       )}
                       <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '0.05rem' : '0.2rem', lineHeight: 1 }}>
-                        <span style={{ fontSize: isMobile ? '0.7rem' : '0.82rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1 }}>
+                        <span style={{ fontSize: isMobile ? '0.7rem' : '0.82rem', fontWeight: 800, color: isDayCompleted ? '#fff' : isFuture ? '#9CA3AF' : 'var(--color-ink)', lineHeight: 1 }}>
                           {m}/{d}
                         </span>
-                        <span style={{ fontSize: isMobile ? '0.58rem' : '0.64rem', fontWeight: 700, color: 'var(--color-ink-2)', lineHeight: 1 }}>
+                        <span style={{ fontSize: isMobile ? '0.58rem' : '0.64rem', fontWeight: 700, color: isDayCompleted ? 'rgba(255,255,255,0.9)' : isFuture ? '#9CA3AF' : dow === 0 ? '#DC2626' : dow === 6 ? '#2563EB' : 'var(--color-ink-2)', lineHeight: 1 }}>
                           {DAY_LABELS[dow]}
                         </span>
                       </div>
-                      {isToday ? (
-                        <span style={{
-                          fontSize: isMobile ? '0.55rem' : '0.6rem',
-                          fontWeight: 800,
-                          color: '#fff',
-                          background: '#20CD8D',
-                          padding: '0.05rem 0.35rem',
-                          borderRadius: 999,
-                          letterSpacing: '0.02em',
-                          justifySelf: 'center',
-                        }}>오늘</span>
+                      {isDayCompleted ? (
+                        <span style={{ fontSize: isMobile ? '0.55rem' : '0.6rem', fontWeight: 800, color: '#20CD8D', background: '#fff', padding: '0.05rem 0.35rem', borderRadius: 999, letterSpacing: '0.02em', justifySelf: 'center' }}>✓ 완료</span>
+                      ) : isToday ? (
+                        <span style={{ fontSize: isMobile ? '0.55rem' : '0.6rem', fontWeight: 800, color: '#fff', background: '#20CD8D', padding: '0.05rem 0.35rem', borderRadius: 999, letterSpacing: '0.02em', justifySelf: 'center' }}>오늘</span>
                       ) : v ? (
                         <svg viewBox="0 0 24 24" width={isMobile ? 12 : 14} height={isMobile ? 9 : 10} aria-label="YouTube" style={{ justifySelf: 'center' }}>
                           <path fill="#FF0000" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31.3 31.3 0 0 0 0 12a31.3 31.3 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31.3 31.3 0 0 0 24 12a31.3 31.3 0 0 0-.5-5.8z"/>
@@ -369,28 +433,65 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                       <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>{qtError || '오늘의 QT말씀 정보가 없습니다.'}</span>
                     )}
                     {qtRef && (
-                      <button
-                        type="button"
-                        onClick={openNoteModal}
-                        style={{
-                          marginLeft: 'auto',
-                          padding: '0.38rem 0.85rem',
-                          borderRadius: 999,
-                          border: '1px solid #65A30D',
-                          background: '#fff',
-                          color: '#3F6212',
-                          fontSize: '0.86rem',
-                          fontWeight: 700,
-                          fontFamily: 'inherit',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.35rem',
-                        }}
-                      >
-                        <span>✍️</span>
-                        <span>나의 묵상노트</span>
-                      </button>
+                      <div style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <button
+                          type="button"
+                          onClick={openNoteModal}
+                          title="묵상노트 작성"
+                          style={{
+                            padding: '0.38rem 0.7rem',
+                            borderRadius: 999,
+                            border: '1px solid #65A30D',
+                            background: '#fff',
+                            color: '#3F6212',
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                          }}
+                        >
+                          <span>✍️</span><span>묵상노트</span>
+                        </button>
+                        {(() => {
+                          const isCompleted = qtCompletedSet.has(selectedDateKey);
+                          return (
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={isCompleted}
+                              aria-label={isCompleted ? '큐티 완료됨 — 취소' : '큐티 전 — 완료 처리'}
+                              onClick={toggleQtComplete}
+                              disabled={qtToggleBusy}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.45rem',
+                                padding: '0.3rem 0.7rem 0.3rem 0.4rem',
+                                borderRadius: 999,
+                                border: `1px solid ${isCompleted ? '#20CD8D' : 'var(--color-gray)'}`,
+                                background: isCompleted ? '#20CD8D' : '#fff',
+                                color: isCompleted ? '#fff' : 'var(--color-ink-2)',
+                                cursor: qtToggleBusy ? 'wait' : 'pointer',
+                                opacity: qtToggleBusy ? 0.7 : 1,
+                                fontSize: '0.8rem',
+                                fontWeight: 800,
+                                letterSpacing: '0.02em',
+                                transition: 'background 0.15s ease, border-color 0.15s ease, color 0.15s ease',
+                              }}
+                            >
+                              <span aria-hidden style={{ position: 'relative', display: 'inline-block', width: 30, height: 18, borderRadius: 999, background: isCompleted ? 'rgba(255,255,255,0.28)' : '#E5E7EB', flexShrink: 0, transition: 'background 0.15s ease' }}>
+                                <span style={{ position: 'absolute', top: 2, left: isCompleted ? 14 : 2, width: 14, height: 14, borderRadius: 999, background: '#fff', boxShadow: '0 1px 2px rgba(0,0,0,0.25)', transition: 'left 0.18s ease' }} />
+                              </span>
+                              <span>{qtToggleBusy ? '처리 중…' : isCompleted ? '✓ 큐티 완료' : '큐티 전'}</span>
+                            </button>
+                          );
+                        })()}
+                      </div>
+                    )}
+                    {qtToggleError && (
+                      <span style={{ fontSize: '0.7rem', color: '#B91C1C', fontWeight: 700 }}>⚠ {qtToggleError}</span>
                     )}
                   </div>
                 </div>
@@ -443,34 +544,32 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
               >✕</button>
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--color-ink-2)' }}>
-              <span style={{ fontWeight: 700, color: '#3F6212' }}>{todayKey}</span>
+              <span style={{ fontWeight: 700, color: '#3F6212' }}>{(() => {
+                const [y, m, d] = todayKey.split('-').map(Number);
+                if (!y || !m || !d) return todayKey;
+                const dow = new Date(y, m - 1, d).getDay();
+                return `${todayKey}(${DAY_LABELS[dow]})`;
+              })()}</span>
               {qtRef && <span> · 📖 {qtRef}</span>}
             </div>
             {noteLoading ? (
               <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--color-ink-2)' }}>불러오는 중…</div>
             ) : (
-              <div style={{ display: 'grid', gap: '0.85rem' }}>
-                {([
-                  { key: 'feelings', label: '💭 느낀점', value: noteFeelings, set: setNoteFeelings, placeholder: '말씀을 읽으며 느낀 점을 자유롭게 적어보세요.' },
-                  { key: 'decision', label: '🌱 나의 결단', value: noteDecision, set: setNoteDecision, placeholder: '오늘 말씀을 통해 결단하고 실천할 것을 적어보세요.' },
-                  { key: 'prayer', label: '🙏 기도제목', value: notePrayer, set: setNotePrayer, placeholder: '오늘의 기도제목을 적어보세요.' },
-                ] as const).map((s) => (
-                  <div key={s.key} style={{ display: 'grid', gap: '0.35rem' }}>
-                    <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#65A30D' }}>{s.label}</label>
-                    <textarea
-                      value={s.value}
-                      onChange={(e) => { s.set(e.target.value); setNoteMsg(null); }}
-                      placeholder={s.placeholder}
-                      rows={4}
-                      style={{
-                        width: '100%', padding: '0.65rem 0.8rem', borderRadius: 10,
-                        border: '1px solid var(--color-gray)', fontSize: '0.93rem', lineHeight: 1.6,
-                        fontFamily: '"Noto Sans KR", "Nanum Gothic", "Malgun Gothic", system-ui, sans-serif',
-                        resize: 'vertical',
-                      }}
-                    />
-                  </div>
-                ))}
+              <div style={{ display: 'grid', gap: '0.4rem' }}>
+                <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#65A30D' }}>✍️ 묵상노트</label>
+                <p style={{ margin: 0, fontSize: '0.76rem', color: 'var(--color-ink-2)', lineHeight: 1.5 }}>느낀 점 · 결단 · 기도제목을 자유롭게 한 곳에 기록하세요.</p>
+                <textarea
+                  value={noteFeelings}
+                  onChange={(e) => { setNoteFeelings(e.target.value); setNoteMsg(null); }}
+                  placeholder={'오늘 말씀을 통해 받은 은혜·결단·기도제목을 자유롭게 기록해 보세요.\n\n예)\n💭 느낀점 — …\n🌱 결단 — …\n🙏 기도제목 — …'}
+                  rows={12}
+                  style={{
+                    width: '100%', padding: '0.75rem 0.9rem', borderRadius: 10,
+                    border: '1px solid var(--color-gray)', fontSize: '0.93rem', lineHeight: 1.7,
+                    fontFamily: '"Noto Sans KR", "Nanum Gothic", "Malgun Gothic", system-ui, sans-serif',
+                    resize: 'vertical',
+                  }}
+                />
               </div>
             )}
             {noteMsg && (

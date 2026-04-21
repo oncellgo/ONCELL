@@ -178,7 +178,7 @@ const fetchDateSpecific = async (dateStr: string): Promise<QtResult> => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
-      'User-Agent': 'Mozilla/5.0 (compatible; Steward+AI/1.0)',
+      'User-Agent': 'Mozilla/5.0 (compatible; KCIS/1.0)',
       Accept: 'application/json, text/javascript, */*',
     },
     body,
@@ -234,19 +234,20 @@ const fetchDateSpecific = async (dateStr: string): Promise<QtResult> => {
 };
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-  res.setHeader('Cache-Control', 'public, max-age=900, s-maxage=1800, stale-while-revalidate=3600');
+  // 브라우저 캐시 끄기 — 서버 메모리/KV 캐시가 이미 있고, 스키마 변경 시 클라이언트가 즉시 반영 받아야 함
+  res.setHeader('Cache-Control', 'no-store');
 
   // 날짜 지정 모드: ?date=YYYY-MM-DD
   const dateParam = typeof req.query.date === 'string' ? req.query.date : null;
   if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
     // 1) 메모리 캐시 (warm invocation)
     const cached = dateCache.get(dateParam);
-    if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
+    if (cached && Date.now() - cached.at < CACHE_TTL_MS && 'passageTextEn' in cached.data) {
       return res.status(200).json(cached.data);
     }
     // 2) 영구 캐시 (Supabase app_kv)
     const persisted = await getKvQt(dateParam);
-    if (persisted && persisted.passageText) {
+    if (persisted && persisted.passageText && 'passageTextEn' in persisted) {
       dateCache.set(dateParam, { data: persisted, at: Date.now() });
       return res.status(200).json(persisted);
     }
@@ -270,12 +271,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   // today 모드: 메모리 캐시 → 영구 캐시(오늘 날짜 키) → upstream 순
-  if (cache && Date.now() - cache.at < CACHE_TTL_MS) {
+  // 캐시 스키마 검증 — passageTextEn 필드가 없는 옛 레코드는 무효화해서 재파싱.
+  if (cache && Date.now() - cache.at < CACHE_TTL_MS && 'passageTextEn' in cache.data) {
     return res.status(200).json(cache.data);
   }
   const todayKey = todayKeySeoul();
   const persistedToday = await getKvQt(todayKey);
-  if (persistedToday && persistedToday.passageText) {
+  if (persistedToday && persistedToday.passageText && 'passageTextEn' in persistedToday) {
     cache = { data: persistedToday, at: Date.now() };
     return res.status(200).json(persistedToday);
   }
@@ -283,7 +285,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     const response = await fetch(SOURCE_URL, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; Steward+AI/1.0)',
+        'User-Agent': 'Mozilla/5.0 (compatible; KCIS/1.0)',
         Accept: 'text/html,application/xhtml+xml',
       },
     });

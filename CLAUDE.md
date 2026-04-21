@@ -69,10 +69,11 @@ node scripts/wipe-non-admin-data.mjs --execute
 - 인당 한도(`perUser` 모드): 초과 시 모달에서 기존 예약 목록 + 수정/삭제 UI
 - 모임구분(부서/구역/기타) 필수 — `description: "[종류] 상세"` 로 저장
 
-### 종일 이벤트
+### 종일 이벤트 · 연간 일정 시드
 
-- `start_at` 00:00, `end_at` 23:59 패턴
-- `lib/events.ts`의 `isAllDayEvent()` 로 판별. 표시 측은 시간 숨기고 "종일" 라벨 사용
+- `start_at` 00:00 **+0800**, `end_at` 23:59 **+0800** 패턴 (싱가폴 시간 고정)
+- `lib/events.ts`의 `isAllDayEvent()` / `getSGDateKey()` 로 판별·버킷팅 — **반드시 SG 벽시계 기준**. 브라우저 로컬 TZ(`getHours()` 등)로 계산하면 KST 사용자에게서 다음날로 spillover 발생 (2026-04-21 사고)
+- **교회일정을 이미지/표에서 시드할 때는 반드시 `.claude/skills/church-events/SKILL.md` 프로토콜 적용** — 종일 패턴 강제, `구역모임 시작/방학/개강`은 시작일만, 반복은 `rule:`/`days:` 단일 row, dry-run 후 사용자 승인 → `--execute`
 
 ### 큐티 · 구역모임교안
 

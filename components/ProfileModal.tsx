@@ -85,7 +85,10 @@ const ProfileModal = ({ profileId, provider, nickname, email, initialRealName, i
       const d = await res.json();
       if (!res.ok) { setMsg(d?.error || '저장 실패'); return; }
       setMsg('저장되었습니다.');
-      onSaved?.({ realName: realName.trim(), contact: `${countryCode} ${contactLocal.trim()}` });
+      const saved = { realName: realName.trim(), contact: `${countryCode} ${contactLocal.trim()}` };
+      onSaved?.(saved);
+      // 전역 브로드캐스트 — 다른 화면(예약자 정보 pill, SubHeader 배지 등) 동기화
+      try { window.dispatchEvent(new CustomEvent('kcis-profile-updated', { detail: saved })); } catch {}
       setTimeout(() => onClose(), 400);
     } catch {
       setMsg('저장 중 오류가 발생했습니다.');

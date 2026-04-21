@@ -60,11 +60,31 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [currentDisplayName, setCurrentDisplayName] = useState<string | null>(displayName);
   const [currentContact, setCurrentContact] = useState<string | null>(contact);
+  // 프로필이 다른 모달(SubHeader·대시보드 등)에서 수정되면 전역 이벤트로 동기화
+  useEffect(() => {
+    const onProfileUpdated = (e: Event) => {
+      const detail = (e as CustomEvent<{ realName?: string; contact?: string }>).detail;
+      if (detail?.realName) setCurrentDisplayName(detail.realName);
+      if (detail?.contact) setCurrentContact(detail.contact);
+    };
+    window.addEventListener('kcis-profile-updated', onProfileUpdated);
+    return () => window.removeEventListener('kcis-profile-updated', onProfileUpdated);
+  }, []);
   // 예약자 확인 체크박스 3종 — 모두 체크되어야 완료 가능
   const [confirmMember, setConfirmMember] = useState(false);
   const [confirmInfo, setConfirmInfo] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const allConfirmed = confirmMember && confirmInfo && confirmCancel;
+  const [confirmShake, setConfirmShake] = useState(false);
+  const triggerConfirmShake = () => {
+    setConfirmShake(true);
+    setTimeout(() => setConfirmShake(false), 650);
+  };
+  const [profileShake, setProfileShake] = useState(false);
+  const triggerProfileShake = () => {
+    setProfileShake(true);
+    setTimeout(() => setProfileShake(false), 650);
+  };
   const [resvTitle, setResvTitle] = useState('');
   const [resvSubmitting, setResvSubmitting] = useState(false);
   const [resvError, setResvError] = useState<string | null>(null);
@@ -762,11 +782,20 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
             </div>
 
             <div style={{ padding: '1rem 1.25rem', overflowY: 'auto', display: 'grid', gap: '1rem' }}>
-              {/* === 예약자 정보 — 각 pill 클릭 시 정보 변경 모달 === */}
-              <div style={{ display: 'grid', gap: '0.4rem', padding: '0.75rem 0.9rem', borderRadius: 12, background: '#F9FAFB', border: '1px solid var(--color-surface-border)' }}>
+              {/* === 예약자 정보 — 연오렌지 === */}
+              <div style={{
+                display: 'grid',
+                gap: '0.4rem',
+                padding: '0.75rem 0.9rem',
+                borderRadius: 12,
+                background: '#FFF7ED',
+                border: profileShake ? '2px solid #DC2626' : '1px solid #FED7AA',
+                animation: profileShake ? 'kcisShake 0.55s cubic-bezier(0.36,0.07,0.19,0.97) both' : undefined,
+                transition: 'border-color 0.2s ease',
+              }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <span style={{ fontSize: '1rem' }}>👤</span>
-                  <span style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-ink)' }}>예약자 정보</span>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#9A3412' }}>예약자 정보</span>
                   <span style={{ fontSize: '0.72rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>(클릭하여 수정)</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', fontSize: '0.9rem' }}>
@@ -774,32 +803,32 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
                     type="button"
                     onClick={() => setProfileModalOpen(true)}
                     title="클릭하여 이름 수정"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.7rem', borderRadius: 999, background: '#ECFCCB', border: '1px solid #D9F09E', cursor: 'pointer', font: 'inherit' }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.7rem', borderRadius: 999, background: '#FFEDD5', border: '1px solid #FED7AA', cursor: 'pointer', font: 'inherit' }}
                   >
-                    <span style={{ color: '#65A30D', fontWeight: 800, fontSize: '0.76rem' }}>이름</span>
+                    <span style={{ color: '#9A3412', fontWeight: 800, fontSize: '0.76rem' }}>이름</span>
                     <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>{currentDisplayName || displayName || '(미등록)'}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setProfileModalOpen(true)}
                     title="클릭하여 연락처 수정"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.7rem', borderRadius: 999, background: '#ECFCCB', border: '1px solid #D9F09E', cursor: 'pointer', font: 'inherit' }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.7rem', borderRadius: 999, background: '#FFEDD5', border: '1px solid #FED7AA', cursor: 'pointer', font: 'inherit' }}
                   >
-                    <span style={{ color: '#65A30D', fontWeight: 800, fontSize: '0.76rem' }}>연락처</span>
+                    <span style={{ color: '#9A3412', fontWeight: 800, fontSize: '0.76rem' }}>연락처</span>
                     <span style={{ color: 'var(--color-ink)', fontWeight: 700, fontFamily: 'monospace' }}>{currentContact || contact || '(미등록)'}</span>
                   </button>
                 </div>
               </div>
 
-              {/* === 섹션 0: 모임구분 === */}
-              <div style={{ display: 'grid', gap: '0.55rem', padding: '0.85rem 1rem', borderRadius: 12, background: '#FEF3C7', border: '1px solid #FCD34D' }}>
+              {/* === 섹션 0: 모임구분 — 연라임 === */}
+              <div style={{ display: 'grid', gap: '0.55rem', padding: '0.85rem 1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <span style={{ fontSize: '1rem' }}>👥</span>
-                  <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#92400E' }}>모임구분</span>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#3F6212' }}>모임구분</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                   {(['부서', '구역', '기타'] as const).map((kind) => (
-                    <label key={kind} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.35rem 0.7rem', borderRadius: 999, border: meetingKind === kind ? '1.5px solid #92400E' : '1px solid var(--color-gray)', background: meetingKind === kind ? '#FDE68A' : '#fff', cursor: 'pointer', fontSize: '0.88rem', fontWeight: meetingKind === kind ? 800 : 600, color: meetingKind === kind ? '#78350F' : 'var(--color-ink-2)' }}>
+                    <label key={kind} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.35rem 0.7rem', borderRadius: 999, border: meetingKind === kind ? '1.5px solid #65A30D' : '1px solid var(--color-gray)', background: meetingKind === kind ? '#ECFCCB' : '#fff', cursor: 'pointer', fontSize: '0.88rem', fontWeight: meetingKind === kind ? 800 : 600, color: meetingKind === kind ? '#3F6212' : 'var(--color-ink-2)' }}>
                       <input
                         type="radio"
                         name="meetingKind"
@@ -919,12 +948,12 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
                 </ul>
               </div>
 
-              {/* === 섹션 2: 장소 선택 === */}
-              <div style={{ display: 'grid', gap: '0.55rem', padding: '0.85rem 1rem', borderRadius: 12, background: '#F0F9FF', border: '1px solid #BAE6FD' }}>
+              {/* === 섹션 2: 장소 선택 — 연라임 === */}
+              <div style={{ display: 'grid', gap: '0.55rem', padding: '0.85rem 1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                     <span style={{ fontSize: '1rem' }}>📍</span>
-                    <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#075985' }}>장소 선택</span>
+                    <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#3F6212' }}>장소 선택</span>
                     <span style={{ fontSize: '0.78rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>({pickerSelected.size}/{venues.length})</span>
                   </div>
                   <div style={{ display: 'inline-flex', gap: '0.3rem' }}>
@@ -972,7 +1001,17 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
               </div>
 
               {/* === 예약전 확인요청사항 — 모두 체크해야 완료 가능 === */}
-              <div style={{ padding: '0.85rem 1rem', borderRadius: 12, background: '#FEF3C7', border: '1px solid #FBBF24', display: 'grid', gap: '0.5rem' }}>
+              <style>{`@keyframes kcisShake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }`}</style>
+              <div style={{
+                padding: '0.85rem 1rem',
+                borderRadius: 12,
+                background: '#FEF3C7',
+                border: confirmShake ? '2px solid #DC2626' : '1px solid #FBBF24',
+                display: 'grid',
+                gap: '0.5rem',
+                animation: confirmShake ? 'kcisShake 0.55s cubic-bezier(0.36,0.07,0.19,0.97) both' : undefined,
+                transition: 'border-color 0.2s ease',
+              }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <span style={{ fontSize: '1rem' }}>⚠️</span>
                   <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#92400E' }}>예약전 확인요청사항</span>
@@ -1003,9 +1042,16 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
               >취소</button>
               <button
                 type="button"
-                onClick={confirmPicker}
-                disabled={!allConfirmed}
-                title={allConfirmed ? '' : '위 3개 항목을 모두 체크해주세요'}
+                onClick={() => {
+                  const effName = currentDisplayName || displayName;
+                  const effContact = currentContact || contact;
+                  const hasName = !!(effName && String(effName).trim());
+                  const hasContact = !!(effContact && String(effContact).trim());
+                  if (!hasName || !hasContact) { triggerProfileShake(); if (!allConfirmed) triggerConfirmShake(); return; }
+                  if (!allConfirmed) { triggerConfirmShake(); return; }
+                  confirmPicker();
+                }}
+                title={allConfirmed ? '' : '예약자 정보와 확인요청사항을 모두 입력해주세요'}
                 style={{
                   padding: '0.55rem 1.1rem',
                   borderRadius: 'var(--radius-lg)',
@@ -1013,7 +1059,7 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
                   background: allConfirmed ? 'var(--color-primary)' : '#9CA3AF',
                   color: '#fff',
                   fontWeight: 800,
-                  cursor: allConfirmed ? 'pointer' : 'not-allowed',
+                  cursor: 'pointer',
                   opacity: allConfirmed ? 1 : 0.7,
                 }}
               >완료</button>

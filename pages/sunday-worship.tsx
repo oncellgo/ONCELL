@@ -2,7 +2,6 @@ import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import { useEffect, useMemo, useState } from 'react';
 import SubHeader from '../components/SubHeader';
-import BiblePassageCard from '../components/BiblePassageCard';
 import BulletinLightbox from '../components/BulletinLightbox';
 import { getSystemAdminHref } from '../lib/adminGuard';
 import { getProfiles, getUsers } from '../lib/dataStore';
@@ -24,11 +23,13 @@ type Props = {
 const pad = (n: number) => String(n).padStart(2, '0');
 const keyFor = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-// 오늘 기준 가장 최근(지나간) 주일 — 오늘이 일요일이면 오늘
+// 현재 속한 주의 일요일 — 오늘이 일요일이면 오늘, 월~토이면 다음 주일.
+// (월요일 이후부터 이미 그 주의 주보/구역예배지가 대상이 됨)
 const mostRecentSunday = (now: Date): Date => {
   const d = new Date(now);
   d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - d.getDay());
+  const dow = d.getDay();
+  if (dow !== 0) d.setDate(d.getDate() + (7 - dow));
   return d;
 };
 
@@ -38,19 +39,39 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
   const today = new Date(todayISO);
   const defaultSunday = mostRecentSunday(today);
 
-  // 최근 4개 주일 (오늘이 주일이면 오늘이 마지막)
+  // 윈도우 오프셋 — 기본 0: 최근 4개 주일(가장 오른쪽이 가장 최근 주일). ‹ / › 로 1주씩 이동.
+  const [windowOffset, setWindowOffset] = useState<number>(0);
   const recentSundays = useMemo(() => {
     const list: string[] = [];
     const base = new Date(defaultSunday);
+    base.setDate(base.getDate() + windowOffset * 7);
     for (let i = 3; i >= 0; i--) {
       const d = new Date(base);
       d.setDate(base.getDate() - i * 7);
       list.push(keyFor(d));
     }
     return list;
-  }, [defaultSunday]);
+  }, [defaultSunday, windowOffset]);
 
   const [selectedKey, setSelectedKey] = useState<string>(keyFor(defaultSunday));
+
+  const goPrevWeek = () => {
+    setWindowOffset((w) => w - 1);
+    // 선택된 주일도 1주 뒤로 이동 (윈도우 밖으로 나가지 않게)
+    setSelectedKey((k) => {
+      const d = new Date(k);
+      d.setDate(d.getDate() - 7);
+      return keyFor(d);
+    });
+  };
+  const goNextWeek = () => {
+    setWindowOffset((w) => w + 1);
+    setSelectedKey((k) => {
+      const d = new Date(k);
+      d.setDate(d.getDate() + 7);
+      return keyFor(d);
+    });
+  };
 
   // 선택된 주일의 영상 — SSR에서 이미 dateKey당 1개(2부 우선)로 정리됨
   const selectedVideo = useMemo(() => videos.find((v) => v.dateKey === selectedKey) || null, [videos, selectedKey]);
@@ -69,11 +90,11 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
   const [bulletinLookupLoading, setBulletinLookupLoading] = useState(false);
   const [bulletinLookupError, setBulletinLookupError] = useState<string | null>(null);
 
-  // 주보 인라인 뷰어
-  const [bulletinOpen, setBulletinOpen] = useState(false);
+  // 주보 이미지·파일
   const [bulletinFiles, setBulletinFiles] = useState<Array<{ n: number; name: string | null; mime: string }>>([]);
   const [bulletinFilesLoading, setBulletinFilesLoading] = useState(false);
   const [bulletinFilesError, setBulletinFilesError] = useState<string | null>(null);
+  const [misbaUrl, setMisbaUrl] = useState<string | null>(null);
 
   // 라이트박스 (주보 이미지 확대 뷰어)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -81,7 +102,7 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
   useEffect(() => {
     let cancelled = false;
     setBulletinLookupLoading(true); setBulletinLookupError(null); setBulletin(null);
-    setBulletinOpen(false); setBulletinFiles([]); setBulletinFilesError(null);
+    setBulletinFiles([]); setBulletinFilesError(null);
     fetch(`/api/sunday-bulletin?date=${selectedKey}`)
       .then((r) => r.json())
       .then((d) => { if (!cancelled) setBulletin(d); })
@@ -90,23 +111,18 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
     return () => { cancelled = true; };
   }, [selectedKey]);
 
-  const toggleBulletin = async () => {
+  // 주보가 확인되면 첨부 파일 목록도 자동으로 가져온다 (토글 없이 곧바로 노출).
+  useEffect(() => {
     if (!bulletin?.bulletinIdx) return;
-    if (bulletinOpen) { setBulletinOpen(false); return; }
-    setBulletinOpen(true);
-    if (bulletinFiles.length > 0) return;
+    let cancelled = false;
     setBulletinFilesLoading(true); setBulletinFilesError(null);
-    try {
-      const r = await fetch(`/api/bulletin-file?idx=${encodeURIComponent(bulletin.bulletinIdx)}`);
-      const d = await r.json();
-      if (!r.ok) throw new Error(d?.error || 'failed');
-      setBulletinFiles(Array.isArray(d?.files) ? d.files : []);
-    } catch (e: any) {
-      setBulletinFilesError('주보 첨부를 불러오지 못했습니다.');
-    } finally {
-      setBulletinFilesLoading(false);
-    }
-  };
+    fetch(`/api/bulletin-file?idx=${encodeURIComponent(bulletin.bulletinIdx)}`)
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) { setBulletinFiles(Array.isArray(d?.files) ? d.files : []); setMisbaUrl(typeof d?.misbaUrl === 'string' ? d.misbaUrl : null); } })
+      .catch(() => { if (!cancelled) setBulletinFilesError('주보 첨부를 불러오지 못했습니다.'); })
+      .finally(() => { if (!cancelled) setBulletinFilesLoading(false); });
+    return () => { cancelled = true; };
+  }, [bulletin?.bulletinIdx]);
 
   const selected = new Date(selectedKey);
   const selectedLabel = `${selected.getFullYear()}.${pad(selected.getMonth() + 1)}.${pad(selected.getDate())} (주일)`;
@@ -127,7 +143,7 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
   return (
     <>
       <Head>
-        <title>KCIS | 주일예배</title>
+        <title>KCIS | 주보</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
@@ -136,76 +152,46 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
       <main style={{ maxWidth: 1040, margin: '0 auto', padding: isMobile ? '1rem 0.6rem 4rem' : '1.5rem 1rem 5rem', display: 'grid', gap: isMobile ? '1rem' : '1.25rem' }}>
         <section style={{ padding: isMobile ? '0.85rem' : '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: isMobile ? '0.75rem' : '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>주일예배</h2>
+            <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>주보</h2>
             <span style={{ fontSize: '0.8rem', color: 'var(--color-ink-2)' }}>KoreanChurchInSingapore</span>
           </div>
 
-          {/* 최근 4개 주일 */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: isMobile ? '0.2rem' : '0.3rem' }}>
-            {recentSundays.map((key) => {
-              const d = new Date(key);
-              const isSelected = selectedKey === key;
-              const isToday = key === todayKey;
-              const v = videos.find((x) => x.dateKey === key);
-              return (
-                <button
-                  key={key} type="button" onClick={() => setSelectedKey(key)}
-                  style={{
-                    padding: isMobile ? '0.35rem 0.15rem' : '0.4rem 0.3rem',
-                    border: isSelected ? '2px solid #20CD8D' : isToday ? '1.5px solid #D9F09E' : '1px solid var(--color-gray)',
-                    borderRadius: 8,
-                    background: isToday ? '#ECFCCB' : '#fff',
-                    cursor: 'pointer',
-                    textAlign: 'center',
-                    boxShadow: isSelected ? '0 2px 6px rgba(32,205,141,0.2)' : 'none',
-                    display: 'grid', gap: isMobile ? '0.1rem' : '0.15rem',
-                    minHeight: isMobile ? 44 : 48, position: 'relative',
-                  }}
-                >
-                  <div style={{ fontSize: isMobile ? '0.78rem' : '0.9rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1 }}>
-                    {d.getMonth() + 1}/{d.getDate()}
-                  </div>
-                  <div style={{ fontSize: isMobile ? '0.58rem' : '0.64rem', fontWeight: 700, color: '#DC2626', lineHeight: 1 }}>
-                    {(() => {
-                      if (isToday) return '오늘';
-                      const ordinal = Math.ceil(d.getDate() / 7);
-                      const labels = ['첫째', '둘째', '셋째', '넷째', '다섯째'];
-                      return `${labels[ordinal - 1] || ''} 주일`;
-                    })()}
-                  </div>
-                  {v && (
-                    <svg viewBox="0 0 24 24" width={isMobile ? 12 : 14} height={isMobile ? 9 : 10} aria-label="YouTube" style={{ justifySelf: 'center' }}>
-                      <path fill="#FF0000" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31.3 31.3 0 0 0 0 12a31.3 31.3 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31.3 31.3 0 0 0 24 12a31.3 31.3 0 0 0-.5-5.8z" />
-                      <path fill="#fff" d="M9.6 15.6 15.8 12 9.6 8.4z" />
-                    </svg>
-                  )}
-                </button>
-              );
-            })}
+          {/* 최근 4개 주일 — 주 이동 네비 없음 */}
+          <div style={{ display: 'flex', alignItems: 'stretch', gap: isMobile ? '0.2rem' : '0.3rem' }}>
+            <div style={{ flex: 1, minWidth: 0, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: isMobile ? '0.15rem' : '0.25rem' }}>
+              {recentSundays.map((key) => {
+                const d = new Date(key);
+                const isSelected = selectedKey === key;
+                const isToday = key === todayKey;
+                return (
+                  <button
+                    key={key} type="button" onClick={() => setSelectedKey(key)}
+                    style={{
+                      padding: isMobile ? '0.25rem 0.05rem' : '0.3rem 0.2rem',
+                      border: isSelected ? '2px solid #20CD8D' : isToday ? '1.5px solid #D9F09E' : '1px solid var(--color-gray)',
+                      borderRadius: 8,
+                      background: isToday ? '#ECFCCB' : '#fff',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      boxShadow: isSelected ? '0 2px 6px rgba(32,205,141,0.2)' : 'none',
+                      display: 'grid', gap: isMobile ? '0.1rem' : '0.15rem',
+                      minHeight: isMobile ? 44 : 48, minWidth: 0, position: 'relative', overflow: 'hidden',
+                    }}
+                  >
+                    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '0.05rem' : '0.2rem', lineHeight: 1 }}>
+                      <span style={{ fontSize: isMobile ? '0.7rem' : '0.82rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1 }}>
+                        {d.getMonth() + 1}/{d.getDate()}
+                      </span>
+                      <span style={{ fontSize: isMobile ? '0.58rem' : '0.64rem', fontWeight: 700, color: '#DC2626', lineHeight: 1 }}>{(() => { const o = Math.ceil(d.getDate() / 7); return ['첫째주','둘째주','셋째주','넷째주','다섯째주'][o - 1] || '주일'; })()}</span>
+                    </div>
+                    {isToday && (
+                      <span style={{ fontSize: isMobile ? '0.55rem' : '0.6rem', fontWeight: 800, color: '#fff', background: '#20CD8D', padding: '0.05rem 0.35rem', borderRadius: 999, letterSpacing: '0.02em', justifySelf: 'center' }}>오늘</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-
-          {/* 영상 */}
-          {selectedVideo ? (
-            <div style={{ position: 'relative', width: '75%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', background: '#000', margin: '0 auto' }}>
-              <iframe
-                src={`https://www.youtube.com/embed/${selectedVideo.videoId}`}
-                title={selectedVideo.title}
-                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
-              />
-            </div>
-          ) : (
-            <div style={{
-              position: 'relative', width: '75%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12,
-              background: '#F3F4F6', border: '1px dashed var(--color-gray)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--color-ink-2)', fontSize: '1rem', fontWeight: 700,
-              margin: '0 auto',
-            }}>
-              이 주일 영상 없음
-            </div>
-          )}
 
           {/* 날짜 + 설교제목 + 성경구절 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', padding: isMobile ? '0.7rem 0.85rem' : '0.85rem 1.1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
@@ -213,81 +199,63 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
               <span style={{ fontSize: isMobile ? '0.88rem' : '0.98rem', fontWeight: 800, color: 'var(--color-ink)' }}>{selectedLabel}</span>
               {sermonTitle && <span style={{ fontSize: isMobile ? '0.88rem' : '0.98rem', fontWeight: 700, color: 'var(--color-ink)' }}>· "{sermonTitle}"</span>}
               {preacher && <span style={{ fontSize: '0.82rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>/ {preacher}</span>}
-              {bulletin?.bulletinIdx && (
-                <button
-                  type="button"
-                  onClick={toggleBulletin}
-                  title={bulletin.bulletinTitle || '주보 보기'}
-                  style={{ marginLeft: 'auto', padding: '0.3rem 0.7rem', borderRadius: 999, border: '1px solid #DC2626', background: bulletinOpen ? '#DC2626' : '#FEE2E2', color: bulletinOpen ? '#fff' : '#991B1B', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+              {misbaUrl && (
+                <a
+                  href={misbaUrl}
+                  target="_blank" rel="noopener noreferrer"
+                  title="미스바 파일 바로 열기"
+                  style={{ marginLeft: 'auto', padding: '0.3rem 0.7rem', borderRadius: 999, border: '1px solid #1E40AF', background: '#EFF6FF', color: '#1E40AF', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
                 >
-                  <span>📄</span><span>{bulletinOpen ? '주보 닫기' : '주보보기'}</span>
-                </button>
+                  <span>📘</span><span>미스바 보기</span>
+                </a>
               )}
             </div>
-            {bulletin?.found && bulletin.reference && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.95rem', fontWeight: 800, color: '#3F6212' }}>
-                <span>📖</span>
-                <span>{bulletin.reference}</span>
-              </div>
-            )}
           </div>
 
-          {/* 주보 인라인 뷰어 */}
-          {bulletinOpen && bulletin?.bulletinIdx && (
-            <div style={{ padding: isMobile ? '0.7rem' : '0.9rem', borderRadius: 12, background: '#FFF7ED', border: '1px solid #FED7AA', display: 'grid', gap: '0.6rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <strong style={{ fontSize: '0.88rem', color: '#9A3412' }}>📄 {bulletin.bulletinTitle || '주보'}</strong>
-                <a
-                  href={`https://koreanchurch.sg/noticeandnews/?bmode=view&idx=${bulletin.bulletinIdx}&t=board`}
-                  target="_blank" rel="noopener noreferrer"
-                  style={{ marginLeft: 'auto', fontSize: '0.76rem', color: '#9A3412', textDecoration: 'underline', fontWeight: 700 }}
-                >원문 게시글 열기 ↗</a>
-              </div>
-              {bulletinFilesLoading ? (
-                <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>주보를 불러오는 중…</p>
-              ) : bulletinFilesError ? (
-                <p style={{ margin: 0, color: '#B91C1C', fontSize: '0.88rem' }}>{bulletinFilesError}</p>
-              ) : bulletinFiles.length === 0 ? (
-                <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>표시할 첨부가 없습니다.</p>
-              ) : (
-                <div style={{ display: 'grid', gap: '0.6rem' }}>
-                  {bulletinFiles.map((f, imgIdx) => {
-                    const src = `/api/bulletin-file?idx=${encodeURIComponent(bulletin.bulletinIdx!)}&n=${f.n}`;
-                    if (f.mime.startsWith('image/')) {
-                      return (
-                        <button
-                          key={f.n} type="button" onClick={() => setLightboxIndex(imgIdx)}
-                          title="클릭하여 크게 보기"
-                          style={{ position: 'relative', padding: 0, border: '1px solid #FED7AA', borderRadius: 8, background: '#fff', cursor: 'zoom-in', display: 'block', width: '100%' }}
-                        >
-                          <img
-                            src={src} alt={f.name || `주보 ${f.n + 1}`}
-                            style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 8 }}
-                          />
-                          <span style={{ position: 'absolute', right: 8, bottom: 8, padding: '0.25rem 0.55rem', borderRadius: 999, background: 'rgba(17,24,39,0.72)', color: '#fff', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                            🔍 크게 보기
-                          </span>
-                        </button>
-                      );
-                    }
-                    if (f.mime === 'application/pdf') {
-                      return (
-                        <iframe
-                          key={f.n} src={src} title={f.name || `주보 ${f.n + 1}`}
-                          style={{ width: '100%', height: isMobile ? 480 : 720, borderRadius: 8, border: '1px solid #FED7AA', background: '#fff' }}
-                        />
-                      );
-                    }
+          {/* 주보 이미지 — 토글 없이 곧바로 표시. 클릭하면 라이트박스로 확대. */}
+          {bulletin?.bulletinIdx && (
+            bulletinFilesLoading ? (
+              <div style={{ padding: '0.85rem 1rem', borderRadius: 12, background: '#F9FAFB', border: '1px dashed var(--color-gray)', fontSize: '0.88rem', color: 'var(--color-ink-2)' }}>주보를 불러오는 중…</div>
+            ) : bulletinFilesError ? (
+              <div style={{ padding: '0.85rem 1rem', borderRadius: 12, background: '#FEF2F2', border: '1px solid #FCA5A5', fontSize: '0.88rem', color: '#B91C1C' }}>{bulletinFilesError}</div>
+            ) : bulletinFiles.length === 0 ? null : (
+              <div style={{ display: 'grid', gap: '0.6rem' }}>
+                {bulletinFiles.map((f, imgIdx) => {
+                  const src = `/api/bulletin-file?idx=${encodeURIComponent(bulletin.bulletinIdx!)}&n=${f.n}`;
+                  if (f.mime.startsWith('image/')) {
                     return (
-                      <a key={f.n} href={src} target="_blank" rel="noopener noreferrer"
-                        style={{ padding: '0.5rem 0.7rem', borderRadius: 8, border: '1px solid #FED7AA', background: '#fff', color: '#9A3412', fontSize: '0.85rem', fontWeight: 700, textDecoration: 'none' }}>
-                        📎 {f.name || `첨부 ${f.n + 1}`} 다운로드
-                      </a>
+                      <button
+                        key={f.n} type="button" onClick={() => setLightboxIndex(imgIdx)}
+                        title="클릭하여 크게 보기"
+                        style={{ position: 'relative', padding: 0, border: '1px solid var(--color-surface-border)', borderRadius: 12, background: '#fff', cursor: 'zoom-in', display: 'block', width: '100%' }}
+                      >
+                        <img
+                          src={src} alt={f.name || `주보 ${f.n + 1}`}
+                          style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 12 }}
+                        />
+                        <span style={{ position: 'absolute', right: 8, bottom: 8, padding: '0.25rem 0.55rem', borderRadius: 999, background: 'rgba(17,24,39,0.72)', color: '#fff', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                          🔍 크게 보기
+                        </span>
+                      </button>
                     );
-                  })}
-                </div>
-              )}
-            </div>
+                  }
+                  if (f.mime === 'application/pdf') {
+                    return (
+                      <iframe
+                        key={f.n} src={src} title={f.name || `주보 ${f.n + 1}`}
+                        style={{ width: '100%', height: isMobile ? 480 : 720, borderRadius: 12, border: '1px solid var(--color-surface-border)', background: '#fff' }}
+                      />
+                    );
+                  }
+                  return (
+                    <a key={f.n} href={src} target="_blank" rel="noopener noreferrer"
+                      style={{ padding: '0.5rem 0.7rem', borderRadius: 8, border: '1px solid var(--color-surface-border)', background: '#fff', color: 'var(--color-ink)', fontSize: '0.85rem', fontWeight: 700, textDecoration: 'none' }}>
+                      📎 {f.name || `첨부 ${f.n + 1}`} 다운로드
+                    </a>
+                  );
+                })}
+              </div>
+            )
           )}
 
           {bulletinLookupLoading && (
@@ -295,18 +263,6 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
           )}
           {!bulletinLookupLoading && !bulletin?.found && (
             <div style={{ padding: '0.85rem 1rem', borderRadius: 12, background: '#F9FAFB', border: '1px dashed var(--color-gray)', fontSize: '0.88rem', color: 'var(--color-ink-2)' }}>{bulletinLookupError || '이 주일의 주보가 아직 등록되지 않았습니다.'}</div>
-          )}
-          {!bulletinLookupLoading && bulletin?.found && !bulletin.reference && (
-            <div style={{ padding: '0.85rem 1rem', borderRadius: 12, background: '#FEF3C7', border: '1px solid #FBBF24', fontSize: '0.85rem', color: '#92400E' }}>주보에서 성경봉독 구절을 찾을 수 없습니다. 주보보기 버튼으로 직접 확인해 주세요.</div>
-          )}
-
-          {/* 말씀 본문 — design.md §2.3 Bible passage rule 준수 (BiblePassageCard) */}
-          {bulletin?.found && (bulletin.bibleText || bulletin.bibleTextEn) && bulletin.reference && (
-            <BiblePassageCard
-              reference={bulletin.reference}
-              koText={bulletin.bibleText || null}
-              enText={bulletin.bibleTextEn || null}
-            />
           )}
         </section>
       </main>
