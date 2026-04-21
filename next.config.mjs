@@ -12,10 +12,17 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // pdf-parse v2 (pdf.js worker 포함)은 Next 번들러가 변환하면 worker 파일 경로가 깨져
-  // Vercel serverless 함수에서 require 시 초기화 실패 → 500. 외부 패키지로 표시하면
-  // node_modules 상태 그대로 함수에 번들되어 해결.
-  serverExternalPackages: ['pdf-parse'],
+  // pdf-parse v2 (pdfjs-dist v5 기반)는 DOMMatrix 등 브라우저 전역이 필요해 lib/pdf.ts 에서
+  // @napi-rs/canvas 로 polyfill 주입. 추가로 Next 번들러의 파일 추적이 pdf.js worker/.mjs
+  // 동적 참조를 놓치므로 outputFileTracingIncludes 로 함수에 강제 포함.
+  serverExternalPackages: ['pdf-parse', 'pdfjs-dist', '@napi-rs/canvas'],
+  outputFileTracingIncludes: {
+    '/api/**/*': [
+      './node_modules/pdf-parse/**/*',
+      './node_modules/pdfjs-dist/**/*',
+      './node_modules/@napi-rs/canvas/**/*',
+    ],
+  },
 };
 
 export default nextConfig;
