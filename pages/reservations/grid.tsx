@@ -587,19 +587,20 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                 <label style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--color-ink)' }}>
                   예약 설명 <span style={{ color: '#DC2626' }}>*</span>
                 </label>
-                <textarea
+                <input
+                  type="text"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="예: 청년부 주중모임, 3구역 구역예배, 새가족 환영식 등"
-                  rows={isMobile ? 3 : 4}
+                  placeholder="예: 청년부 주중모임, 3구역 구역예배"
+                  maxLength={80}
                   style={{
                     width: '100%',
-                    padding: '0.65rem 0.85rem',
+                    padding: '0.7rem 0.85rem',
+                    minHeight: 44,
                     borderRadius: 10,
                     border: shakeDesc ? '2px solid #DC2626' : '1px solid var(--color-gray)',
-                    fontSize: '0.92rem',
+                    fontSize: '0.95rem',
                     fontFamily: 'inherit',
-                    resize: 'vertical',
                     background: '#fff',
                     boxSizing: 'border-box',
                     animation: shakeDesc ? 'kcisShake 0.55s cubic-bezier(0.36,0.07,0.19,0.97) both' : undefined,
