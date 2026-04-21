@@ -1,9 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { lookupPassage, formatVerses } from '../../lib/bible';
 
-// pdf-parse v2: new PDFParse({ data: buffer }).getText()
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { PDFParse } = require('pdf-parse') as { PDFParse: new (opts: { data: Buffer }) => { getText: () => Promise<{ text: string }> } };
+import { PDFParse } from '../../lib/pdf';
 
 /**
  * 주일(YYYY-MM-DD)에 해당하는 주보 게시글을 찾아

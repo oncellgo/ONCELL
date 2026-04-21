@@ -1,8 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { kvGet, kvSet } from '../../lib/db';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { PDFParse } = require('pdf-parse') as { PDFParse: new (opts: { data: Buffer }) => { getText: () => Promise<{ text: string }> } };
+import { PDFParse } from '../../lib/pdf';
 
 /**
  * 이번달 교회 목회일정 추출.

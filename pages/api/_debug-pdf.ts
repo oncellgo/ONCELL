@@ -8,14 +8,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const step = typeof req.query.step === 'string' ? req.query.step : '0';
   const log: Array<{ name: string; ok: boolean; note?: string }> = [];
 
-  // Step 1: pdf-parse 모듈 로드
+  // Step 1: pdf-parse 모듈 로드 (lib/pdf 경유 — DOMMatrix polyfill 포함)
   let PDFParse: any = null;
   try {
-    const mod = require('pdf-parse');
+    const mod = require('../../lib/pdf');
     PDFParse = mod.PDFParse;
-    log.push({ name: 'require(pdf-parse)', ok: true, note: `PDFParse=${typeof PDFParse}` });
+    log.push({ name: 'require(lib/pdf)', ok: true, note: `PDFParse=${typeof PDFParse}, DOMMatrix=${typeof (globalThis as any).DOMMatrix}` });
   } catch (e: any) {
-    log.push({ name: 'require(pdf-parse)', ok: false, note: `${e?.message}\n${e?.stack?.split('\n').slice(0, 5).join('\n')}` });
+    log.push({ name: 'require(lib/pdf)', ok: false, note: `${e?.message}\n${e?.stack?.split('\n').slice(0, 5).join('\n')}` });
     return res.status(200).json({ ok: false, log, node: process.version });
   }
 
