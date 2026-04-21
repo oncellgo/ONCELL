@@ -97,14 +97,24 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
   const [meetingShake, setMeetingShake] = useState(false);
   const [timeShake, setTimeShake] = useState(false);
   const [venueShake, setVenueShake] = useState(false);
-  const [titleShake, setTitleShake] = useState(false);
   const [confirmShake, setConfirmShake] = useState(false);
   const shake = (setter: (v: boolean) => void) => { setter(true); setTimeout(() => setter(false), 650); };
 
   // 예약 제출
-  const [resvTitle, setResvTitle] = useState('');
   const [resvSubmitting, setResvSubmitting] = useState(false);
   const [resvError, setResvError] = useState<string | null>(null);
+
+  // 첫 방문 onboarding (localStorage `kcis-reservation-tour-v1`이 없으면 보여줌)
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  useEffect(() => {
+    try {
+      if (!window.localStorage.getItem('kcis-reservation-tour-v1')) setShowOnboarding(true);
+    } catch {}
+  }, []);
+  const dismissOnboarding = () => {
+    setShowOnboarding(false);
+    try { window.localStorage.setItem('kcis-reservation-tour-v1', '1'); } catch {}
+  };
 
   // perUser 한도
   type MyReservation = {
@@ -112,6 +122,7 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
     seriesId: string;
     occurrenceDate?: string;
     title: string;
+    description?: string;
     startAt: string;
     endAt: string;
     location?: string;
@@ -244,7 +255,7 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
           const colon = id.indexOf(':');
           const seriesId = colon > 0 ? id.slice(0, colon) : id;
           const occurrenceDate = colon > 0 ? id.slice(colon + 1) : undefined;
-          return { id, seriesId, occurrenceDate, title: r.title, startAt: r.startAt, endAt: r.endAt, location: r.location, venueId: r.venueId } as MyReservation;
+          return { id, seriesId, occurrenceDate, title: r.title, description: r.description, startAt: r.startAt, endAt: r.endAt, location: r.location, venueId: r.venueId } as MyReservation;
         })
         .sort((a, b) => a.startAt.localeCompare(b.startAt));
     } catch { return []; }
@@ -327,7 +338,6 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
     if (!effName?.trim() || !effContact?.trim()) { shake(setProfileShake); ok = false; }
     if (!meetingDetail.trim()) { shake(setMeetingShake); ok = false; }
     if (pickerSelected.size === 0) { shake(setVenueShake); ok = false; }
-    if (!resvTitle.trim()) { shake(setTitleShake); ok = false; }
     if (!allConfirmed) { shake(setConfirmShake); ok = false; }
     if (!ok) return;
 
@@ -349,6 +359,8 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
       const selectedVenues = venues.filter((v) => pickerSelected.has(v.id));
       const detail = meetingDetail.trim();
       const description = `[${meetingKind}]${detail ? ' ' + detail : ''}`;
+      // 제목은 '모임구분 상세' 자동 생성 (예: "부서 청년부" / "구역 3구역")
+      const autoTitle = detail ? `${meetingKind} ${detail}` : meetingKind;
 
       for (const v of selectedVenues) {
         const res = await fetch('/api/events', {
@@ -357,7 +369,7 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
           body: JSON.stringify({
             communityId: 'kcis',
             profileId: effectiveProfileId,
-            title: resvTitle.trim(),
+            title: autoTitle,
             description,
             startAt, endAt,
             venueId: v.id,
@@ -418,6 +430,77 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
     return `${first} 외 ${list.length - 1}곳`;
   })();
 
+  // 타임라인 히트맵: pickerDate의 availableStart~End 구간에서 슬롯별 '충돌 장소 수'
+  // (이벤트 + 예약 + 블럭 + 반복 블럭 그룹 모두 반영)
+  const timelineCells = useMemo(() => {
+    const startAbs = toMinLocal(availableStart);
+    const endAbs = toMinLocal(availableEnd);
+    const cells: Array<{ min: number; busyCount: number; isEvent: boolean; isSelected: boolean }> = [];
+    const [py, pm, pd] = pickerDate.split('-').map(Number);
+    const baseTs = (py && pm && pd) ? new Date(py, pm - 1, pd).getTime() : 0;
+    const pickerStartAbs = pickerStartHour * 60 + pickerStartMin;
+    const pickerEndAbs = pickerStartAbs + Math.round(pickerDurationHours * 60);
+    const groupSlotMap = baseTs ? computeBlockedSlotsForDate(groups, pickerDate) : new Map<string, Set<number>>();
+    for (let mm = startAbs; mm < endAbs; mm += slotMin) {
+      const slotStart = baseTs + mm * 60 * 1000;
+      const slotEnd = slotStart + slotMin * 60 * 1000;
+      const busyVenues = new Set<string>();
+      let hasEvent = false;
+      for (const b of blocks) {
+        const bs = new Date(b.startAt).getTime();
+        const be = b.endAt ? new Date(b.endAt).getTime() : Number.POSITIVE_INFINITY;
+        if (bs < slotEnd && be > slotStart) {
+          busyVenues.add(b.venueId);
+          if (b.kind === 'event') hasEvent = true;
+        }
+      }
+      for (const [vid, slotSet] of groupSlotMap.entries()) {
+        if (slotSet.has(mm)) busyVenues.add(vid);
+      }
+      const isSelected = mm >= pickerStartAbs && mm < pickerEndAbs;
+      cells.push({ min: mm, busyCount: busyVenues.size, isEvent: hasEvent, isSelected });
+    }
+    return cells;
+  }, [blocks, groups, pickerDate, pickerStartHour, pickerStartMin, pickerDurationHours, slotMin, availableStart, availableEnd]);
+
+  // 각 장소의 '충돌 사유' — 이 시간에 어떤 이벤트/예약이 있는지 표시용
+  const conflictReasonByVenue = useMemo(() => {
+    const out = new Map<string, string>();
+    const [py, pm, pd] = pickerDate.split('-').map(Number);
+    if (!py || !pm || !pd) return out;
+    const pickerStartTs = new Date(py, pm - 1, pd, pickerStartHour, pickerStartMin).getTime();
+    const pickerEndTs = pickerStartTs + Math.round(pickerDurationHours * 60) * 60 * 1000;
+    for (const b of blocks) {
+      const bs = new Date(b.startAt).getTime();
+      const be = b.endAt ? new Date(b.endAt).getTime() : Number.POSITIVE_INFINITY;
+      if (bs < pickerEndTs && be > pickerStartTs) {
+        const existing = out.get(b.venueId);
+        const label = b.reason || (b.kind === 'event' ? '교회일정' : b.kind === 'reservation' ? '예약됨' : '블럭');
+        if (!existing) out.set(b.venueId, label);
+      }
+    }
+    return out;
+  }, [blocks, pickerDate, pickerStartHour, pickerStartMin, pickerDurationHours]);
+
+  // "같은 모임으로" 복사: 기존 예약에서 meetingKind/detail/venue 끌어와 현재 입력 복원
+  const copyFromReservation = (r: { description?: string; location?: string; venueId?: string; startAt: string }) => {
+    // description 파싱: "[부서] 청년부" 같은 패턴
+    const desc = r.description || '';
+    const km = desc.match(/^\[(부서|구역|기타)\]\s*(.*)$/);
+    if (km) {
+      setMeetingKind(km[1] as MeetingKind);
+      setMeetingDetail(km[2].trim());
+    }
+    // venue 매칭 (venueId 우선, 없으면 location 텍스트로 fallback)
+    const matchVenue = (() => {
+      if (r.venueId) return venues.find((v) => v.id === r.venueId) || null;
+      if (r.location) return venues.find((v) => r.location!.includes(`(${v.code})`)) || null;
+      return null;
+    })();
+    if (matchVenue) setPickerSelected(new Set([matchVenue.id]));
+    setShowLimitModal(false);
+  };
+
   // 모바일 최적화 공통 상수
   const P = isMobile ? '0.9rem 0.85rem' : '1rem 1.1rem';
   const GAP = isMobile ? '0.75rem' : '1rem';
@@ -443,8 +526,41 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
 
       <style>{SHAKE_CSS}</style>
 
-      <main style={{ maxWidth: 720, margin: '0 auto', padding: isMobile ? '0.9rem 0.7rem 5rem' : '1.4rem 1rem 5rem', display: 'grid', gap: GAP }}>
+      <main style={{ maxWidth: 720, margin: '0 auto', padding: isMobile ? '0.9rem 0.7rem 6rem' : '1.4rem 1rem 5rem', display: 'grid', gap: GAP }}>
         <h1 style={{ margin: 0, fontSize: isMobile ? '1.15rem' : '1.3rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>📍 장소 예약</h1>
+
+        {/* 첫 방문 가이드 (한 번만) */}
+        {showOnboarding && (
+          <section style={{
+            padding: isMobile ? '0.85rem 0.9rem' : '1rem 1.1rem',
+            borderRadius: 14,
+            background: 'linear-gradient(135deg, #ECFDF5 0%, #F0FDF4 100%)',
+            border: '1px solid #A7F3D0',
+            display: 'grid', gap: '0.5rem',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span style={{ fontSize: '1.05rem' }}>💡</span>
+              <span style={{ fontSize: FS_LABEL, fontWeight: 800, color: '#065F46' }}>처음이신가요?</span>
+              <button
+                type="button"
+                onClick={dismissOnboarding}
+                aria-label="가이드 닫기"
+                style={{
+                  marginLeft: 'auto',
+                  background: 'transparent', border: 'none',
+                  fontSize: '1.1rem', color: '#065F46', cursor: 'pointer',
+                  minWidth: 36, minHeight: 36,
+                }}
+              >✕</button>
+            </div>
+            <ol style={{ margin: 0, paddingLeft: '1.3rem', fontSize: isMobile ? '0.84rem' : '0.88rem', color: '#047857', lineHeight: 1.7 }}>
+              <li><strong>예약자 정보</strong> 확인 (이름·연락처)</li>
+              <li><strong>모임구분</strong> 선택 (부서 / 구역 / 기타) + 상세</li>
+              <li><strong>시간·장소</strong> 선택 — 충돌 사전 확인</li>
+              <li><strong>확인사항</strong> 체크 → <strong>예약하기</strong></li>
+            </ol>
+          </section>
+        )}
 
         {/* 1. 예약자 정보 */}
         <section
@@ -670,49 +786,68 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
           ))}
         </section>
 
-        {/* 6. 제목 + 예약하기 */}
-        <section style={{ display: 'grid', gap: '0.6rem' }}>
-          <input
-            type="text"
-            value={resvTitle}
-            onChange={(e) => setResvTitle(e.target.value)}
-            placeholder="예약 제목 (예: 3월 청년부 모임)"
-            style={{
-              width: '100%',
-              padding: '0.75rem 0.9rem', minHeight: MIN_H + 4,
-              borderRadius: 12,
-              border: titleShake ? '2px solid #DC2626' : '1px solid var(--color-gray)',
-              fontSize: isMobile ? '0.95rem' : '1rem',
-              fontWeight: 700,
-              background: '#fff',
-              boxSizing: 'border-box',
-              animation: titleShake ? 'kcisShake 0.55s cubic-bezier(0.36,0.07,0.19,0.97) both' : undefined,
-              transition: 'border-color 0.2s ease',
-            }}
-          />
+        {/* 6. 예약하기 (데스크톱은 인라인 / 모바일은 스티키 바 추가) */}
+        {!isMobile && (
+          <section style={{ display: 'grid', gap: '0.5rem' }}>
+            <button
+              type="button"
+              onClick={submitReservations}
+              disabled={resvSubmitting}
+              style={{
+                width: '100%',
+                padding: '0.95rem 1rem', minHeight: 52,
+                borderRadius: 14,
+                border: 'none',
+                background: resvSubmitting ? '#9CA3AF' : 'var(--color-primary)',
+                color: '#fff',
+                fontWeight: 800,
+                fontSize: '1.05rem',
+                cursor: resvSubmitting ? 'not-allowed' : 'pointer',
+                boxShadow: '0 4px 12px rgba(32,205,141,0.25)',
+                letterSpacing: '0.02em',
+              }}
+            >
+              {resvSubmitting ? '저장 중...' : '✓ 예약하기'}
+            </button>
+            {resvError && <p style={{ margin: 0, fontSize: '0.85rem', color: '#DC2626', fontWeight: 700, textAlign: 'center' }}>{resvError}</p>}
+          </section>
+        )}
+      </main>
+
+      {/* 모바일 스티키 예약하기 바 (스크롤 중에도 항상 하단 고정) */}
+      {isMobile && (
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0,
+          padding: '0.65rem 0.7rem calc(0.65rem + env(safe-area-inset-bottom))',
+          background: 'rgba(255,255,255,0.96)',
+          borderTop: '1px solid var(--color-surface-border)',
+          boxShadow: '0 -4px 14px rgba(0,0,0,0.08)',
+          zIndex: 60,
+          backdropFilter: 'saturate(150%) blur(8px)',
+        }}>
+          {resvError && <p style={{ margin: '0 0 0.4rem', fontSize: '0.82rem', color: '#DC2626', fontWeight: 700, textAlign: 'center' }}>{resvError}</p>}
           <button
             type="button"
             onClick={submitReservations}
             disabled={resvSubmitting}
             style={{
               width: '100%',
-              padding: '0.95rem 1rem', minHeight: 52,
+              padding: '0.85rem 1rem', minHeight: 52,
               borderRadius: 14,
               border: 'none',
               background: resvSubmitting ? '#9CA3AF' : 'var(--color-primary)',
               color: '#fff',
               fontWeight: 800,
-              fontSize: isMobile ? '1.02rem' : '1.05rem',
+              fontSize: '1.02rem',
               cursor: resvSubmitting ? 'not-allowed' : 'pointer',
-              boxShadow: '0 4px 12px rgba(32,205,141,0.25)',
+              boxShadow: '0 4px 12px rgba(32,205,141,0.28)',
               letterSpacing: '0.02em',
             }}
           >
             {resvSubmitting ? '저장 중...' : '✓ 예약하기'}
           </button>
-          {resvError && <p style={{ margin: 0, fontSize: '0.85rem', color: '#DC2626', fontWeight: 700, textAlign: 'center' }}>{resvError}</p>}
-        </section>
-      </main>
+        </div>
+      )}
 
       {/* 시간 선택 모달 */}
       {timePickerOpen && (
@@ -755,6 +890,42 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
                   color: pickerDateDow === 0 ? '#DC2626' : pickerDateDow === 6 ? '#2563EB' : '#374151',
                   fontSize: '0.82rem', fontWeight: 800,
                 }}>{dateDowLabel}요일</span>
+              </div>
+
+              {/* 타임라인 히트맵 — 이 날짜의 시간대별 혼잡도 (선택 전 충돌 시각 확인) */}
+              <div style={{ display: 'grid', gap: '0.35rem' }}>
+                <label style={{ fontSize: '0.84rem', fontWeight: 800, color: '#3F6212', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.3rem' }}>
+                  <span>그날의 혼잡도</span>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-ink-2)' }}>민트=선택 / 회색=사용중 / 빨강=교회일정</span>
+                </label>
+                <div style={{ display: 'flex', gap: '1px', height: 32, borderRadius: 6, overflow: 'hidden', background: '#F3F4F6' }}>
+                  {timelineCells.map((c) => {
+                    const heavy = Math.max(1, Math.floor(venues.length * 0.6));
+                    const medium = Math.max(1, Math.floor(venues.length * 0.3));
+                    const bg = c.isSelected
+                      ? '#20CD8D'
+                      : c.isEvent
+                        ? '#FCA5A5'
+                        : c.busyCount === 0
+                          ? '#F7FEE7'
+                          : c.busyCount >= heavy
+                            ? '#6B7280'
+                            : c.busyCount >= medium
+                              ? '#9CA3AF'
+                              : '#D1D5DB';
+                    return (
+                      <div
+                        key={c.min}
+                        title={`${String(Math.floor(c.min / 60)).padStart(2, '0')}:${String(c.min % 60).padStart(2, '0')} — ${c.isEvent ? '교회일정 포함' : c.busyCount === 0 ? '예약 0건' : `${c.busyCount}곳 사용중`}`}
+                        style={{ flex: 1, background: bg, minWidth: 3 }}
+                      />
+                    );
+                  })}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--color-ink-2)', fontFamily: 'monospace' }}>
+                  <span>{availableStart}</span>
+                  <span>{availableEnd}</span>
+                </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
@@ -877,33 +1048,71 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
                       />
                       {floor}
                     </label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-                      {list.map((v) => {
-                        const on = pickerSelected.has(v.id);
-                        const conflict = conflictedPickerVenueIds.has(v.id);
-                        return (
-                          <label
-                            key={v.id}
-                            title={conflict ? '이 시간에 기존 예약/블럭이 있어 선택 불가' : ''}
-                            style={{
-                              display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                              padding: '0.5rem 0.7rem', minHeight: 40,
-                              borderRadius: 10,
-                              background: conflict ? '#F3F4F6' : on ? '#ECFCCB' : '#fff',
-                              border: conflict ? '1px dashed #9CA3AF' : on ? '1.5px solid #65A30D' : '1px solid var(--color-surface-border)',
-                              cursor: conflict ? 'not-allowed' : 'pointer',
-                              fontSize: '0.86rem', whiteSpace: 'nowrap',
-                              opacity: conflict ? 0.5 : 1,
-                              textDecoration: conflict ? 'line-through' : 'none',
-                            }}
-                          >
-                            <input type="checkbox" checked={on} disabled={conflict} onChange={() => togglePickerVenue(v.id)} style={{ width: 16, height: 16, accentColor: '#65A30D' }} />
-                            <span style={{ color: 'var(--color-ink)', fontWeight: on ? 800 : 600 }}>{v.name}</span>
-                            <span style={{ color: 'var(--color-ink-2)', fontFamily: 'monospace', fontSize: '0.72rem' }}>({v.code})</span>
-                          </label>
-                        );
-                      })}
-                    </div>
+                    {(() => {
+                      const available = list.filter((v) => !conflictedPickerVenueIds.has(v.id));
+                      const occupied = list.filter((v) => conflictedPickerVenueIds.has(v.id));
+                      return (
+                        <>
+                          {available.length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                              {available.map((v) => {
+                                const on = pickerSelected.has(v.id);
+                                return (
+                                  <label
+                                    key={v.id}
+                                    style={{
+                                      display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                                      padding: '0.5rem 0.7rem', minHeight: 40,
+                                      borderRadius: 10,
+                                      background: on ? '#ECFCCB' : '#fff',
+                                      border: on ? '1.5px solid #65A30D' : '1px solid var(--color-surface-border)',
+                                      cursor: 'pointer',
+                                      fontSize: '0.86rem', whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    <input type="checkbox" checked={on} onChange={() => togglePickerVenue(v.id)} style={{ width: 16, height: 16, accentColor: '#65A30D' }} />
+                                    <span style={{ color: 'var(--color-ink)', fontWeight: on ? 800 : 600 }}>{v.name}</span>
+                                    <span style={{ color: 'var(--color-ink-2)', fontFamily: 'monospace', fontSize: '0.72rem' }}>({v.code})</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          )}
+                          {occupied.length > 0 && (
+                            <details style={{ marginTop: available.length > 0 ? '0.3rem' : 0 }}>
+                              <summary style={{ cursor: 'pointer', fontSize: '0.78rem', color: '#9CA3AF', fontWeight: 700, padding: '0.3rem 0.2rem', listStyle: 'revert' }}>
+                                이 시간 사용중 ({occupied.length})
+                              </summary>
+                              <div style={{ display: 'grid', gap: '0.3rem', marginTop: '0.4rem' }}>
+                                {occupied.map((v) => {
+                                  const reason = conflictReasonByVenue.get(v.id) || '사용중';
+                                  return (
+                                    <div
+                                      key={v.id}
+                                      style={{
+                                        display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                        padding: '0.4rem 0.65rem',
+                                        borderRadius: 8,
+                                        background: '#F3F4F6',
+                                        border: '1px dashed #9CA3AF',
+                                        fontSize: '0.8rem',
+                                        opacity: 0.7,
+                                      }}
+                                    >
+                                      <span style={{ color: '#6B7280', fontWeight: 700, textDecoration: 'line-through' }}>{v.name}</span>
+                                      <span style={{ color: '#9CA3AF', fontFamily: 'monospace', fontSize: '0.68rem' }}>({v.code})</span>
+                                      <span style={{ marginLeft: 'auto', color: '#6B7280', fontSize: '0.74rem', fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
+                                        {reason}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </details>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 );
               })}
@@ -983,12 +1192,17 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
                             <button type="button" onClick={cancelEditMine} style={{ padding: '0.55rem 0.9rem', minHeight: MIN_H, borderRadius: 10, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}>취소</button>
                           </div>
                         ) : (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '0.92rem', color: 'var(--color-ink)', fontWeight: 700 }}>{r.title}</span>
-                            {r.location && <span style={{ fontSize: '0.8rem', color: 'var(--color-ink-2)' }}>· 📍 {r.location}</span>}
-                            <div style={{ marginLeft: 'auto', display: 'inline-flex', gap: '0.35rem' }}>
-                              <button type="button" onClick={() => startEditMine(r)} style={{ padding: '0.45rem 0.8rem', minHeight: 40, borderRadius: 8, border: '1px solid #65A30D', background: '#fff', color: '#3F6212', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}>수정</button>
-                              <button type="button" disabled={limitActionBusy} onClick={() => handleDeleteMine(r)} style={{ padding: '0.45rem 0.8rem', minHeight: 40, borderRadius: 8, border: '1px solid #DC2626', background: '#fff', color: '#DC2626', fontWeight: 800, fontSize: '0.8rem', cursor: limitActionBusy ? 'not-allowed' : 'pointer' }}>삭제</button>
+                          <div style={{ display: 'grid', gap: '0.4rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '0.92rem', color: 'var(--color-ink)', fontWeight: 700 }}>{r.title}</span>
+                              {r.location && <span style={{ fontSize: '0.8rem', color: 'var(--color-ink-2)' }}>· 📍 {r.location}</span>}
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                              <button type="button" onClick={() => copyFromReservation(r)} title="이 예약과 같은 모임구분·장소로 새 예약 만들기" style={{ padding: '0.45rem 0.8rem', minHeight: 40, borderRadius: 8, border: '1px solid #20CD8D', background: '#ECFDF5', color: '#065F46', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}>🔄 같은 모임으로</button>
+                              <div style={{ marginLeft: 'auto', display: 'inline-flex', gap: '0.35rem' }}>
+                                <button type="button" onClick={() => startEditMine(r)} style={{ padding: '0.45rem 0.8rem', minHeight: 40, borderRadius: 8, border: '1px solid #65A30D', background: '#fff', color: '#3F6212', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}>수정</button>
+                                <button type="button" disabled={limitActionBusy} onClick={() => handleDeleteMine(r)} style={{ padding: '0.45rem 0.8rem', minHeight: 40, borderRadius: 8, border: '1px solid #DC2626', background: '#fff', color: '#DC2626', fontWeight: 800, fontSize: '0.8rem', cursor: limitActionBusy ? 'not-allowed' : 'pointer' }}>삭제</button>
+                              </div>
                             </div>
                           </div>
                         )}
