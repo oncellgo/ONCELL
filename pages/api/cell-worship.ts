@@ -118,7 +118,8 @@ type BulletinItem = { idx: string; title: string; dateKey: string };
 type ListPayload = { items: ListItem[]; bulletins: BulletinItem[]; year: number };
 
 // Supabase KV 기반 영속 캐시 — 람다 콜드스타트에도 재사용.
-const listCache = makeKvCache<ListPayload>('cell_worship_list_cache_v1', LIST_TTL);
+// v2: 제목 파싱에 M/D 슬래시 형식 추가 — 기존 v1 캐시는 이 형식을 놓쳤음
+const listCache = makeKvCache<ListPayload>('cell_worship_list_cache_v2', LIST_TTL);
 const detailCache = makeKvCache<any>('cell_worship_detail_cache_v1', DETAIL_TTL);
 
 const ORDINAL_MAP: Record<string, number> = { '첫': 1, '둘': 2, '셋': 3, '넷': 4, '다섯': 5 };
@@ -164,15 +165,40 @@ const fetchList = async (year: number): Promise<{ items: ListItem[]; bulletins: 
     const rawTitle = decodeEntities(m[2]).trim();
     seen.add(idx);
 
-    // 1) 구역예배지 — "M월 N째 주 ... 구역예배지"
+    // 1) 구역예배지 — 두 형식 지원
+    //    A) "N월 M째 주 ... 구역예배지"  → nthSundayOf(year, month, nth) 계산
+    //    B) "M/D ... 구역예배지"          → 슬래시 날짜 그대로 사용 (주일 날짜 직접 명시)
     if (/구역예배지/.test(rawTitle)) {
-      const monthMatch = rawTitle.match(/(\d+)월/);
-      const nthMatch = rawTitle.match(/([첫둘셋넷다섯])째/);
-      if (!monthMatch || !nthMatch) continue;
-      const month = Number(monthMatch[1]);
-      const nth = ORDINAL_MAP[nthMatch[1]] || 0;
-      if (!month || !nth) continue;
-      const dateKey = nthSundayOf(year, month, nth);
+      let dateKey: string | null = null;
+      let month = 0;
+      let nth = 0;
+
+      // B) 슬래시 형식 우선 — 명시적 날짜가 가장 정확
+      const slashMatch = rawTitle.match(/(\d{1,2})\s*\/\s*(\d{1,2})/);
+      if (slashMatch) {
+        const mm = Number(slashMatch[1]);
+        const dd = Number(slashMatch[2]);
+        if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) {
+          dateKey = `${year}-${pad(mm)}-${pad(dd)}`;
+          month = mm;
+          nth = Math.ceil(dd / 7);
+        }
+      }
+
+      // A) 레거시 "N월 M째 주" 형식
+      if (!dateKey) {
+        const monthMatch = rawTitle.match(/(\d+)월/);
+        const nthMatch = rawTitle.match(/([첫둘셋넷다섯])째/);
+        if (monthMatch && nthMatch) {
+          const mm = Number(monthMatch[1]);
+          const nn = ORDINAL_MAP[nthMatch[1]] || 0;
+          if (mm && nn) {
+            const dk = nthSundayOf(year, mm, nn);
+            if (dk) { dateKey = dk; month = mm; nth = nn; }
+          }
+        }
+      }
+
       if (!dateKey) continue;
       items.push({ idx, title: rawTitle, dateKey, month, nth });
       continue;
