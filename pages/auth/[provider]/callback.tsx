@@ -55,22 +55,13 @@ const CallbackPage = () => {
           window.localStorage.setItem('kcisProfileId', profileId);
         } catch {}
 
-        // 로그인 페이지 사전 동의 플래그(있으면 신규 가입 시 approval 에 바로 반영).
-        // 한 번 읽고 바로 제거 — 다음 로그인 시에도 모달을 강제하려고.
-        let pendingPrivacyConsent = false;
-        try {
-          pendingPrivacyConsent = window.sessionStorage.getItem('kcisPrivacyConsented') === '1';
-          window.sessionStorage.removeItem('kcisPrivacyConsented');
-          window.sessionStorage.removeItem('kcisPrivacyConsentedAt');
-        } catch {}
-
         let approvalStatus: 'approved' | 'pending' | 'rejected' | 'blocked' = 'approved';
         let missingFields: string[] = [];
         try {
           const loginRes = await fetch('/api/auth/record-login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ profileId, provider: providerName, nickname, email, privacyConsent: pendingPrivacyConsent || undefined }),
+            body: JSON.stringify({ profileId, provider: providerName, nickname, email }),
           });
           const loginData = await loginRes.json().catch(() => ({}));
           if (!loginRes.ok && loginData?.error === 'blocked') {
