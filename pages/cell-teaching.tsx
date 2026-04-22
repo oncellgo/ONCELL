@@ -161,6 +161,8 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: isMobile ? '0.3rem' : '0.4rem' }}>
             {recentSundays.map((key) => {
               const d = new Date(key);
+              const end = new Date(d); end.setDate(d.getDate() + 6);
+              const rangeLabel = `${d.getMonth() + 1}/${d.getDate()}-${end.getMonth() + 1}/${end.getDate()}`;
               const isSelected = selectedKey === key;
               const isToday = key === todayKey;
               const weekOrd = Math.ceil(d.getDate() / 7);
@@ -168,7 +170,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
               return (
                 <button
                   key={key} type="button" onClick={() => setSelectedKey(key)}
-                  aria-label={`${d.getMonth() + 1}월 ${d.getDate()}일 ${weekLabel}`}
+                  aria-label={`${rangeLabel} ${weekLabel}`}
                   aria-pressed={isSelected}
                   style={{
                     padding: isMobile ? '0.45rem 0.2rem' : '0.4rem 0.3rem',
@@ -183,8 +185,8 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
                     minHeight: isMobile ? 56 : 52, minWidth: 0,
                   }}
                 >
-                  <span style={{ fontSize: isMobile ? '0.78rem' : '0.84rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1 }}>
-                    {d.getMonth() + 1}/{d.getDate()}
+                  <span style={{ fontSize: isMobile ? '0.72rem' : '0.8rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1, whiteSpace: 'nowrap' }}>
+                    {rangeLabel}
                   </span>
                   <span style={{ fontSize: isMobile ? '0.68rem' : '0.72rem', fontWeight: 700, color: '#DC2626', lineHeight: 1 }}>{weekLabel}</span>
                   {isToday && (
