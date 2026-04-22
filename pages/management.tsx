@@ -1196,7 +1196,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                     const isAdmin = Boolean(community?.adminProfileId === profileId);
                     return (
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>일정관리</h2>
+                        <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>일정확인 <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-ink-2)' }}>(일자별)</span></h2>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
                           <strong style={{ color: 'var(--color-ink)', fontSize: '0.9rem' }}>{panelKey}{panelKey === todayKey ? ' (오늘)' : ''}</strong>
                           <button
