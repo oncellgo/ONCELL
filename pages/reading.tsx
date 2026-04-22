@@ -220,11 +220,6 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                         {DAY_LABELS[dow]}
                       </span>
                     </div>
-                    {planLabel && (
-                      <span style={{ fontSize: isMobile ? '0.55rem' : '0.62rem', fontWeight: 600, color: isDayCompleted ? '#F7FEE7' : '#3F6212', lineHeight: 1.2, padding: '0 2px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
-                        {planLabel}
-                      </span>
-                    )}
                     {isDayCompleted ? (
                       <span style={{ fontSize: isMobile ? '0.56rem' : '0.62rem', fontWeight: 800, color: '#20CD8D', background: '#fff', padding: '0.05rem 0.35rem', borderRadius: 999, justifySelf: 'center' }}>✓ 완료</span>
                     ) : isToday ? (
