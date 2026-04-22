@@ -45,9 +45,11 @@ type AdminUser = {
   nickname?: string;
   realName?: string;
   email?: string;
+  contact?: string;
   provider?: string;
   communities: string[];
   registeredAt: string | null;
+  lastLoginAt: string | null;
   isCommunityAdmin: boolean;
 };
 
@@ -415,9 +417,6 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
                     )}
                     <span style={{ color: '#2D4048', fontWeight: 500 }}>{u.email || u.profileId}</span>
                   </p>
-                  <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: '#2D4048' }}>
-                    {u.provider || '-'} · 가입 {u.communities.length}개{u.registeredAt ? ` · 최근 ${new Date(u.registeredAt).toLocaleDateString('ko-KR')}` : ''}
-                  </p>
                 </div>
               ))}
               {filteredUsers.length === 0 && <p style={subtle}>사용자가 없습니다.</p>}
@@ -449,20 +448,28 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
             </select>
             <button disabled={busy || !newAdmin.trim()} onClick={addAdmin} style={{ ...btn, background: '#20CD8D', color: '#fff', minHeight: 44 }}>{t('admin.add')}</button>
           </div>
-          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: '0.35rem' }}>
+          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: '0.4rem' }}>
             {admins.map((id) => {
               const u = users.find((x) => x.profileId === id);
               const name = u?.realName || u?.nickname || '(이름 미입력)';
-              // 카카오 OAuth 가입은 email 미동의 가능 → email 없으면 식별을 위해 profileId 노출.
-              const sub = u?.email || id;
+              const idLabel = u?.email || id;
+              const contactLabel = u?.contact || '-';
+              const lastLoginLabel = u?.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString('ko-KR') : '-';
               return (
-                <li key={`pid-${id}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', padding: '0.55rem 0.75rem', border: '1px solid #E7F3EE', borderRadius: 10, background: '#F9FCFB' }}>
-                  <p style={{ margin: 0, fontWeight: 700, color: '#182527', fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
-                    <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#20CD8D', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>ID</span>
-                    <span>{name}</span>
-                    {id === profileId && <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#F59E0B', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>나</span>}
-                    <span style={{ color: '#2D4048', fontWeight: 500 }}>{sub}</span>
-                  </p>
+                <li key={`pid-${id}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', padding: '0.65rem 0.85rem', border: '1px solid #E7F3EE', borderRadius: 10, background: '#F9FCFB' }}>
+                  <div style={{ display: 'grid', gap: '0.25rem', minWidth: 0, flex: 1, fontSize: '0.85rem' }}>
+                    <p style={{ margin: 0, fontWeight: 700, color: '#182527', fontSize: '0.92rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#20CD8D', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>ID</span>
+                      <span>{name}</span>
+                      {id === profileId && <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#F59E0B', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>나</span>}
+                    </p>
+                    <p style={{ margin: 0, color: '#2D4048', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'auto 1fr', gap: isMobile ? '0.1rem' : '0.4rem', rowGap: '0.15rem' }}>
+                      <span style={{ color: '#65A30D', fontWeight: 700 }}>아이디</span><span style={{ wordBreak: 'break-all' }}>{idLabel}</span>
+                      <span style={{ color: '#65A30D', fontWeight: 700 }}>이메일</span><span style={{ wordBreak: 'break-all' }}>{u?.email || '-'}</span>
+                      <span style={{ color: '#65A30D', fontWeight: 700 }}>연락처</span><span>{contactLabel}</span>
+                      <span style={{ color: '#65A30D', fontWeight: 700 }}>최근접속</span><span>{lastLoginLabel}</span>
+                    </p>
+                  </div>
                   <button disabled={busy || id === profileId} onClick={() => removeAdmin(id, 'profileId')} style={{ ...btn, minHeight: 40, background: id === profileId ? '#e5e7eb' : '#b91c1c', color: id === profileId ? '#6b7280' : '#fff', cursor: id === profileId ? 'not-allowed' : 'pointer', flexShrink: 0 }}>{t('admin.remove')}</button>
                 </li>
               );
@@ -471,14 +478,24 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
               const isMine = myEmailLower && em.toLowerCase() === myEmailLower;
               const u = users.find((x) => (x.email || '').toLowerCase() === em.toLowerCase());
               const name = u?.realName || u?.nickname || '(가입 안 된 이메일)';
+              const idLabel = u?.profileId || '-';
+              const contactLabel = u?.contact || '-';
+              const lastLoginLabel = u?.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString('ko-KR') : '-';
               return (
-                <li key={`em-${em}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', padding: '0.55rem 0.75rem', border: isMine ? '1px solid #F59E0B' : '1px solid #BFDBFE', borderRadius: 10, background: isMine ? '#FEF3C7' : '#EFF6FF' }}>
-                  <p style={{ margin: 0, fontWeight: 700, color: '#182527', fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
-                    <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#1E40AF', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>EMAIL</span>
-                    <span>{name}</span>
-                    {isMine && <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#F59E0B', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>나</span>}
-                    <span style={{ color: '#2D4048', fontWeight: 500 }}>{em}</span>
-                  </p>
+                <li key={`em-${em}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', padding: '0.65rem 0.85rem', border: isMine ? '1px solid #F59E0B' : '1px solid #BFDBFE', borderRadius: 10, background: isMine ? '#FEF3C7' : '#EFF6FF' }}>
+                  <div style={{ display: 'grid', gap: '0.25rem', minWidth: 0, flex: 1, fontSize: '0.85rem' }}>
+                    <p style={{ margin: 0, fontWeight: 700, color: '#182527', fontSize: '0.92rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#1E40AF', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>EMAIL</span>
+                      <span>{name}</span>
+                      {isMine && <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#F59E0B', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>나</span>}
+                    </p>
+                    <p style={{ margin: 0, color: '#2D4048', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'auto 1fr', gap: isMobile ? '0.1rem' : '0.4rem', rowGap: '0.15rem' }}>
+                      <span style={{ color: '#1E40AF', fontWeight: 700 }}>아이디</span><span style={{ wordBreak: 'break-all' }}>{idLabel}</span>
+                      <span style={{ color: '#1E40AF', fontWeight: 700 }}>이메일</span><span style={{ wordBreak: 'break-all' }}>{em}</span>
+                      <span style={{ color: '#1E40AF', fontWeight: 700 }}>연락처</span><span>{contactLabel}</span>
+                      <span style={{ color: '#1E40AF', fontWeight: 700 }}>최근접속</span><span>{lastLoginLabel}</span>
+                    </p>
+                  </div>
                   <button disabled={busy} onClick={() => removeAdmin(em, 'email')} style={{ ...btn, minHeight: 40, background: '#b91c1c', color: '#fff', flexShrink: 0 }}>{t('admin.remove')}</button>
                 </li>
               );
