@@ -160,7 +160,7 @@ const CompleteSignupPage = () => {
                     <strong style={{ color: '#365314' }}>수집 항목:</strong> 이름, 연락처(휴대전화 번호), 이메일·닉네임 (카카오/구글 소셜 로그인 제공)
                   </p>
                   <p style={{ margin: '0.15rem 0 0' }}>
-                    <strong style={{ color: '#365314' }}>수집 목적:</strong> 교인 식별, 장소 예약 확인 및 관리, 긴급 공지 전달, 개인화 서비스(큐티/성경통독 기록) 제공
+                    <strong style={{ color: '#365314' }}>수집 목적:</strong> 교인 식별 및 본인 확인, 장소 예약 신청·관리 및 예약자 연락, 개인화 서비스(큐티·성경통독 기록) 제공
                   </p>
                 </div>
                 <div>
