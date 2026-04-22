@@ -941,7 +941,7 @@ const ReservationSlotPicker = ({
 
             <div style={{ padding: '1rem', overflowY: 'auto', display: 'grid', gap: '0.85rem' }}>
               <div style={{ padding: '0.75rem 0.9rem', borderRadius: 12, background: '#FFF7ED', border: '1px solid #FED7AA', display: 'grid', gap: '0.55rem' }}>
-                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#9A3412', letterSpacing: '0.02em' }}>👤 예약자 정보 (수정 가능)</div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#9A3412', letterSpacing: '0.02em' }}>👤 예약자 정보 (교인확인을 위해 실명과 연락처를 정확히 기입)</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr', gap: '0.4rem 0.5rem', fontSize: '0.92rem', alignItems: 'center' }}>
                   <span style={{ color: '#9A3412', fontWeight: 800 }}>이름</span>
                   <input
