@@ -361,7 +361,8 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                   const isConflict = isSelected && blocked;
                   // 색상: 충돌=주황경고, 선택=민트, 대체=반투명민트+점선, 불가시간=연회색, 교회일정=진빨강,
                   //       내 예약=딥민트(노랑 테두리 강조), 타인 예약=중간회색, 예약불가=보라(교회일정/예약과 분리), 예약가능=연녹
-                  const kindBg = kind === 'event' ? '#DC2626' : kind === 'reservation' ? (mine ? '#F97316' : '#9CA3AF') : '#4B5563';
+                  // 교회일정도 예약불가와 같은 진회색으로 통일 (빨강 강조 제거)
+                  const kindBg = kind === 'event' ? '#4B5563' : kind === 'reservation' ? (mine ? '#F97316' : '#9CA3AF') : '#4B5563';
                   const kindFg = '#FFFFFF';
                   const bg = isConflict ? '#F59E0B' : isSelected ? '#20CD8D' : isAlternate ? 'rgba(32, 205, 141, 0.18)' : (!inAvailable ? '#E5E7EB' : blocked ? kindBg : '#F7FEE7');
                   const color = isConflict ? '#FFFFFF' : isSelected ? '#fff' : isAlternate ? '#3F6212' : (!inAvailable ? '#9CA3AF' : blocked ? kindFg : '#4D7C0F');

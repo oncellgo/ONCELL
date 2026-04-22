@@ -26,6 +26,8 @@ type Props = {
   slotMin: number;
   availableStart: string;
   availableEnd: string;
+  reservationLimitMode: 'unlimited' | 'perUser';
+  reservationLimitPerUser: number;
   profileId: string | null;
   displayName: string | null;
   contact: string | null;
@@ -36,7 +38,7 @@ type Props = {
 
 const WEEK_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
-const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, availableEnd, profileId, displayName, contact, nickname, email, systemAdminHref }: Props) => {
+const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, availableEnd, reservationLimitMode, reservationLimitPerUser, profileId, displayName, contact, nickname, email, systemAdminHref }: Props) => {
   const isMobile = useIsMobile();
   const router = useRouter();
   useRequireLogin(profileId);
@@ -229,9 +231,31 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
     return { venue: v, startMin, endMin, startLabel: hhmm(startMin), endLabel: hhmm(endMin), totalLabel };
   }, [activeVenueId, activeSlots, totalSelectedSlots, venues, slotMin]);
 
-  const openConfirmModal = () => {
+  const openConfirmModal = async () => {
     if (!selection) return;
     setSubmitError(null);
+    // 예약 한도 사전 체크 (관리자는 SSR 에서 mode=unlimited 로 내려오므로 여기서 스킵됨)
+    if (profileId && reservationLimitMode === 'perUser') {
+      try {
+        const r = await fetch(`/api/events?communityId=kcis&profileId=${encodeURIComponent(profileId)}&type=reservation`);
+        if (r.ok) {
+          const d = await r.json();
+          const all: any[] = Array.isArray(d?.events) ? d.events : [];
+          const nowTs = Date.now();
+          const futureCnt = all.filter((x) => new Date(x.endAt).getTime() > nowTs).length;
+          if (futureCnt >= reservationLimitPerUser) {
+            alert(`예약 한도(${reservationLimitPerUser}건)를 초과했습니다.\n기존 예약 중 하나를 취소한 뒤 다시 시도해주세요.\n\n내 대시보드의 '다가오는 내 장소예약' 으로 이동합니다.`);
+            const qs = new URLSearchParams();
+            if (profileId) qs.set('profileId', profileId);
+            if (nickname) qs.set('nickname', nickname);
+            if (email) qs.set('email', email);
+            qs.set('focus', 'my-reservations');
+            window.location.href = `/dashboard?${qs.toString()}#my-reservations`;
+            return;
+          }
+        }
+      } catch { /* 네트워크 실패 시엔 모달을 열고 서버 측에서 재검증 */ }
+    }
     setConfirmOpen(true);
   };
 
@@ -457,9 +481,6 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
               <div style={{ display: 'flex', gap: isMobile ? '0.5rem' : '0.85rem', fontSize: '0.76rem', color: 'var(--color-ink-2)', flexWrap: 'wrap', alignItems: 'center', rowGap: '0.4rem' }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                   <span style={{ width: 14, height: 14, borderRadius: 3, background: '#F7FEE7', border: '1px solid #D9F09E' }} /> 예약 가능
-                </span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <span style={{ width: 14, height: 14, borderRadius: 3, background: '#DC2626' }} /> 교회일정
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                   <span style={{ width: 14, height: 14, borderRadius: 3, background: '#F97316', outline: '2px solid #FBBF24', outlineOffset: -1 }} /> ⭐ 내 예약
@@ -812,10 +833,13 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
   }
   const adhocTyped: Block[] = adhocBlocks.map((b) => ({ ...b, kind: b.kind || 'block' }));
   const blocks: Block[] = [...adhocTyped, ...eventBlocks];
-  const settings = (settingsObj || {}) as { venueSlotMin?: number; venueAvailableStart?: string; venueAvailableEnd?: string };
+  const settings = (settingsObj || {}) as { venueSlotMin?: number; venueAvailableStart?: string; venueAvailableEnd?: string; reservationLimitMode?: string; reservationLimitPerUser?: number };
   const slotMin = settings.venueSlotMin === 60 ? 60 : 30;
   const availableStart = typeof settings.venueAvailableStart === 'string' && /^\d{2}:\d{2}$/.test(settings.venueAvailableStart) ? settings.venueAvailableStart : '06:00';
   const availableEnd = typeof settings.venueAvailableEnd === 'string' && /^\d{2}:\d{2}$/.test(settings.venueAvailableEnd) ? settings.venueAvailableEnd : '22:00';
+  // 관리자는 한도 무시하도록 서버에서 모드 자체를 unlimited 로 덮어 씀 (클라이언트 로직 단순화)
+  const reservationLimitMode: 'unlimited' | 'perUser' = (settings.reservationLimitMode === 'perUser' && !isAdmin) ? 'perUser' : 'unlimited';
+  const reservationLimitPerUser = Math.max(1, Math.min(10, Number(settings.reservationLimitPerUser) || 3));
 
   const profileId = queryProfileId;
   const nickname = typeof ctx.query.nickname === 'string' ? ctx.query.nickname : null;
@@ -833,7 +857,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
 
   const systemAdminHref = await getSystemAdminHref(profileId, { nickname, email });
 
-  return { props: { venues, blocks, groups, slotMin, availableStart, availableEnd, profileId, displayName, contact, nickname, email, systemAdminHref } };
+  return { props: { venues, blocks, groups, slotMin, availableStart, availableEnd, reservationLimitMode, reservationLimitPerUser, profileId, displayName, contact, nickname, email, systemAdminHref } };
 };
 
 export default ReservationGridPage;

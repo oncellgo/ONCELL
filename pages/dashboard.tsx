@@ -209,6 +209,21 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
   };
 
   const router = useRouter();
+  // 한도 초과로 유입된 경우 (?focus=my-reservations) 또는 #my-reservations 앵커 → 해당 섹션 스크롤 + 깜빡 강조
+  const [reservationsFlash, setReservationsFlash] = useState(false);
+  useEffect(() => {
+    if (!router.isReady) return;
+    const wantsFocus = router.query.focus === 'my-reservations' || (typeof window !== 'undefined' && window.location.hash === '#my-reservations');
+    if (!wantsFocus) return;
+    const el = document.getElementById('my-reservations');
+    if (el) {
+      setTimeout(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setReservationsFlash(true);
+        setTimeout(() => setReservationsFlash(false), 2400);
+      }, 120);
+    }
+  }, [router.isReady, router.query.focus]);
   const [activeCommunityId, setActiveCommunityId] = useState<string | null>(null);
   const [publishedServices, setPublishedServices] = useState<any[]>([]);
   const [previewBulletin, setPreviewBulletin] = useState<any>(null);
@@ -742,7 +757,16 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
           )}
 
 
-          <section style={cardBase}>
+          <section
+            id="my-reservations"
+            style={{
+              ...cardBase,
+              outline: reservationsFlash ? '3px solid #F97316' : 'none',
+              outlineOffset: reservationsFlash ? '-1px' : undefined,
+              boxShadow: reservationsFlash ? '0 0 0 4px rgba(249,115,22,0.18)' : cardBase.boxShadow,
+              transition: 'outline 0.25s ease, box-shadow 0.25s ease',
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
               <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>📍 다가오는 나의 장소예약</h2>
               <a href="/reservations/grid" style={{ color: 'var(--color-primary-deep)', fontSize: isMobile ? '0.85rem' : '0.82rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 40, padding: '0 0.25rem' }}>새 예약 →</a>
