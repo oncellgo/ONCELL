@@ -78,7 +78,8 @@ const CompleteSignupPage = () => {
         }),
       });
       if (!res.ok) {
-        setError('저장 실패. 다시 시도해주세요.');
+        const d = await res.json().catch(() => ({}));
+        setError(`저장 실패 (${res.status})${d?.error ? `: ${d.error}` : ''}`);
         setSubmitting(false);
         return;
       }
