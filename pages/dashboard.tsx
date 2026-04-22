@@ -951,7 +951,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <h2 style={{ ...sectionTitle, fontSize: '1.05rem', margin: 0 }}>📖 최근 큐티기록</h2>
                   <span style={{ fontSize: '0.7rem', color: '#65A30D', fontWeight: 600, lineHeight: 1.4 }}>
-                    ※ 큐티는 오늘만 작성 가능 · 과거 요일은 보기만
+                    ⏰ 오늘의 큐티를 완료해 보세요
                   </span>
                 </div>
                 <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '0.85rem 1rem', borderRadius: 14, background: t.bg, border: `1px solid ${t.ring}` }}>
@@ -1055,11 +1055,6 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                           );
                         })}
                       </div>
-                      {!todayDone && (
-                        <div style={{ marginTop: '0.4rem', fontSize: '0.76rem', color: '#65A30D', fontWeight: 700, textAlign: 'center' }}>
-                          ⏰ 오늘의 큐티를 완료해 보세요
-                        </div>
-                      )}
                     </div>
                   );
                 })()}
