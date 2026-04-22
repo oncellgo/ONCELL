@@ -455,29 +455,9 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
 
       <main style={{ maxWidth: 1040, margin: '0 auto', padding: isMobile ? '1rem 0.6rem 4rem' : '1.5rem 1rem 5rem', display: 'grid', gap: '1rem' }}>
         <section style={{ padding: isMobile ? '0.85rem' : '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: isMobile ? '0.55rem' : '0.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'wrap' }}>
-              <h2 style={{ margin: 0, fontSize: isMobile ? '1.05rem' : '1.2rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>📖 예약현황보기</h2>
-              {(() => {
-                const [y, mo, d] = selectedDate.split('-').map(Number);
-                if (!y || !mo || !d) return null;
-                const dowI = new Date(y, mo - 1, d).getDay();
-                const labels = ['일', '월', '화', '수', '목', '금', '토'];
-                const todayK = dateKey(new Date());
-                const isToday = selectedDate === todayK;
-                const dowBg = dowI === 0 ? '#FEE2E2' : dowI === 6 ? '#DBEAFE' : '#F3F4F6';
-                const dowFg = dowI === 0 ? '#DC2626' : dowI === 6 ? '#2563EB' : '#374151';
-                return (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                    <span style={{ fontSize: isMobile ? '0.92rem' : '0.98rem', fontWeight: 800, color: 'var(--color-ink)', fontVariantNumeric: 'tabular-nums' }}>{selectedDate}</span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 999, background: dowBg, color: dowFg, fontSize: '0.76rem', fontWeight: 800 }}>{labels[dowI]}</span>
-                    {isToday && (
-                      <span style={{ padding: '0.15rem 0.55rem', borderRadius: 999, background: '#ECFDF5', border: '1px solid #20CD8D', color: 'var(--color-primary-deep)', fontSize: '0.72rem', fontWeight: 800 }}>오늘</span>
-                    )}
-                  </span>
-                );
-              })()}
-            </div>
+          {/* 상단: 제목 + 날짜·장소 변경 */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <h2 style={{ margin: 0, fontSize: isMobile ? '1.05rem' : '1.2rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>📖 예약현황보기</h2>
             <button
               type="button"
               onClick={() => {
@@ -485,9 +465,58 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
                 setPickerSelected(new Set(confirmedVenueIds));
                 setPickerOpen(true);
               }}
-              style={{ padding: '0.5rem 0.95rem', minHeight: 40, width: isMobile ? '100%' : undefined, borderRadius: 999, border: '1px solid #65A30D', background: '#fff', color: '#3F6212', fontSize: '0.86rem', fontWeight: 800, cursor: 'pointer' }}
+              style={{ padding: '0.5rem 0.95rem', minHeight: 40, borderRadius: 999, border: '1px solid #65A30D', background: '#fff', color: '#3F6212', fontSize: '0.86rem', fontWeight: 800, cursor: 'pointer' }}
             >날짜·장소 변경</button>
           </div>
+
+          {/* 날짜 네비: ‹ 이전일 · 크게 표시 · 다음일 › */}
+          {(() => {
+            const [y, mo, d] = selectedDate.split('-').map(Number);
+            if (!y || !mo || !d) return null;
+            const cur = new Date(y, mo - 1, d);
+            const dowI = cur.getDay();
+            const labels = ['일', '월', '화', '수', '목', '금', '토'];
+            const todayK = dateKey(new Date());
+            const isToday = selectedDate === todayK;
+            const dowBg = dowI === 0 ? '#FEE2E2' : dowI === 6 ? '#DBEAFE' : '#F3F4F6';
+            const dowFg = dowI === 0 ? '#DC2626' : dowI === 6 ? '#2563EB' : '#374151';
+            const shift = (days: number) => {
+              const nx = new Date(cur);
+              nx.setDate(nx.getDate() + days);
+              setSelectedDate(dateKey(nx));
+            };
+            const navBtn: React.CSSProperties = {
+              flex: '0 0 auto',
+              minWidth: 44, minHeight: 44,
+              padding: '0 0.75rem',
+              borderRadius: 10,
+              border: '1px solid var(--color-gray)',
+              background: '#fff',
+              color: 'var(--color-ink-2)',
+              fontSize: '1.35rem', fontWeight: 800,
+              cursor: 'pointer',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            };
+            return (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                <button type="button" onClick={() => shift(-1)} aria-label="전날" style={navBtn}>‹</button>
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap', textAlign: 'center' }}>
+                  <span style={{ fontSize: isMobile ? '1.3rem' : '1.6rem', fontWeight: 800, color: 'var(--color-ink)', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em' }}>{selectedDate}</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: isMobile ? 30 : 34, height: isMobile ? 30 : 34, borderRadius: 999, background: dowBg, color: dowFg, fontSize: isMobile ? '0.95rem' : '1.05rem', fontWeight: 800 }}>{labels[dowI]}</span>
+                  {isToday ? (
+                    <span style={{ padding: '0.2rem 0.65rem', borderRadius: 999, background: '#ECFDF5', border: '1px solid #20CD8D', color: 'var(--color-primary-deep)', fontSize: '0.78rem', fontWeight: 800 }}>오늘</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDate(todayK)}
+                      style={{ padding: '0.25rem 0.7rem', minHeight: 32, borderRadius: 999, border: '1px solid var(--color-primary)', background: '#fff', color: 'var(--color-primary-deep)', fontSize: '0.76rem', fontWeight: 800, cursor: 'pointer' }}
+                    >오늘로</button>
+                  )}
+                </div>
+                <button type="button" onClick={() => shift(1)} aria-label="다음날" style={navBtn}>›</button>
+              </div>
+            );
+          })()}
           <div style={{ display: 'flex', gap: isMobile ? '0.5rem' : '0.85rem', fontSize: '0.78rem', color: 'var(--color-ink-2)', flexWrap: 'wrap', alignItems: 'center', rowGap: '0.4rem' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#F7FEE7', border: '1px solid #D9F09E' }} /> 예약 가능</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#DC2626' }} /> 교회일정</span>
