@@ -175,8 +175,8 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
             <button
               type="button"
               onClick={() => setProfileModalOpen(true)}
-              title="내 정보 수정"
-              aria-label="내 정보 수정"
+              title="내 정보"
+              aria-label="내 정보"
               style={{ background: 'none', border: 'none', padding: 0, margin: 0, font: 'inherit', color: 'inherit', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'underline', textUnderlineOffset: 3, textDecorationColor: 'var(--color-gray)' }}
             >{userLabel}</button>
             {effAdminHref && (

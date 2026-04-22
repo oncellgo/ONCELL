@@ -100,7 +100,7 @@ const ProfileModal = ({ profileId, email, onClose }: Props) => {
     >
       <div
         role="dialog"
-        aria-label="내 정보 수정"
+        aria-label="내 정보"
         className="modal-card"
         style={{
           width: '100%',
