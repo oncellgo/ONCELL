@@ -82,8 +82,11 @@ const DateTimePicker = ({ value, onChange, placeholder, style, buttonStyle, date
     const h12 = hh % 12 === 0 ? 12 : hh % 12;
     return `${ampm} ${pad(h12)}:${pad(mm)}`;
   };
+  const WEEK_LABELS_LOCAL = ['일', '월', '화', '수', '목', '금', '토'];
+  const curDow = cur ? new Date(cur.y, cur.m - 1, cur.d).getDay() : -1;
+  const dowLabel = curDow >= 0 ? ` (${WEEK_LABELS_LOCAL[curDow]})` : '';
   const display = cur
-    ? (dateOnly ? `${cur.y}-${pad(cur.m)}-${pad(cur.d)}` : `${cur.y}-${pad(cur.m)}-${pad(cur.d)} ${formatAmPm(cur.hh, cur.mm)}`)
+    ? (dateOnly ? `${cur.y}-${pad(cur.m)}-${pad(cur.d)}${dowLabel}` : `${cur.y}-${pad(cur.m)}-${pad(cur.d)}${dowLabel} ${formatAmPm(cur.hh, cur.mm)}`)
     : '';
   const todayKey = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
 
