@@ -87,7 +87,9 @@ const MembersCard = ({ profileId, k }: Props) => {
   const doDelete = async (m: Approval) => {
     setBusy(m.profileId);
     try {
-      const res = await fetch(`/api/admin/delete-user?${authQS}&profileId=${encodeURIComponent(m.profileId)}`, {
+      // authQS 의 profileId(호출자 본인) 와 삭제 대상 profileId 가 같은 key 로 충돌하므로
+      // URL 에는 토큰만, 인증은 헤더(x-profile-id/x-admin-token) 로.
+      const res = await fetch(`/api/admin/delete-user?profileId=${encodeURIComponent(m.profileId)}&k=${encodeURIComponent(k)}`, {
         method: 'DELETE',
         headers: authHeaders,
       });
