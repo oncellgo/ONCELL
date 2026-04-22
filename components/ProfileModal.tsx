@@ -47,10 +47,16 @@ const ProfileModal = ({ profileId, provider, nickname, email, initialRealName, i
   const [withdrawReason, setWithdrawReason] = useState('');
   const [withdrawing, setWithdrawing] = useState(false);
   const [withdrawMsg, setWithdrawMsg] = useState<string | null>(null);
+  const [finalConfirmOpen, setFinalConfirmOpen] = useState(false);
 
-  const withdraw = async () => {
+  const requestWithdraw = () => {
     if (!withdrawReason.trim()) { setWithdrawMsg('탈퇴 사유를 입력해주세요.'); return; }
-    if (!window.confirm('정말 탈퇴하시겠습니까?\n\n탈퇴 후 로그아웃되며, 재가입 시 관리자 승인이 필요할 수 있습니다.\n작성한 예약·기록은 보존됩니다.')) return;
+    setWithdrawMsg(null);
+    setFinalConfirmOpen(true);
+  };
+
+  const doWithdraw = async () => {
+    setFinalConfirmOpen(false);
     setWithdrawing(true); setWithdrawMsg(null);
     try {
       const res = await fetch('/api/profile/withdraw', {
@@ -246,12 +252,13 @@ const ProfileModal = ({ profileId, provider, nickname, email, initialRealName, i
                   </div>
                 </div>
 
-                {/* 3가지 확인 항목 */}
+                {/* 4가지 확인 항목 */}
                 <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: '0.55rem' }}>
                   {[
-                    { title: '기존 예약 내역 삭제', body: '현재 신청 중인 장소 예약 및 과거 이용 기록이 모두 삭제되며, 복구가 불가능합니다.' },
-                    { title: '개인정보 파기', body: '수집된 모든 개인정보는 즉시 파기됩니다. (단, 법령에 의해 보존이 필요한 기록은 별도 보관 후 파기됩니다.)' },
-                    { title: '소셜 연동 안내', body: "본 서비스 탈퇴 후에도 카카오/구글 계정 설정 내 '연결된 앱' 목록에 기록이 남아있을 수 있습니다. 완전한 연결 해제를 원하시면 해당 플랫폼 설정에서 연결을 끊어주시기 바랍니다." },
+                    { title: '장소 예약 정보 삭제', body: '현재 신청 중이거나 이용 완료된 모든 예약 내역이 삭제됩니다.' },
+                    { title: '나의 기록 삭제', body: '그 동안 작성한 나의 큐티 기록 및 성경통독 진행 데이터가 모두 파기됩니다. (탈퇴 후에는 어떤 방법으로도 복구할 수 없습니다.)' },
+                    { title: '개인정보 파기', body: '이름, 연락처 등 모든 개인 식별 정보가 즉시 삭제됩니다.' },
+                    { title: '소셜 연동 해제', body: "사이트 탈퇴 후에도 카카오/구글 설정 내 '연결된 앱'에 기록이 남아있을 수 있으니, 해당 플랫폼에서 직접 연동 해제를 권장합니다." },
                   ].map((item, i) => (
                     <li key={i} style={{ display: 'flex', gap: '0.55rem', alignItems: 'flex-start', padding: '0.55rem 0.7rem', background: '#fff', borderRadius: 8, border: '1px solid #FECACA' }}>
                       <span aria-hidden style={{ flexShrink: 0, width: 20, height: 20, borderRadius: 999, background: '#B91C1C', color: '#fff', fontSize: '0.72rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>{i + 1}</span>
@@ -276,7 +283,7 @@ const ProfileModal = ({ profileId, provider, nickname, email, initialRealName, i
                 {withdrawMsg && <p style={{ margin: 0, fontSize: '0.82rem', color: '#B91C1C', fontWeight: 700 }}>{withdrawMsg}</p>}
                 <button
                   type="button"
-                  onClick={withdraw}
+                  onClick={requestWithdraw}
                   disabled={withdrawing || !withdrawReason.trim()}
                   style={{
                     padding: '0.65rem 1rem', borderRadius: 10, border: 'none',
@@ -332,6 +339,68 @@ const ProfileModal = ({ profileId, provider, nickname, email, initialRealName, i
           >{saving ? '저장 중…' : '저장'}</button>
         </div>
       </div>
+
+      {/* 최종 탈퇴 확인 모달 — ProfileModal 위에 겹쳐서 표시 */}
+      {finalConfirmOpen && (
+        <div
+          role="dialog"
+          aria-label="회원 탈퇴 최종 확인"
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', zIndex: 110, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setFinalConfirmOpen(false); }}
+        >
+          <div
+            style={{ width: '100%', maxWidth: 520, maxHeight: '92vh', background: '#fff', borderRadius: 16, boxShadow: '0 24px 64px rgba(0,0,0,0.35)', display: 'flex', flexDirection: 'column', overflow: 'hidden', border: '2px solid #B91C1C' }}
+          >
+            <div style={{ padding: '1.1rem 1.25rem', background: '#FEF2F2', borderBottom: '1px solid #FCA5A5' }}>
+              <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start' }}>
+                <span aria-hidden style={{ fontSize: '1.6rem', lineHeight: 1 }}>🚨</span>
+                <div style={{ display: 'grid', gap: '0.2rem' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#7F1D1D' }}>탈퇴 전 꼭 확인해 주세요</h3>
+                  <p style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#991B1B', lineHeight: 1.5 }}>
+                    탈퇴 시 아래의 모든 정보가 <strong>즉시 삭제</strong>되며 <strong>복구가 불가능</strong>합니다.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: '1rem 1.25rem', overflowY: 'auto', display: 'grid', gap: '0.65rem' }}>
+              <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: '0.55rem' }}>
+                {[
+                  { title: '장소 예약 정보 삭제', body: '현재 신청 중이거나 이용 완료된 모든 예약 내역이 삭제됩니다.' },
+                  { title: '나의 기록 삭제', body: '그 동안 작성한 나의 큐티 기록 및 성경통독 진행 데이터가 모두 파기됩니다. (탈퇴 후에는 어떤 방법으로도 복구할 수 없습니다.)' },
+                  { title: '개인정보 파기', body: '이름, 연락처 등 모든 개인 식별 정보가 즉시 삭제됩니다.' },
+                  { title: '소셜 연동 해제', body: "사이트 탈퇴 후에도 카카오/구글 설정 내 '연결된 앱'에 기록이 남아있을 수 있으니, 해당 플랫폼에서 직접 연동 해제를 권장합니다." },
+                ].map((item, i) => (
+                  <li key={i} style={{ display: 'flex', gap: '0.55rem', alignItems: 'flex-start', padding: '0.65rem 0.8rem', background: '#FEF2F2', borderRadius: 10, border: '1px solid #FECACA' }}>
+                    <span aria-hidden style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 999, background: '#B91C1C', color: '#fff', fontSize: '0.76rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>{i + 1}</span>
+                    <div style={{ display: 'grid', gap: '0.2rem', minWidth: 0 }}>
+                      <strong style={{ fontSize: '0.88rem', color: '#7F1D1D', fontWeight: 800 }}>{item.title}</strong>
+                      <span style={{ fontSize: '0.82rem', color: '#4B5563', lineHeight: 1.6, wordBreak: 'keep-all' }}>{item.body}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              <p style={{ margin: '0.2rem 0 0', fontSize: '0.95rem', color: '#7F1D1D', fontWeight: 800, textAlign: 'center', lineHeight: 1.5 }}>
+                삭제되는 데이터에 동의하며 탈퇴하시겠습니까?
+              </p>
+            </div>
+
+            <div style={{ padding: '0.85rem 1.25rem 1rem', borderTop: '1px solid var(--color-surface-border)', display: 'flex', gap: '0.5rem', flexDirection: isMobile ? 'column-reverse' : 'row', justifyContent: isMobile ? 'stretch' : 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setFinalConfirmOpen(false)}
+                style={{ padding: '0.75rem 1.2rem', borderRadius: 10, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', fontWeight: 700, fontSize: '0.95rem', minHeight: 48, cursor: 'pointer' }}
+              >취소</button>
+              <button
+                type="button"
+                onClick={doWithdraw}
+                style={{ padding: '0.75rem 1.2rem', borderRadius: 10, border: 'none', background: '#B91C1C', color: '#fff', fontWeight: 800, fontSize: '0.95rem', minHeight: 48, cursor: 'pointer' }}
+              >탈퇴하기</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
