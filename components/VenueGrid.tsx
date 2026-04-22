@@ -147,7 +147,7 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
       for (const s of slots) {
         if (s.dow !== dow) continue;
         if (!map.has(g.venueId)) map.set(g.venueId, new Map());
-        map.get(g.venueId)!.set(s.startMin, g.reason || '교회사용');
+        map.get(g.venueId)!.set(s.startMin, g.reason || '예약불가');
       }
     }
     return map;
@@ -299,13 +299,13 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                   // 사용자 선택이 기존 예약/블럭과 겹치면 "예약불가" 경고 상태
                   const isConflict = isSelected && blocked;
                   // 색상: 충돌=주황경고, 선택=민트, 대체=반투명민트+점선, 불가시간=연회색, 교회일정=진빨강,
-                  //       내 예약=딥민트(노랑 테두리 강조), 타인 예약=중간회색, 교회사용=보라(교회일정/예약과 분리), 예약가능=연녹
+                  //       내 예약=딥민트(노랑 테두리 강조), 타인 예약=중간회색, 예약불가=보라(교회일정/예약과 분리), 예약가능=연녹
                   const kindBg = kind === 'event' ? '#DC2626' : kind === 'reservation' ? (mine ? '#0F7A52' : '#9CA3AF') : '#7C3AED';
                   const kindFg = '#FFFFFF';
                   const bg = isConflict ? '#F59E0B' : isSelected ? '#20CD8D' : isAlternate ? 'rgba(32, 205, 141, 0.18)' : (!inAvailable ? '#E5E7EB' : blocked ? kindBg : '#F7FEE7');
                   const color = isConflict ? '#FFFFFF' : isSelected ? '#fff' : isAlternate ? '#3F6212' : (!inAvailable ? '#9CA3AF' : blocked ? kindFg : '#4D7C0F');
                   const clickable = !!onSlotClick && inAvailable;
-                  const kindLabel = kind === 'event' ? '교회일정' : kind === 'reservation' ? '예약됨' : '교회사용';
+                  const kindLabel = kind === 'event' ? '교회일정' : kind === 'reservation' ? '예약됨' : '예약불가';
                   const titleParts = [`${v.floor} ${v.name} ${toHHMM(m)}`];
                   if (!inAvailable) titleParts.push('예약 불가 시간대');
                   else if (blocked) {

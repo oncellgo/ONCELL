@@ -463,7 +463,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                   <span style={{ width: 14, height: 14, borderRadius: 3, background: '#9CA3AF' }} /> 타인 예약
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <span style={{ width: 14, height: 14, borderRadius: 3, background: '#7C3AED' }} /> 교회사용
+                  <span style={{ width: 14, height: 14, borderRadius: 3, background: '#7C3AED' }} /> 예약불가
                 </span>
               </div>
 
