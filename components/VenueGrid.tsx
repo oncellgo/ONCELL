@@ -373,7 +373,7 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                     titleParts.push(`${kindLabel}${mine ? ' (내 예약)' : ''}: ${reason}`);
                     if (kind === 'reservation' && reserverName) titleParts.push(`예약자: ${reserverName}`);
                     if (kind === 'reservation' && reserverContact) titleParts.push(`연락처: ${reserverContact}`);
-                  } else if (isSelected) titleParts.push('선택됨 (클릭하여 해제)');
+                  } else if (isSelected) titleParts.push('선택됨 — 클릭하여 해제, 또는 드래그로 연속 선택');
                   else if (isAlternate) titleParts.push('후보 (클릭하여 이 장소로 전환)');
                   else titleParts.push('예약 가능 — 클릭하거나, 시작 셀에서 끝 셀까지 드래그하면 한 번에 선택됩니다');
                   // 셀 내부: reservation kind이고 rowSpan≥2면 3줄 표시, 그 외엔 reason만
