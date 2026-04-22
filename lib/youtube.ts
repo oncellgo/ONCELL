@@ -255,6 +255,32 @@ const fetchChannelUploadsByRSS = async (handle: string): Promise<YTResult> => {
   }
 };
 
+// Playlist 전용 RSS fallback — https://www.youtube.com/feeds/videos.xml?playlist_id=<ID>
+const fetchPlaylistItemsByRSS = async (playlistId: string): Promise<YTResult> => {
+  try {
+    const res = await fetch(`https://www.youtube.com/feeds/videos.xml?playlist_id=${encodeURIComponent(playlistId)}`, {
+      headers: { 'User-Agent': 'KCIS-app/1.0 (+https://kcis.app)' },
+    });
+    if (!res.ok) return { items: [], status: 'network' };
+    const xml = await res.text();
+    const items = parseYoutubeRss(xml);
+    return { items, status: items.length === 0 ? 'empty' : 'ok' };
+  } catch {
+    return { items: [], status: 'network' };
+  }
+};
+
+// Playlist API + RSS fallback 묶음. API 키 없음/쿼터/네트워크 실패 시 RSS 로 보완.
+export const fetchPlaylistItemsWithFallback = async (playlistId: string, maxResults = 50): Promise<YTResult> => {
+  const result = await fetchPlaylistItems(playlistId, maxResults);
+  if (result.status === 'ok' || result.items.length > 0) return result;
+  if (result.status === 'quota' || result.status === 'unauthorized' || result.status === 'network') {
+    const rss = await fetchPlaylistItemsByRSS(playlistId);
+    if (rss.items.length > 0) return { items: rss.items, status: 'ok' };
+  }
+  return result;
+};
+
 export const fetchChannelUploadsByHandle = async (handle: string, maxResults = 50): Promise<YTResult> => {
   const ch = await resolveChannelIdByHandle(handle);
   if (ch.id) {

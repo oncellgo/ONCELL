@@ -7,7 +7,7 @@ import { getSystemAdminHref } from '../lib/adminGuard';
 import { getProfiles, getUsers } from '../lib/dataStore';
 import { useIsMobile } from '../lib/useIsMobile';
 import { useRequireLogin } from '../lib/useRequireLogin';
-import { fetchPlaylistItems } from '../lib/youtube';
+import { fetchPlaylistItemsWithFallback } from '../lib/youtube';
 
 type Video = { videoId: string; title: string; publishedAt: string; dateKey: string };
 
@@ -297,7 +297,7 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
 const SUNDAY_SERVICE_PLAYLIST_ID = 'PLSCiGfh6aK3T0eD4sx5mGkSlg1MZ-Egcn';
 
 const fetchSundayServicePlaylist = async (): Promise<Array<{ videoId: string; title: string; dateKey: string | null }>> => {
-  const items = await fetchPlaylistItems(SUNDAY_SERVICE_PLAYLIST_ID, 50);
+  const { items } = await fetchPlaylistItemsWithFallback(SUNDAY_SERVICE_PLAYLIST_ID, 50);
   return items.map((v) => {
     const dm = v.title.match(/(\d{4})\.(\d{1,2})\.(\d{1,2})\.?/);
     const dateKey = dm ? `${dm[1]}-${String(dm[2]).padStart(2, '0')}-${String(dm[3]).padStart(2, '0')}` : null;
