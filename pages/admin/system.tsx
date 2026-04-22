@@ -454,18 +454,14 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
               const u = users.find((x) => x.profileId === id);
               const name = u?.realName || u?.nickname || '(이름 미입력)';
               const sub = u?.email || id;
-              const meta = `${u?.provider || '-'} · 가입 ${u?.communities.length ?? 0}개${u?.registeredAt ? ` · 최근 ${new Date(u.registeredAt).toLocaleDateString('ko-KR')}` : ''}`;
               return (
                 <li key={`pid-${id}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', padding: '0.55rem 0.75rem', border: '1px solid #E7F3EE', borderRadius: 10, background: '#F9FCFB' }}>
-                  <div style={{ display: 'grid', gap: '0.2rem', minWidth: 0, flex: 1 }}>
-                    <p style={{ margin: 0, fontWeight: 700, color: '#182527', fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                      <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#20CD8D', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>ID</span>
-                      <span>{name}</span>
-                      {id === profileId && <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#F59E0B', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>나</span>}
-                      <span style={{ color: '#2D4048', fontWeight: 500 }}>{sub}</span>
-                    </p>
-                    <p style={{ margin: 0, fontSize: '0.78rem', color: '#2D4048' }}>{meta}</p>
-                  </div>
+                  <p style={{ margin: 0, fontWeight: 700, color: '#182527', fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
+                    <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#20CD8D', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>ID</span>
+                    <span>{name}</span>
+                    {id === profileId && <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#F59E0B', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>나</span>}
+                    <span style={{ color: '#2D4048', fontWeight: 500 }}>{sub}</span>
+                  </p>
                   <button disabled={busy || id === profileId} onClick={() => removeAdmin(id, 'profileId')} style={{ ...btn, minHeight: 40, background: id === profileId ? '#e5e7eb' : '#b91c1c', color: id === profileId ? '#6b7280' : '#fff', cursor: id === profileId ? 'not-allowed' : 'pointer', flexShrink: 0 }}>{t('admin.remove')}</button>
                 </li>
               );
@@ -474,20 +470,14 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
               const isMine = myEmailLower && em.toLowerCase() === myEmailLower;
               const u = users.find((x) => (x.email || '').toLowerCase() === em.toLowerCase());
               const name = u?.realName || u?.nickname || '(가입 안 된 이메일)';
-              const meta = u
-                ? `${u.provider || '-'} · 가입 ${u.communities.length}개${u.registeredAt ? ` · 최근 ${new Date(u.registeredAt).toLocaleDateString('ko-KR')}` : ''}`
-                : '아직 가입하지 않은 이메일입니다.';
               return (
                 <li key={`em-${em}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', padding: '0.55rem 0.75rem', border: isMine ? '1px solid #F59E0B' : '1px solid #BFDBFE', borderRadius: 10, background: isMine ? '#FEF3C7' : '#EFF6FF' }}>
-                  <div style={{ display: 'grid', gap: '0.2rem', minWidth: 0, flex: 1 }}>
-                    <p style={{ margin: 0, fontWeight: 700, color: '#182527', fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                      <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#1E40AF', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>EMAIL</span>
-                      <span>{name}</span>
-                      {isMine && <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#F59E0B', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>나</span>}
-                      <span style={{ color: '#2D4048', fontWeight: 500 }}>{em}</span>
-                    </p>
-                    <p style={{ margin: 0, fontSize: '0.78rem', color: '#2D4048' }}>{meta}</p>
-                  </div>
+                  <p style={{ margin: 0, fontWeight: 700, color: '#182527', fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
+                    <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#1E40AF', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>EMAIL</span>
+                    <span>{name}</span>
+                    {isMine && <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#F59E0B', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>나</span>}
+                    <span style={{ color: '#2D4048', fontWeight: 500 }}>{em}</span>
+                  </p>
                   <button disabled={busy} onClick={() => removeAdmin(em, 'email')} style={{ ...btn, minHeight: 40, background: '#b91c1c', color: '#fff', flexShrink: 0 }}>{t('admin.remove')}</button>
                 </li>
               );
