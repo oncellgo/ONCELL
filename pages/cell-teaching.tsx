@@ -93,6 +93,8 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
   const [guideLoading, setGuideLoading] = useState(false);
   const [guideError, setGuideError] = useState<string | null>(null);
   const guideCacheRef = useRef(new Map<string, CellGuide>());
+  const [showNaeyong, setShowNaeyong] = useState(false);
+  useEffect(() => { setShowNaeyong(false); }, [selectedKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -281,19 +283,29 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
             />
           )}
 
-          {/* 카드 2: 내용 나눔 (질문) */}
+          {/* 카드 2: 나눔 내용 (질문) — 제목 클릭으로 토글, 기본 접힘 */}
           {guide?.found && guide.questions && guide.questions.length > 0 && (
-            <section style={{ padding: isMobile ? '0.9rem' : '1.1rem', borderRadius: 16, background: '#fff', border: '1px solid #BFDBFE', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '0.6rem' }}>
-              <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: '#1E40AF', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                <span>💬</span><span>내용 나눔</span>
-              </h3>
-              <ol style={{ margin: 0, paddingLeft: '1.3rem', display: 'grid', gap: '0.65rem' }}>
-                {guide.questions.map((q, i) => (
-                  <li key={i} style={{ fontSize: '0.92rem', lineHeight: 1.75, color: 'var(--color-ink)' }}>
-                    {q.replace(/^\d+\.\s*/, '')}
-                  </li>
-                ))}
-              </ol>
+            <section style={{ padding: isMobile ? '0.9rem' : '1.1rem', borderRadius: 16, background: '#fff', border: '1px solid #BFDBFE', boxShadow: 'var(--shadow-card)', display: 'grid', gap: showNaeyong ? '0.6rem' : 0 }}>
+              <button
+                type="button"
+                onClick={() => setShowNaeyong((v) => !v)}
+                aria-expanded={showNaeyong}
+                aria-label={showNaeyong ? '나눔 내용 접기' : '나눔 내용 펼치기'}
+                style={{ margin: 0, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.98rem', fontWeight: 800, color: '#1E40AF', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', textAlign: 'left' }}
+              >
+                <span aria-hidden>💬</span>
+                <span>나눔 내용</span>
+                <span aria-hidden style={{ fontSize: '0.8rem', transition: 'transform 0.15s', transform: showNaeyong ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▾</span>
+              </button>
+              {showNaeyong && (
+                <ol style={{ margin: 0, paddingLeft: '1.3rem', display: 'grid', gap: '0.65rem' }}>
+                  {guide.questions.map((q, i) => (
+                    <li key={i} style={{ fontSize: '0.92rem', lineHeight: 1.75, color: 'var(--color-ink)' }}>
+                      {q.replace(/^\d+\.\s*/, '')}
+                    </li>
+                  ))}
+                </ol>
+              )}
             </section>
           )}
 
