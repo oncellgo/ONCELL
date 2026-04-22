@@ -181,27 +181,29 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           }
         }
 
-        // per-user 예약 한도 (현재 시각 이후만 카운트)
-        try {
-          const settings = await getSettings();
-          if (settings && settings.reservationLimitMode === 'perUser') {
-            const limit = Math.max(1, Math.min(10, Number(settings.reservationLimitPerUser) || 3));
-            const nowTs = Date.now();
-            const mine = events.filter((e) => (e.type === 'reservation') && e.createdBy === profileId);
-            let futureCount = 0;
-            for (const ev of mine) {
-              if (ev.rule) {
-                const insts = expandOccurrences(ev, { from: new Date(nowTs), to: new Date(nowTs + 365 * 24 * 3600 * 1000) });
-                futureCount += insts.length;
-              } else if (new Date(ev.endAt).getTime() > nowTs) {
-                futureCount++;
+        // per-user 예약 한도 (현재 시각 이후만 카운트). 관리자는 한도 무제한.
+        if (!isAdmin) {
+          try {
+            const settings = await getSettings();
+            if (settings && settings.reservationLimitMode === 'perUser') {
+              const limit = Math.max(1, Math.min(10, Number(settings.reservationLimitPerUser) || 3));
+              const nowTs = Date.now();
+              const mine = events.filter((e) => (e.type === 'reservation') && e.createdBy === profileId);
+              let futureCount = 0;
+              for (const ev of mine) {
+                if (ev.rule) {
+                  const insts = expandOccurrences(ev, { from: new Date(nowTs), to: new Date(nowTs + 365 * 24 * 3600 * 1000) });
+                  futureCount += insts.length;
+                } else if (new Date(ev.endAt).getTime() > nowTs) {
+                  futureCount++;
+                }
+              }
+              if (futureCount >= limit) {
+                return res.status(429).json({ error: `예약 가능 건수(${limit})를 초과했습니다. 지난 예약은 자동 제외됩니다.` });
               }
             }
-            if (futureCount >= limit) {
-              return res.status(429).json({ error: `예약 가능 건수(${limit})를 초과했습니다. 지난 예약은 자동 제외됩니다.` });
-            }
-          }
-        } catch {}
+          } catch {}
+        }
       }
 
       const rule = sanitizeRule(recurrence);
