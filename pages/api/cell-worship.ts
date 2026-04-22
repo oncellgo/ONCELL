@@ -323,8 +323,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { items, bulletins } = await fetchList(year);
     const bulletinMatch = bulletins.find((b) => b.dateKey === date);
     const match = items.find((x) => x.dateKey === date);
-    // CDN + 브라우저: 30분 fresh, 1일 stale-while-revalidate — PDF 파싱 비용 회피.
-    res.setHeader('Cache-Control', 'public, max-age=1800, s-maxage=3600, stale-while-revalidate=86400');
+    // CDN 은 5분만 fresh + 10분 SWR 로 두고 KV 캐시로 장기 hit 을 흡수한다.
+    // (응답 shape 을 자주 확장하므로 edge 가 오래 stale 을 서빙하면 새 필드가 누락된 것처럼 보임.)
+    res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
     if (!match) return res.status(200).json({ found: false, bulletinIdx: bulletinMatch?.idx || null, bulletinTitle: bulletinMatch?.title || null });
     const detail = await fetchDetail(match.idx);
     return res.status(200).json({
