@@ -89,6 +89,7 @@ const CallbackPage = () => {
             email,
             fields: missingFields.join(','),
             next: approvalStatus,
+            provider: providerName,
           });
           router.replace(`/auth/complete?${qs.toString()}`);
           return;

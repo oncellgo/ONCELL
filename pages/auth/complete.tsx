@@ -17,6 +17,8 @@ const CompleteSignupPage = () => {
   const email = typeof router.query.email === 'string' ? router.query.email : '';
   const fieldsParam = typeof router.query.fields === 'string' ? router.query.fields : '';
   const next = typeof router.query.next === 'string' ? router.query.next : 'approved';
+  const provider = typeof router.query.provider === 'string' ? router.query.provider : '';
+  const providerLabel = provider === 'kakao' ? '카카오' : provider === 'google' ? '구글' : '소셜';
 
   const fields = useMemo(() => fieldsParam.split(',').filter(Boolean), [fieldsParam]);
   const needPrivacy = fields.includes('privacyConsent');
@@ -101,14 +103,23 @@ const CompleteSignupPage = () => {
 
   return (
     <>
-      <Head><title>KCIS | 가입정보 입력</title></Head>
-      <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', fontFamily: 'var(--font-sans)' }}>
-        <div style={{ width: '100%', maxWidth: 520, padding: '2rem 1.5rem', borderRadius: 16, background: '#fff', border: '1px solid #D9F09E', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1.1rem' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2.5rem', lineHeight: 1 }}>📝</div>
-            <h1 style={{ margin: '0.5rem 0 0', fontSize: '1.2rem', color: '#3F6212' }}>가입정보 입력</h1>
-            <p style={{ margin: '0.4rem 0 0', color: 'var(--color-ink-2)', fontSize: '0.88rem', lineHeight: 1.6, wordBreak: 'keep-all' }}>가입을 완료하려면 아래 정보를 입력해주세요.</p>
+      <Head><title>KCIS | 가입 마무리</title></Head>
+      <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: '#FAFAFA', fontFamily: 'var(--font-sans)' }}>
+        <div style={{ width: '100%', maxWidth: 480, background: '#fff', borderRadius: 20, boxShadow: '0 8px 32px rgba(0,0,0,0.08)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          {/* 카카오 스타일 헤더 — 단계 배지 + 연결 확인 */}
+          <div style={{ padding: '1.5rem 1.5rem 1.1rem', background: '#FEE500', textAlign: 'center', position: 'relative' }}>
+            <span style={{ display: 'inline-block', padding: '0.2rem 0.7rem', borderRadius: 999, background: 'rgba(24, 22, 0, 0.1)', color: '#181600', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.02em', marginBottom: '0.5rem' }}>
+              KCIS 가입 마무리 단계
+            </span>
+            <h1 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#181600', lineHeight: 1.45, wordBreak: 'keep-all' }}>
+              ✓ {providerLabel} 계정 연결이 확인되었습니다
+            </h1>
+            <p style={{ margin: '0.4rem 0 0', color: '#3D3A00', fontSize: '0.85rem', fontWeight: 600, lineHeight: 1.55, wordBreak: 'keep-all' }}>
+              서비스 이용을 위해 아래 정보를 입력해 주세요.
+            </p>
           </div>
+
+          <div style={{ padding: '1.25rem 1.5rem 1.5rem', display: 'grid', gap: '1rem' }}>
 
           <label style={{ display: 'grid', gap: '0.35rem' }}>
             <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-ink)' }}>실명 <span style={{ color: '#DC2626' }}>*</span></span>
@@ -214,6 +225,7 @@ const CompleteSignupPage = () => {
           >
             {submitting ? '저장 중...' : '저장하고 계속'}
           </button>
+          </div>
         </div>
       </main>
     </>
