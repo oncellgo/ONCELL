@@ -915,7 +915,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                       {days.map((d) => {
                         const done = completedSet.has(d.key);
                         const dow = d.date.getDay();
-                        const label = d.isToday ? '오늘' : DOWS[dow];
+                        const label = d.isToday ? `${DOWS[dow]}(오늘)` : DOWS[dow];
                         // 요일별 색상 팔레트: 일요일=빨강, 토요일=파랑, 평일=해당 메뉴 accent
                         const dowBase = dow === 0 ? '#DC2626' : dow === 6 ? '#2563EB' : null;
                         // 평일(월~금): 진회색 테두리로 구분, 일/토: 각 요일 색
@@ -929,7 +929,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                             title={`${d.key}${done ? ' · 완료' : ''}`}
                             style={{
                               flex: '0 0 auto',
-                              minWidth: isMobile ? (d.isToday ? 44 : 38) : (d.isToday ? 36 : 28),
+                              minWidth: isMobile ? (d.isToday ? 58 : 38) : (d.isToday ? 52 : 28),
                               minHeight: isMobile ? 40 : 28,
                               padding: isMobile ? '0.45rem 0.5rem' : '0.25rem 0.4rem',
                               borderRadius: 8,
