@@ -1075,7 +1075,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                 <>
                 <section style={{ padding: '1.25rem 1.5rem', borderRadius: 16, background: '#fff', border: '1px solid #D9F09E', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '0.75rem', order: 2 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <h2 style={{ margin: 0, fontSize: '1.1rem', color: '#3F6212', letterSpacing: '-0.01em', fontWeight: 800 }}>⛪ 교회일정 ({weekLabel})</h2>
+                    <h2 style={{ margin: 0, fontSize: '1.1rem', color: '#3F6212', letterSpacing: '-0.01em', fontWeight: 800 }}>일정확인 <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-ink-2)' }}>(주별 · {weekLabel})</span></h2>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                       <span style={{ padding: '0.3rem 0.7rem', borderRadius: 999, background: '#ECFCCB', color: '#3F6212', fontSize: isMobile ? '0.88rem' : '0.95rem', fontWeight: 800, letterSpacing: '0.01em' }}>{weekRangeText}</span>
                       {worshipWeekOffset !== 0 && (
