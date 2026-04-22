@@ -41,7 +41,7 @@ const computeMissingFields = (approval: Approval, required: SignupField[]): Sign
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed.' });
 
-  const { profileId, provider, nickname, email, realName } = req.body as Partial<Approval>;
+  const { profileId, provider, nickname, email, realName, privacyConsent } = req.body as Partial<Approval>;
   if (!profileId) return res.status(400).json({ error: 'profileId required.' });
 
   const settings = await readSettings();
@@ -74,6 +74,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       loginCount: 1,
       status: approvalMode === 'admin' ? 'pending' : 'approved',
     };
+    // 로그인 페이지에서 사전 동의했으면 신규 approval 에 바로 반영
+    if (privacyConsent === true) {
+      entry.privacyConsent = true;
+      entry.privacyConsentAt = now;
+    }
     list.push(entry);
     await writeApprovals(list);
     return res.status(200).json({ approval: entry, approvalMode, requiredFields: required, missingFields: computeMissingFields(entry, required) });
@@ -82,6 +87,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   // Existing user: update last login + count, preserve status
   list[idx].lastLoginAt = now;
   list[idx].loginCount = (list[idx].loginCount || 0) + 1;
+  // 기존 사용자가 사전 동의 모달로 첫 동의한 경우 저장
+  if (privacyConsent === true && !list[idx].privacyConsent) {
+    list[idx].privacyConsent = true;
+    list[idx].privacyConsentAt = now;
+  }
   if (nickname && !list[idx].nickname) list[idx].nickname = nickname;
   if (email && !list[idx].email) list[idx].email = email;
   if (realName && !list[idx].realName) list[idx].realName = realName;

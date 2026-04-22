@@ -55,13 +55,17 @@ const CallbackPage = () => {
           window.localStorage.setItem('kcisProfileId', profileId);
         } catch {}
 
+        // 로그인 페이지 사전 동의 플래그(있으면 신규 가입 시 approval 에 바로 반영)
+        let pendingPrivacyConsent = false;
+        try { pendingPrivacyConsent = window.localStorage.getItem('kcisPrivacyConsented') === '1'; } catch {}
+
         let approvalStatus: 'approved' | 'pending' | 'rejected' | 'blocked' = 'approved';
         let missingFields: string[] = [];
         try {
           const loginRes = await fetch('/api/auth/record-login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ profileId, provider: providerName, nickname, email }),
+            body: JSON.stringify({ profileId, provider: providerName, nickname, email, privacyConsent: pendingPrivacyConsent || undefined }),
           });
           const loginData = await loginRes.json().catch(() => ({}));
           if (!loginRes.ok && loginData?.error === 'blocked') {
