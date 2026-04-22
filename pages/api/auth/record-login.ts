@@ -11,7 +11,9 @@ type Approval = {
   firstLoginAt: string;
   lastLoginAt: string;
   loginCount: number;
-  status: 'pending' | 'approved' | 'rejected' | 'blocked';
+  status: 'pending' | 'approved' | 'rejected' | 'blocked' | 'withdrawn';
+  withdrawReason?: string;
+  withdrawnAt?: string;
 };
 
 type SignupField = 'realName' | 'contact';
@@ -52,6 +54,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   // 차단된 profileId 는 로그인/재가입 불가 — lastLoginAt 갱신도 안 함.
   if (idx >= 0 && list[idx].status === 'blocked') {
     return res.status(403).json({ error: 'blocked', approval: list[idx], approvalMode, requiredFields: required, missingFields: [] });
+  }
+
+  // 자진 탈퇴 후 재로그인 — 자동/관리자 승인 모드에 따라 복구. withdrawReason 은 이력 유지.
+  if (idx >= 0 && list[idx].status === 'withdrawn') {
+    list[idx].status = approvalMode === 'admin' ? 'pending' : 'approved';
   }
 
   if (idx === -1) {

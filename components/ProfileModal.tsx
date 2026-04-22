@@ -42,6 +42,41 @@ const ProfileModal = ({ profileId, provider, nickname, email, initialRealName, i
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  // 회원 탈퇴 섹션
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawReason, setWithdrawReason] = useState('');
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawMsg, setWithdrawMsg] = useState<string | null>(null);
+
+  const withdraw = async () => {
+    if (!withdrawReason.trim()) { setWithdrawMsg('탈퇴 사유를 입력해주세요.'); return; }
+    if (!window.confirm('정말 탈퇴하시겠습니까?\n\n탈퇴 후 로그아웃되며, 재가입 시 관리자 승인이 필요할 수 있습니다.\n작성한 예약·기록은 보존됩니다.')) return;
+    setWithdrawing(true); setWithdrawMsg(null);
+    try {
+      const res = await fetch('/api/profile/withdraw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileId, reason: withdrawReason.trim() }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setWithdrawMsg(d?.error === 'blocked' ? '차단된 계정은 탈퇴 처리할 수 없습니다.' : (d?.error || '탈퇴 실패'));
+        return;
+      }
+      // 로컬 인증 정보 제거 후 홈으로
+      try {
+        window.localStorage.removeItem('kcisProfileId');
+        window.localStorage.removeItem('kcisNickname');
+        window.localStorage.removeItem('kcisEmail');
+        window.localStorage.removeItem('kcisSystemAdminHref');
+      } catch {}
+      window.location.href = '/';
+    } catch {
+      setWithdrawMsg('탈퇴 처리 중 오류가 발생했습니다.');
+    } finally {
+      setWithdrawing(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -187,6 +222,51 @@ const ProfileModal = ({ profileId, provider, nickname, email, initialRealName, i
           </div>
 
           {msg && <p style={{ margin: 0, fontSize: '0.82rem', color: msg.includes('저장되었습니다') ? 'var(--color-primary-deep)' : '#b91c1c', fontWeight: 700 }}>{msg}</p>}
+
+          {/* 회원 탈퇴 섹션 — 접힘 기본 */}
+          <div style={{ marginTop: '0.5rem', borderTop: '1px dashed var(--color-gray)', paddingTop: '0.85rem' }}>
+            <button
+              type="button"
+              onClick={() => setWithdrawOpen((v) => !v)}
+              aria-expanded={withdrawOpen}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700, color: '#B91C1C', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+            >
+              <span aria-hidden>⚠️</span>
+              <span>회원 탈퇴하기</span>
+              <span aria-hidden style={{ fontSize: '0.75rem', transition: 'transform 0.15s', transform: withdrawOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▾</span>
+            </button>
+            {withdrawOpen && (
+              <div style={{ marginTop: '0.75rem', padding: '0.85rem', borderRadius: 10, background: '#FEF2F2', border: '1px solid #FCA5A5', display: 'grid', gap: '0.65rem' }}>
+                <p style={{ margin: 0, fontSize: '0.82rem', color: '#7F1D1D', lineHeight: 1.6 }}>
+                  탈퇴 시 로그아웃되며 관리자 승인 설정에 따라 재가입 시 승인 대기 상태가 될 수 있습니다.<br />
+                  기존에 작성한 예약·기록은 이력 보존을 위해 유지됩니다.
+                </p>
+                <label htmlFor="withdraw-reason" style={{ fontSize: '0.85rem', fontWeight: 700, color: '#7F1D1D' }}>탈퇴 사유</label>
+                <textarea
+                  id="withdraw-reason"
+                  value={withdrawReason}
+                  onChange={(e) => setWithdrawReason(e.target.value)}
+                  placeholder="탈퇴 사유를 간단히 입력해주세요 (필수, 500자 이내)"
+                  rows={3}
+                  maxLength={500}
+                  style={{ padding: '0.65rem 0.8rem', borderRadius: 8, border: '1px solid #FCA5A5', fontSize: '0.9rem', resize: 'vertical', minHeight: 72, fontFamily: 'inherit' }}
+                />
+                {withdrawMsg && <p style={{ margin: 0, fontSize: '0.82rem', color: '#B91C1C', fontWeight: 700 }}>{withdrawMsg}</p>}
+                <button
+                  type="button"
+                  onClick={withdraw}
+                  disabled={withdrawing || !withdrawReason.trim()}
+                  style={{
+                    padding: '0.65rem 1rem', borderRadius: 10, border: 'none',
+                    background: withdrawing || !withdrawReason.trim() ? '#9CA3AF' : '#B91C1C', color: '#fff',
+                    fontWeight: 800, fontSize: '0.9rem', minHeight: 44,
+                    cursor: withdrawing || !withdrawReason.trim() ? 'not-allowed' : 'pointer',
+                    justifySelf: 'flex-start',
+                  }}
+                >{withdrawing ? '탈퇴 처리 중…' : '탈퇴하기'}</button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div style={{
