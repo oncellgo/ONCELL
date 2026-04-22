@@ -113,6 +113,11 @@ type Props = {
   availableEnd?: string;
   selectedSlots?: Map<string, Set<number>>;
   alternateSlots?: Map<string, Set<number>>;  // picker에서 함께 선택된 "대체" 장소 — 비활성 표시, 클릭 시 swap
+  /**
+   * 편집 모드에서 "원래 예약" 을 ghost 로 표시. blocked 취급하지 않고(클릭 가능),
+   * 연민트 배경 + 가운데 ★ 표시로 현재 예약 위치를 지속적으로 알림. 사용자가 새 시간을 선택해도 사라지지 않는다.
+   */
+  ghostSlots?: Map<string, Set<number>>;
   onSlotClick?: (venue: Venue, slotMin: number, blocked: boolean) => void;
   onSlotPointerDown?: (venue: Venue, slotMin: number, blocked: boolean) => void;
   onSlotPointerEnter?: (venue: Venue, slotMin: number, blocked: boolean) => void;
@@ -120,7 +125,7 @@ type Props = {
   showActionColumn?: boolean;
 };
 
-const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate, slotMin = SLOT_MIN, availableStart = '06:00', availableEnd = '22:00', selectedSlots, alternateSlots, onSlotClick, onSlotPointerDown, onSlotPointerEnter, renderRowExtra, showActionColumn = false }: Props) => {
+const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate, slotMin = SLOT_MIN, availableStart = '06:00', availableEnd = '22:00', selectedSlots, alternateSlots, ghostSlots, onSlotClick, onSlotPointerDown, onSlotPointerEnter, renderRowExtra, showActionColumn = false }: Props) => {
   const isMobile = useIsMobile();
   const blockedByVenue = computeBlockedSlotsForDate(groups, selectedDate);
 
@@ -357,6 +362,8 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                   const mine = info?.mine;
                   const isSelected = !!selectedSlots?.get(v.id)?.has(m);
                   const isAlternate = !isSelected && !blocked && inAvailable && !!alternateSlots?.get(v.id)?.has(m);
+                  // 편집 모드의 "원래 예약 ghost" — blocked 도 아니고 선택된 것도 아닌 상태에서만 표시
+                  const isGhost = !isSelected && !blocked && inAvailable && !!ghostSlots?.get(v.id)?.has(m);
                   // 사용자 선택이 기존 예약/블럭과 겹치면 "예약불가" 경고 상태
                   const isConflict = isSelected && blocked;
                   // 색상: 충돌=주황경고, 선택=민트, 대체=반투명민트+점선, 불가시간=연회색,
@@ -368,8 +375,8 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                       ? (mine ? '#A7F3D0' : '#9CA089')
                       : '#6B6F5C';
                   const kindFg = kind === 'reservation' && mine ? '#064E3B' : '#FFFFFF';
-                  const bg = isConflict ? '#F59E0B' : isSelected ? '#20CD8D' : isAlternate ? 'rgba(32, 205, 141, 0.18)' : (!inAvailable ? '#E5E7EB' : blocked ? kindBg : '#F7FEE7');
-                  const color = isConflict ? '#FFFFFF' : isSelected ? '#fff' : isAlternate ? '#3F6212' : (!inAvailable ? '#9CA3AF' : blocked ? kindFg : '#4D7C0F');
+                  const bg = isConflict ? '#F59E0B' : isSelected ? '#20CD8D' : isAlternate ? 'rgba(32, 205, 141, 0.18)' : isGhost ? 'rgba(167, 243, 208, 0.45)' : (!inAvailable ? '#E5E7EB' : blocked ? kindBg : '#F7FEE7');
+                  const color = isConflict ? '#FFFFFF' : isSelected ? '#fff' : isAlternate ? '#3F6212' : isGhost ? '#064E3B' : (!inAvailable ? '#9CA3AF' : blocked ? kindFg : '#4D7C0F');
                   const clickable = !!onSlotClick && inAvailable;
                   const kindLabel = kind === 'event' ? '교회일정' : kind === 'reservation' ? '예약됨' : '예약불가';
                   const titleParts = [`${v.floor} ${v.name} ${toHHMM(m)}`];
@@ -380,6 +387,7 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                     if (kind === 'reservation' && reserverContact) titleParts.push(`연락처: ${reserverContact}`);
                   } else if (isSelected) titleParts.push('예약 시간 선택됨');
                   else if (isAlternate) titleParts.push('후보 (클릭하여 이 장소로 전환)');
+                  else if (isGhost) titleParts.push('원래 예약 — 새 시간을 선택할 수 있어요');
                   else titleParts.push('예약 가능 — 클릭하거나, 시작 셀에서 끝 셀까지 드래그하면 한 번에 선택됩니다');
                   // 셀 내부: reservation kind이면 가능한 한 항상 예약자 실명까지 표시.
                   // span ≥ 2 → 스택 (reason + reserverName + contact 각 줄)
@@ -404,9 +412,14 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                           onSlotPointerEnter(v, m, blocked);
                         } : undefined}
                         title={titleParts.join(' | ')}
-                        style={{ width: '100%', height: '100%', minHeight: blocked ? span * SLOT_ROW_H : SLOT_ROW_H, display: 'block', border: isAlternate ? '1.5px dashed #20CD8D' : mine ? '2px solid #20CD8D' : 'none', outline: mine ? '2px solid #20CD8D' : undefined, outlineOffset: mine ? '-2px' : undefined, background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: isMobile ? '0.62rem' : '0.6rem', fontWeight: mine ? 800 : 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box', touchAction: 'manipulation', userSelect: 'none', boxShadow: mine ? 'inset 0 0 0 1px rgba(255,255,255,0.7)' : undefined }}
+                        style={{ width: '100%', height: '100%', minHeight: blocked ? span * SLOT_ROW_H : SLOT_ROW_H, display: 'block', border: isAlternate ? '1.5px dashed #20CD8D' : isGhost ? '1.5px dashed #20CD8D' : mine ? '2px solid #20CD8D' : 'none', outline: mine ? '2px solid #20CD8D' : undefined, outlineOffset: mine ? '-2px' : undefined, background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: isMobile ? '0.62rem' : '0.6rem', fontWeight: mine || isGhost ? 800 : 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box', touchAction: 'manipulation', userSelect: 'none', boxShadow: mine ? 'inset 0 0 0 1px rgba(255,255,255,0.7)' : undefined }}
                       >
-                        {isConflict ? '예약불가' : isSelected ? '예약가능' : isAlternate ? '○' : (blocked ? (
+                        {isConflict ? '예약불가' : isSelected ? '예약가능' : isAlternate ? '○' : isGhost ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: '0.58rem' }}>
+                            <span style={{ color: '#EAB308' }}>★</span>
+                            <span style={{ color: '#064E3B', fontWeight: 700 }}>원래</span>
+                          </span>
+                        ) : (blocked ? (
                           showStacked ? (
                             <span style={{ display: 'grid', gap: 1, lineHeight: 1.1 }}>
                               {mine && (

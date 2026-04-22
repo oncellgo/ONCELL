@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { expandOccurrences, EventRow, RecurrenceRule } from '../../lib/recurrence';
-import { getEvents, setEvents, getCommunities, getSettings } from '../../lib/dataStore';
+import { getEvents, setEvents, getCommunities, getSettings, getVenues } from '../../lib/dataStore';
 
 type Community = {
   id: string;
@@ -82,6 +82,25 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       // 기간 내 occurrence로 펼치기
       const instances = visible.flatMap((ev) => expandOccurrences(ev, { from, to }));
       instances.sort((a, b) => a.startAt.localeCompare(b.startAt));
+
+      // 장소 표시 일관성 보장: venueId 가 있으면 현재 venue 데이터로 location 을 재합성한다.
+      // 저장된 location 문자열이 오래되거나 venue 이름이 변경되어도 항상 최신 이름으로 노출 → '엉뚱한 장소' 표시 방지.
+      try {
+        const venuesArr = (await getVenues()) as Array<{ id: string; floor: string; name: string; code?: string }>;
+        const venueById = new Map<string, { floor: string; name: string; code?: string }>();
+        for (const v of venuesArr || []) {
+          if (v?.id) venueById.set(v.id, { floor: v.floor, name: v.name, code: v.code });
+        }
+        for (const inst of instances) {
+          if (inst.venueId) {
+            const v = venueById.get(inst.venueId);
+            if (v) {
+              inst.location = `${v.floor} ${v.name}${v.code ? `(${v.code})` : ''}`;
+            }
+          }
+        }
+      } catch { /* venue fetch 실패 시 저장된 location 그대로 둠 */ }
+
       const truncated = instances.length > MAX_EVENTS;
       const payload = truncated ? instances.slice(0, MAX_EVENTS) : instances;
       return res.status(200).json({ events: payload, truncated, total: instances.length });
@@ -104,6 +123,17 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       }
       if (resolvedType === 'reservation' && !venueId && !(location || '').trim()) {
         return res.status(400).json({ error: '장소예약은 장소가 필요합니다.' });
+      }
+
+      // 장소 정합성 보장: venueId 가 주어졌으면 현재 venue 데이터로 location 을 서버에서 재합성.
+      // 클라이언트에서 venueId 와 location 문자열이 일치하지 않게 보낼 여지를 원천 차단.
+      let resolvedLocation: string | undefined = typeof location === 'string' ? location : undefined;
+      if (venueId) {
+        try {
+          const venuesArr = (await getVenues()) as Array<{ id: string; floor: string; name: string; code?: string }>;
+          const v = (venuesArr || []).find((x) => x.id === venueId);
+          if (v) resolvedLocation = `${v.floor} ${v.name}${v.code ? `(${v.code})` : ''}`;
+        } catch { /* venue fetch 실패 → 클라이언트가 보낸 값 사용 */ }
       }
 
       const events = await readEvents();
@@ -160,7 +190,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         title: String(title).trim(),
         startAt,
         endAt,
-        location: location ? String(location).trim() : undefined,
+        location: resolvedLocation ? String(resolvedLocation).trim() : undefined,
         venueId: venueId ? String(venueId).trim() : undefined,
         description: description ? String(description).trim() : undefined,
         createdBy: profileId,
@@ -192,8 +222,52 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       if ((row.scope === 'community' || row.scope === 'worship') && !isAdmin) return res.status(403).json({ error: '권한 없음' });
       if (row.scope === 'personal' && !isOwner && !isAdmin) return res.status(403).json({ error: '권한 없음' });
 
+      // 예약(reservation) 타입: 시간/장소 변경 시 충돌 검증.
+      // 같은 장소에서 같은 시간대에 이미 다른 예약/일정이 있으면 409.
+      if ((row.type || 'event') === 'reservation' && fields && (fields.startAt || fields.endAt || fields.venueId || fields.location)) {
+        const newStartAt: string | undefined = fields.startAt || row.startAt;
+        const newEndAt: string | undefined = fields.endAt || row.endAt;
+        const newVenueId: string | undefined = fields.venueId || row.venueId;
+        const newLocation: string | undefined = fields.location || row.location;
+        if (newStartAt && newEndAt) {
+          const newStart = new Date(newStartAt).getTime();
+          const newEnd = new Date(newEndAt).getTime();
+          if (!Number.isFinite(newStart) || !Number.isFinite(newEnd) || newEnd <= newStart) {
+            return res.status(400).json({ error: '시간이 올바르지 않습니다.' });
+          }
+          const from = new Date(newStart - 1); const to = new Date(newEnd + 1);
+          const conflictTarget = events.filter((e) =>
+            e.id !== seriesId && (
+              (e.venueId && newVenueId && e.venueId === newVenueId) ||
+              (!e.venueId && e.location && newLocation && e.location === newLocation)
+            ),
+          );
+          for (const ev of conflictTarget) {
+            const insts = expandOccurrences(ev, { from, to });
+            for (const inst of insts) {
+              const s = new Date(inst.startAt).getTime();
+              const t = new Date(inst.endAt).getTime();
+              if (s < newEnd && t > newStart) {
+                return res.status(409).json({ error: `이미 예약된 시간대입니다: ${inst.title}` });
+              }
+            }
+          }
+        }
+      }
+
+      // 장소 정합성: fields.venueId 가 주어지면 현재 venue 데이터로 location 을 재합성해 override.
+      // PATCH 도 POST 와 동일하게 venueId 를 진실의 원천으로 취급.
+      const fieldsSanitized: any = { ...(fields || {}) };
+      if (fieldsSanitized.venueId) {
+        try {
+          const venuesArr = (await getVenues()) as Array<{ id: string; floor: string; name: string; code?: string }>;
+          const v = (venuesArr || []).find((x) => x.id === fieldsSanitized.venueId);
+          if (v) fieldsSanitized.location = `${v.floor} ${v.name}${v.code ? `(${v.code})` : ''}`;
+        } catch { /* fallback: keep fields.location as-is */ }
+      }
+
       const overrides = row.overrides || {};
-      overrides[occurrenceDate] = { ...(overrides[occurrenceDate] || {}), ...(fields || {}) };
+      overrides[occurrenceDate] = { ...(overrides[occurrenceDate] || {}), ...fieldsSanitized };
       row.overrides = overrides;
       await setEvents(events);
       return res.status(200).json({ event: row });

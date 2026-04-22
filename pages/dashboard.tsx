@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { useAudio } from '../components/AudioPlayer';
 import AppShell from '../components/AppShell';
 import ConfirmModal from '../components/ConfirmModal';
+import ReservationSlotPicker, { EditReservationPayload } from '../components/ReservationSlotPicker';
+import type { Venue, Block, BlockGroup } from '../components/VenueGrid';
 import { WorshipBulletinPreview } from '../components/WorshipBulletinEditor';
 import { getCommunities, getUsers, getProfiles, getSignupApprovals } from '../lib/dataStore';
 import { getSystemAdminHref } from '../lib/adminGuard';
@@ -230,15 +232,27 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
   const [previewBulletin, setPreviewBulletin] = useState<any>(null);
 
   type WeekEvent = { id: string; title: string; startAt: string; endAt: string; location?: string; scope?: string; category?: string };
-  type MyReservation = { id: string; title: string; startAt: string; endAt: string; location?: string };
+  type MyReservation = { id: string; title: string; description?: string; startAt: string; endAt: string; location?: string; venueId?: string; seriesId?: string; dateKey?: string };
   const [weekEvents, setWeekEvents] = useState<WeekEvent[] | null>(null);
   const [myReservations, setMyReservations] = useState<MyReservation[] | null>(null);
-  // 내 장소예약 수정/삭제 인라인 상태
-  const [resEditingId, setResEditingId] = useState<string | null>(null);
-  const [resEditValue, setResEditValue] = useState<string>('');
-  const [resEditBusy, setResEditBusy] = useState(false);
+  // 내 장소예약 수정/삭제 상태
   const [resDeletingId, setResDeletingId] = useState<string | null>(null);
   const [resConfirmTarget, setResConfirmTarget] = useState<MyReservation | null>(null);
+  // 수정 모달: ReservationSlotPicker 를 edit 모드로 띄우기 위한 컨텍스트
+  type ResCtx = {
+    venues: Venue[];
+    blocks: Block[];
+    groups: BlockGroup[];
+    slotMin: number;
+    availableStart: string;
+    availableEnd: string;
+    reservationLimitMode: 'unlimited' | 'perUser';
+    reservationLimitPerUser: number;
+  };
+  const [editModalRes, setEditModalRes] = useState<MyReservation | null>(null);
+  const [editCtx, setEditCtx] = useState<ResCtx | null>(null);
+  const [editCtxLoading, setEditCtxLoading] = useState(false);
+  const [editCtxError, setEditCtxError] = useState<string | null>(null);
 
   const reloadMyReservations = async () => {
     if (!profileId) return;
@@ -255,39 +269,38 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
     } catch { /* noop */ }
   };
 
-  const onResEditStart = (r: MyReservation) => {
-    setResEditingId(r.id);
-    setResEditValue((r as any).description || r.title || '');
-  };
-  const onResEditCancel = () => { setResEditingId(null); setResEditValue(''); };
-  const onResEditSubmit = async (r: MyReservation) => {
-    if (!profileId) return;
-    const next = resEditValue.trim();
-    if (!next) return;
-    setResEditBusy(true);
+  // 수정 버튼 클릭 → 컨텍스트 로드 후 모달 오픈
+  const onResEditStart = async (r: MyReservation) => {
+    setEditModalRes(r);
+    setEditCtxError(null);
+    setEditCtxLoading(true);
     try {
-      const seriesId = (r as any).seriesId || r.id;
-      const occurrenceDate = (r as any).dateKey || r.startAt.slice(0, 10);
-      const res = await fetch('/api/events', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          seriesId,
-          occurrenceDate,
-          profileId,
-          fields: { title: next, description: next },
-        }),
+      const qs = new URLSearchParams();
+      if (profileId) qs.set('profileId', profileId);
+      if (email) qs.set('email', email);
+      const res = await fetch(`/api/reservation-context?${qs.toString()}`);
+      if (!res.ok) throw new Error('ctx load failed');
+      const d = await res.json();
+      setEditCtx({
+        venues: d.venues || [],
+        blocks: d.blocks || [],
+        groups: d.groups || [],
+        slotMin: d.slotMin || 30,
+        availableStart: d.availableStart || '06:00',
+        availableEnd: d.availableEnd || '22:00',
+        reservationLimitMode: d.reservationLimitMode || 'unlimited',
+        reservationLimitPerUser: d.reservationLimitPerUser || 3,
       });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({} as any));
-        alert(j?.error || '수정 실패');
-        return;
-      }
-      onResEditCancel();
-      await reloadMyReservations();
+    } catch {
+      setEditCtxError('예약 정보를 불러오지 못했습니다. 다시 시도해 주세요.');
     } finally {
-      setResEditBusy(false);
+      setEditCtxLoading(false);
     }
+  };
+  const closeEditModal = () => {
+    setEditModalRes(null);
+    setEditCtx(null);
+    setEditCtxError(null);
   };
   const onResDelete = (r: MyReservation) => setResConfirmTarget(r);
   const performResDelete = async () => {
@@ -863,62 +876,32 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                   const labels = ['일', '월', '화', '수', '목', '금', '토'];
                   const dateStr = `${pad(s.getMonth() + 1)}/${pad(s.getDate())} (${labels[s.getDay()]})`;
                   const timeStr = `${pad(s.getHours())}:${pad(s.getMinutes())}~${pad(e.getHours())}:${pad(e.getMinutes())}`;
-                  const isEditing = resEditingId === r.id;
                   const isDeleting = resDeletingId === r.id;
+                  const isLoadingEdit = editCtxLoading && editModalRes?.id === r.id;
                   return (
                     <li key={r.id} style={{ padding: isMobile ? '0.65rem 0.85rem' : '0.55rem 0.75rem', borderRadius: 10, background: '#ECFCCB', border: '1px solid #D9F09E', display: 'grid', gap: '0.35rem', fontSize: '0.88rem' }}>
                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                         <span style={{ color: '#3F6212', fontWeight: 800 }}>{dateStr}</span>
                         <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>{timeStr}</span>
-                        {!isEditing && (
-                          <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: '0.3rem' }}>
-                            <button
-                              type="button"
-                              onClick={() => onResEditStart(r)}
-                              disabled={isDeleting}
-                              style={{ padding: '0.25rem 0.6rem', minHeight: 32, borderRadius: 8, border: '1px solid #65A30D', background: '#fff', color: '#3F6212', fontSize: '0.78rem', fontWeight: 800, cursor: isDeleting ? 'not-allowed' : 'pointer' }}
-                            >수정</button>
-                            <button
-                              type="button"
-                              onClick={() => onResDelete(r)}
-                              disabled={isDeleting}
-                              style={{ padding: '0.25rem 0.6rem', minHeight: 32, borderRadius: 8, border: '1px solid #DC2626', background: '#fff', color: '#DC2626', fontSize: '0.78rem', fontWeight: 800, cursor: isDeleting ? 'not-allowed' : 'pointer' }}
-                            >{isDeleting ? '삭제중…' : '삭제'}</button>
-                          </span>
-                        )}
+                        <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: '0.3rem' }}>
+                          <button
+                            type="button"
+                            onClick={() => onResEditStart(r)}
+                            disabled={isDeleting || isLoadingEdit}
+                            style={{ padding: '0.25rem 0.6rem', minHeight: 32, borderRadius: 8, border: '1px solid #65A30D', background: '#fff', color: '#3F6212', fontSize: '0.78rem', fontWeight: 800, cursor: (isDeleting || isLoadingEdit) ? 'not-allowed' : 'pointer' }}
+                          >{isLoadingEdit ? '열리는 중…' : '수정'}</button>
+                          <button
+                            type="button"
+                            onClick={() => onResDelete(r)}
+                            disabled={isDeleting}
+                            style={{ padding: '0.25rem 0.6rem', minHeight: 32, borderRadius: 8, border: '1px solid #DC2626', background: '#fff', color: '#DC2626', fontSize: '0.78rem', fontWeight: 800, cursor: isDeleting ? 'not-allowed' : 'pointer' }}
+                          >{isDeleting ? '삭제중…' : '삭제'}</button>
+                        </span>
                       </div>
-                      {isEditing ? (
-                        <div style={{ display: 'grid', gap: '0.4rem' }}>
-                          <input
-                            type="text"
-                            value={resEditValue}
-                            onChange={(ev) => setResEditValue(ev.target.value)}
-                            autoFocus
-                            maxLength={80}
-                            placeholder="예약 설명 (최대 80자)"
-                            style={{ padding: '0.5rem 0.7rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.9rem', color: 'var(--color-ink)', background: '#fff' }}
-                          />
-                          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                            <button
-                              type="button"
-                              onClick={() => onResEditSubmit(r)}
-                              disabled={resEditBusy || !resEditValue.trim()}
-                              style={{ padding: '0.4rem 0.85rem', minHeight: 36, borderRadius: 8, border: 'none', background: resEditBusy || !resEditValue.trim() ? '#9CA3AF' : 'var(--color-primary)', color: '#fff', fontWeight: 800, fontSize: '0.82rem', cursor: resEditBusy || !resEditValue.trim() ? 'not-allowed' : 'pointer' }}
-                            >{resEditBusy ? '저장중…' : '저장'}</button>
-                            <button
-                              type="button"
-                              onClick={onResEditCancel}
-                              disabled={resEditBusy}
-                              style={{ padding: '0.4rem 0.85rem', minHeight: 36, borderRadius: 8, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', fontWeight: 700, fontSize: '0.82rem', cursor: resEditBusy ? 'not-allowed' : 'pointer' }}
-                            >취소</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'baseline', flexWrap: 'wrap' }}>
-                          <span style={{ color: 'var(--color-ink)', fontWeight: isMobile ? 700 : 400 }}>{r.title}</span>
-                          {r.location && <span style={{ color: 'var(--color-ink-2)', fontSize: '0.82rem' }}>📍 {r.location}</span>}
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'baseline', flexWrap: 'wrap' }}>
+                        <span style={{ color: 'var(--color-ink)', fontWeight: isMobile ? 700 : 400 }}>{r.title}</span>
+                        {r.location && <span style={{ color: 'var(--color-ink-2)', fontSize: '0.82rem' }}>📍 {r.location}</span>}
+                      </div>
                     </li>
                   );
                 })}
@@ -956,8 +939,11 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
             const qtHref = `/qt${profileId ? `?profileId=${encodeURIComponent(profileId)}${nickname ? `&nickname=${encodeURIComponent(nickname)}` : ''}${email ? `&email=${encodeURIComponent(email)}` : ''}` : ''}`;
             return (
               <section style={cardBase}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>📖 최근 큐티기록</h2>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <h2 style={{ ...sectionTitle, fontSize: '1.05rem', margin: 0 }}>📖 최근 큐티기록</h2>
+                  <span style={{ fontSize: '0.7rem', color: '#65A30D', fontWeight: 600, lineHeight: 1.4 }}>
+                    ※ 큐티는 오늘만 작성 가능 · 과거 요일은 보기만
+                  </span>
                 </div>
                 <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '0.85rem 1rem', borderRadius: 14, background: t.bg, border: `1px solid ${t.ring}` }}>
                   <span aria-hidden style={{ fontSize: '2.4rem', lineHeight: 1 }}>{t.emoji}</span>
@@ -1065,9 +1051,6 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                           ⏰ 오늘의 큐티를 완료해 보세요
                         </div>
                       )}
-                      <div style={{ marginTop: '0.3rem', fontSize: '0.7rem', color: 'var(--color-ink-2)', textAlign: 'center' }}>
-                        ※ 큐티는 오늘만 작성 가능 · 과거 요일은 보기만
-                      </div>
                     </div>
                   );
                 })()}
@@ -1093,8 +1076,11 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
             const pct = Math.round((total / 14) * 100);
             return (
               <section style={cardBase}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>🏆 최근 성경통독 기록</h2>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <h2 style={{ ...sectionTitle, fontSize: '1.05rem', margin: 0 }}>🏆 최근 성경통독 기록</h2>
+                  <span style={{ fontSize: '0.7rem', color: '#65A30D', fontWeight: 600, lineHeight: 1.4 }}>
+                    ⏰ 오늘의 성경통독을 완료해 보세요
+                  </span>
                 </div>
                 <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '0.85rem 1rem', borderRadius: 14, background: b.bg, border: `1px solid ${b.ring}` }}>
                   <span aria-hidden style={{ fontSize: '2.2rem', lineHeight: 1 }}>{b.emoji}</span>
@@ -1173,11 +1159,6 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                           );
                         })}
                       </div>
-                      {!todayDone && (
-                        <div style={{ marginTop: '0.4rem', fontSize: '0.76rem', color: 'var(--color-ink)', fontWeight: 400, textAlign: 'center' }}>
-                          ⏰ 오늘의 성경통독을 완료해 보세요
-                        </div>
-                      )}
                     </div>
                   );
                 })()}
@@ -1247,21 +1228,33 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
           })()}
 
           <section style={cardBase}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-start', gap: '0.5rem', flexWrap: 'wrap' }}>
               <h2 style={{ ...sectionTitle, fontSize: '1.05rem', margin: 0 }}>📅 {monthlySchedule?.month || (new Date().getMonth() + 1)}월 교회일정</h2>
+              <span style={{ fontSize: '0.68rem', color: '#DC2626', fontWeight: 600, lineHeight: 1.4 }}>
+                (현재 일정은 홈피의 미스바 2page 일정을 불러옴. 관리자가 등록한 일정으로 출력시 코드 변경필요)
+              </span>
             </div>
             {!monthlySchedule ? (
               <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>목회일정 불러오는 중…</p>
             ) : monthlySchedule.items.length === 0 ? (
               <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>이번달 목회일정 정보가 아직 준비되지 않았습니다.</p>
             ) : (
-              <ul style={{ listStyle: 'none', margin: '0.6rem 0 0', padding: 0, display: 'grid', gap: isMobile ? '0.5rem' : '0.4rem' }}>
-                {monthlySchedule.items.map((ev, i) => (
-                  <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', padding: isMobile ? '0.6rem 0.85rem' : '0.45rem 0.7rem', minHeight: isMobile ? 44 : undefined, borderRadius: 10, background: '#F9FCFB', border: '1px solid var(--color-surface-border)', flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 800, color: '#065F46', fontSize: isMobile ? '0.9rem' : '0.88rem', flexShrink: 0, whiteSpace: 'nowrap' }}>{ev.label}</span>
-                    <span style={{ color: 'var(--color-ink)', fontWeight: 600, fontSize: isMobile ? '0.9rem' : '0.88rem', flex: '1 1 60%', minWidth: 0, wordBreak: 'keep-all' }}>{ev.title}</span>
-                  </li>
-                ))}
+              <ul style={{ listStyle: 'none', margin: '0.5rem 0 0', padding: 0, display: 'grid', gap: '0.2rem' }}>
+                {(() => {
+                  const pad = (n: number) => String(n).padStart(2, '0');
+                  const today = new Date();
+                  const todayKey = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+                  return monthlySchedule.items.map((ev, i) => {
+                    const isUpcoming = typeof ev.date === 'string' && ev.date >= todayKey;
+                    const bg = isUpcoming ? '#ECFCCB' : (i % 2 === 0 ? '#F9FCFB' : 'transparent');
+                    return (
+                      <li key={i} style={{ display: 'flex', alignItems: 'baseline', gap: '0.55rem', padding: '0.3rem 0.7rem', borderRadius: 8, background: bg, flexWrap: 'wrap', lineHeight: 1.35, border: isUpcoming ? '1px solid #D9F09E' : 'none' }}>
+                        <span style={{ fontWeight: 800, color: isUpcoming ? '#3F6212' : '#065F46', fontSize: '0.82rem', flexShrink: 0, whiteSpace: 'nowrap', minWidth: isMobile ? 56 : 70 }}>{ev.label}</span>
+                        <span style={{ color: 'var(--color-ink)', fontWeight: isUpcoming ? 700 : 500, fontSize: '0.82rem', flex: '1 1 auto', minWidth: 0, wordBreak: 'keep-all' }}>{ev.title}</span>
+                      </li>
+                    );
+                  });
+                })()}
               </ul>
             )}
             <p style={{ margin: '0.55rem 0 0', fontSize: isMobile ? '0.78rem' : '0.74rem', color: 'var(--color-ink-2)', lineHeight: 1.5 }}>※ 교회의 사정에 따라 일정은 변경될 수 있습니다. (출처: 미스바 목회일정)</p>
@@ -1336,6 +1329,84 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
       {previewBulletin && (
         <WorshipBulletinPreview value={previewBulletin} onClose={() => setPreviewBulletin(null)} />
       )}
+
+      {editModalRes && (() => {
+        // venueId 복원: 블럭 id 패턴 occ-<seriesId>:<dateKey>, venueId 는 reservation occurrence 에 포함.
+        // ctx 로드 후 reservation 자체의 venueId 를 찾아야 함 — SSR 에서 MyReservation 에 venueId 가 없다면 location 매칭.
+        const r = editModalRes;
+        const venueId = r.venueId || (editCtx?.venues || []).find((v) => r.location?.includes(`(${v.code})`))?.id || '';
+        const fixedVenue = (editCtx?.venues || []).find((v) => v.id === venueId);
+        const dateStr = r.startAt.slice(0, 10);
+        const startDate = new Date(r.startAt);
+        const endDate = new Date(r.endAt);
+        const startMin = startDate.getHours() * 60 + startDate.getMinutes();
+        const endMin = endDate.getHours() * 60 + endDate.getMinutes();
+        const editPayload: EditReservationPayload = {
+          id: r.id,
+          seriesId: r.seriesId || r.id,
+          dateKey: r.dateKey || dateStr,
+          date: dateStr,
+          venueId,
+          startMin,
+          endMin,
+          description: r.description || r.title || '',
+        };
+        return (
+          <div
+            onClick={(e) => { if (e.target === e.currentTarget) closeEditModal(); }}
+            style={{ position: 'fixed', inset: 0, zIndex: 110, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', padding: isMobile ? 0 : '1rem' }}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="예약 수정"
+              style={{
+                width: '100%',
+                maxWidth: 1100,
+                maxHeight: isMobile ? '94dvh' : '92vh',
+                background: '#fff',
+                borderRadius: isMobile ? '18px 18px 0 0' : 16,
+                boxShadow: '0 -8px 40px rgba(0,0,0,0.22)',
+                display: 'flex', flexDirection: 'column', overflow: 'hidden',
+              }}
+            >
+              <div style={{ padding: '0.9rem 1rem', borderBottom: '1px solid var(--color-surface-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-ink)' }}>📍 예약 수정</h3>
+                <button type="button" onClick={closeEditModal} aria-label="닫기" style={{ background: 'none', border: 'none', fontSize: '1.3rem', cursor: 'pointer', color: 'var(--color-ink-2)', minWidth: 40, minHeight: 40 }}>✕</button>
+              </div>
+              <div style={{ padding: isMobile ? '0.85rem 0.75rem 1.5rem' : '1.1rem 1.2rem', overflowY: 'auto', display: 'grid', gap: isMobile ? '0.85rem' : '1rem' }}>
+                {editCtxLoading ? (
+                  <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.9rem', textAlign: 'center', padding: '2rem 0' }}>예약 정보를 불러오는 중…</p>
+                ) : editCtxError ? (
+                  <p style={{ margin: 0, color: '#B91C1C', fontSize: '0.9rem', fontWeight: 700, textAlign: 'center', padding: '1rem 0' }}>⚠ {editCtxError}</p>
+                ) : editCtx && fixedVenue ? (
+                  <ReservationSlotPicker
+                    mode="edit"
+                    venues={editCtx.venues}
+                    blocks={editCtx.blocks}
+                    groups={editCtx.groups}
+                    slotMin={editCtx.slotMin}
+                    availableStart={editCtx.availableStart}
+                    availableEnd={editCtx.availableEnd}
+                    reservationLimitMode={editCtx.reservationLimitMode}
+                    reservationLimitPerUser={editCtx.reservationLimitPerUser}
+                    profileId={profileId}
+                    displayName={storedProfile?.realName || userEntries[0]?.realName || userEntries[0]?.nickname || nickname || null}
+                    contact={storedProfile?.contact || null}
+                    nickname={nickname}
+                    email={email}
+                    editReservation={editPayload}
+                    onSubmitted={async () => { closeEditModal(); await reloadMyReservations(); }}
+                    onCancel={closeEditModal}
+                  />
+                ) : (
+                  <p style={{ margin: 0, color: '#B91C1C', fontSize: '0.9rem', fontWeight: 700, textAlign: 'center', padding: '1rem 0' }}>장소 정보를 찾지 못했습니다.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       <ConfirmModal
         open={!!resConfirmTarget}
