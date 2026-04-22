@@ -941,14 +941,16 @@ const ReservationSlotPicker = ({
 
             <div style={{ padding: '1rem', overflowY: 'auto', display: 'grid', gap: '0.85rem' }}>
               <div style={{ padding: '0.75rem 0.9rem', borderRadius: 12, background: '#FFF7ED', border: '1px solid #FED7AA', display: 'grid', gap: '0.55rem' }}>
+                <style>{`.kcis-resv-input::placeholder { color: #D1D5DB; font-style: italic; font-weight: 400; opacity: 1; }`}</style>
                 <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#9A3412', letterSpacing: '0.02em' }}>👤 예약자 정보 (교인확인을 위해 실명과 연락처를 정확히 기입)</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr', gap: '0.4rem 0.5rem', fontSize: '0.92rem', alignItems: 'center' }}>
                   <span style={{ color: '#9A3412', fontWeight: 800 }}>이름</span>
                   <input
                     type="text"
+                    className="kcis-resv-input"
                     value={stagedName}
                     onChange={(e) => setStagedName(e.target.value)}
-                    placeholder="실명"
+                    placeholder="실명을 입력하세요"
                     style={{ padding: '0.5rem 0.7rem', minHeight: 38, borderRadius: 8, border: '1px solid #FED7AA', background: '#fff', fontSize: '0.9rem', color: 'var(--color-ink)', fontWeight: 700 }}
                   />
                   <span style={{ color: '#9A3412', fontWeight: 800 }}>연락처</span>
@@ -956,13 +958,14 @@ const ReservationSlotPicker = ({
                     <span style={{ fontSize: '0.9rem', color: 'var(--color-ink-2)', fontWeight: 700, fontFamily: 'monospace', flexShrink: 0 }}>+65</span>
                     <input
                       type="tel"
+                      className="kcis-resv-input"
                       value={(() => { const s = (stagedContact || '').trim(); const m = s.match(/^\+\d{1,3}[\s-]*(.+)$/); return m ? m[1].trim() : s; })()}
                       onChange={(e) => {
                         const digits = e.target.value.replace(/\D/g, '').slice(0, 8);
                         const formatted = digits.length <= 4 ? digits : `${digits.slice(0, 4)}-${digits.slice(4)}`;
                         setStagedContact(formatted ? `+65 ${formatted}` : '');
                       }}
-                      placeholder="1234-5678"
+                      placeholder="예) 1234-5678"
                       inputMode="numeric"
                       maxLength={9}
                       style={{ flex: 1, minWidth: 0, padding: '0.5rem 0.7rem', minHeight: 38, borderRadius: 8, border: '1px solid #FED7AA', background: '#fff', fontSize: '0.9rem', color: 'var(--color-ink)', fontWeight: 700, fontFamily: 'monospace' }}
