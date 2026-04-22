@@ -199,11 +199,11 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
                     minHeight: isMobile ? 56 : 52, minWidth: 0,
                   }}
                 >
+                  <span style={{ fontSize: isMobile ? '0.68rem' : '0.72rem', fontWeight: 700, color: 'var(--color-ink)', lineHeight: 1 }}>{weekLabel}</span>
                   <span style={{ fontSize: isMobile ? '0.72rem' : '0.8rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1, whiteSpace: 'nowrap' }}>
                     <span style={{ color: '#DC2626' }}>{startLabel}</span>
                     -{endLabel}
                   </span>
-                  <span style={{ fontSize: isMobile ? '0.68rem' : '0.72rem', fontWeight: 700, color: 'var(--color-ink)', lineHeight: 1 }}>{weekLabel}</span>
                   {isToday && (
                     <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#fff', background: '#20CD8D', padding: '0.08rem 0.4rem', borderRadius: 999, letterSpacing: '0.02em' }}>오늘</span>
                   )}
