@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
+import ProfileModal from './ProfileModal';
 import { useIsMobile } from '../lib/useIsMobile';
 
 /**
@@ -44,6 +45,8 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
   const effProfileId = profileId || lsProfileId;
   const effNickname = nickname || lsNickname;
   const effEmail = email || lsEmail;
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [currentDisplayName, setCurrentDisplayName] = useState<string | null>(displayName || null);
   const authQs = effProfileId
     ? new URLSearchParams({
         profileId: effProfileId,
@@ -54,7 +57,7 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
   const homeHref = effProfileId ? `/?${authQs}` : '/';
   const dashboardHref = effProfileId ? `/dashboard?${authQs}` : '/dashboard';
   const providerLabel = effProfileId?.startsWith('kakao-') ? '카카오 사용자' : effProfileId?.startsWith('google-') ? 'Google 사용자' : '사용자';
-  const userLabel = displayName || effNickname || (effEmail ? effEmail.split('@')[0] : providerLabel);
+  const userLabel = currentDisplayName || displayName || effNickname || (effEmail ? effEmail.split('@')[0] : providerLabel);
   return (
     <div style={{ position: 'sticky', top: 0, zIndex: 20, display: 'grid', gap: '0.35rem' }}>
     <style>{`
@@ -135,7 +138,13 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
             overflow: 'hidden',
             whiteSpace: 'nowrap',
           }}>
-            {userLabel}
+            <button
+              type="button"
+              onClick={() => setProfileModalOpen(true)}
+              title="내 정보 수정"
+              aria-label="내 정보 수정"
+              style={{ background: 'none', border: 'none', padding: 0, margin: 0, font: 'inherit', color: 'inherit', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'underline', textUnderlineOffset: 3, textDecorationColor: 'var(--color-gray)' }}
+            >{userLabel}</button>
             {systemAdminHref && (
               <a href={systemAdminHref} aria-label={t('nav.sysSettings')} title={t('nav.sysSettings')} style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -214,6 +223,17 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
           <div style={{ flex: 1, minWidth: 0 }}>{brandExtras}</div>
         )}
       </section>
+    )}
+
+    {profileModalOpen && effProfileId && (
+      <ProfileModal
+        profileId={effProfileId}
+        nickname={effNickname}
+        email={effEmail}
+        initialRealName={currentDisplayName || displayName || null}
+        onClose={() => setProfileModalOpen(false)}
+        onSaved={(next) => setCurrentDisplayName(next.realName)}
+      />
     )}
     </div>
   );
