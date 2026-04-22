@@ -1015,28 +1015,34 @@ const ReservationSlotPicker = ({
 
               {mode === 'create' && (
                 <div style={{
-                  padding: '0.75rem 0.9rem', borderRadius: 12,
+                  padding: '0.85rem 0.95rem', borderRadius: 12,
                   background: '#FEF3C7',
                   border: shakeConfirm ? '2px solid #DC2626' : '1px solid #FBBF24',
-                  display: 'grid', gap: '0.4rem',
+                  display: 'grid', gap: '0.6rem',
                   animation: shakeConfirm ? 'kcisShake 0.55s cubic-bezier(0.36,0.07,0.19,0.97) both' : undefined,
                   transition: 'border-color 0.2s ease',
                 }}>
-                  <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#92400E', letterSpacing: '0.02em' }}>⚠️ 예약전 확인사항</div>
-                  {[
-                    { checked: cMember, setter: setCMember, label: '싱가폴한인교회 등록교인이며, 실명과 연락가능한 번호를 올바르게 입력했습니다.' },
-                    { checked: cCancel, setter: setCCancel, label: '잘못된 정보를 입력할 경우, 사전통보 없이 예약이 취소될 수 있음을 인지했습니다.' },
-                  ].map((item, i) => (
-                    <label key={i} style={{
-                      display: 'flex', alignItems: 'flex-start', gap: '0.7rem',
-                      padding: '0.4rem 0',
-                      fontSize: '0.92rem',
-                      color: '#78350F', fontWeight: 700, lineHeight: 1.5, cursor: 'pointer',
-                    }}>
-                      <input type="checkbox" checked={item.checked} onChange={(e) => item.setter(e.target.checked)} style={{ marginTop: '0.1rem', accentColor: '#D97706', flexShrink: 0, width: 24, height: 24 }} />
-                      <span>{item.label}</span>
-                    </label>
-                  ))}
+                  <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#92400E', letterSpacing: '0.02em' }}>⚠️ 예약 전 확인해 주세요!</div>
+                  <div style={{ display: 'grid', gap: '0.4rem', fontSize: '0.86rem', color: '#78350F', lineHeight: 1.6 }}>
+                    <p style={{ margin: 0 }}>장소 예약 서비스는 정확한 성함과 연락처가 등록된 교인에 한해 제공됩니다.</p>
+                    <p style={{ margin: 0 }}>연락처 미기재 또는 허위 정보 입력 시 예약이 임의 취소될 수 있으며, 이후 서비스 이용에 제한이 있을 수 있습니다.</p>
+                  </div>
+                  <div style={{ display: 'grid', gap: '0.2rem', paddingTop: '0.4rem', borderTop: '1px dashed #FBBF24' }}>
+                    {[
+                      { checked: cMember, setter: setCMember, label: '싱가폴한인교회 등록교인이며, 실명과 연락가능한 번호를 올바르게 입력했습니다.' },
+                      { checked: cCancel, setter: setCCancel, label: '잘못된 정보를 입력할 경우, 사전통보 없이 예약이 취소될 수 있음을 인지했습니다.' },
+                    ].map((item, i) => (
+                      <label key={i} style={{
+                        display: 'flex', alignItems: 'flex-start', gap: '0.7rem',
+                        padding: '0.35rem 0',
+                        fontSize: '0.9rem',
+                        color: '#78350F', fontWeight: 700, lineHeight: 1.5, cursor: 'pointer',
+                      }}>
+                        <input type="checkbox" checked={item.checked} onChange={(e) => item.setter(e.target.checked)} style={{ marginTop: '0.1rem', accentColor: '#D97706', flexShrink: 0, width: 24, height: 24 }} />
+                        <span>{item.label}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               )}
 
