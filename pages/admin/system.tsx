@@ -427,7 +427,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
 
         {!sectionFilter && (
         <section style={{ ...cardStyle, padding: isMobile ? '0.85rem' : cardStyle.padding }}>
-          <h2 style={titleStyle}>{t('admin.sectionSysAdmins')} ({admins.length + adminEmails.length})</h2>
+          <h2 style={titleStyle}>{t('admin.sectionSysAdmins')} ({admins.length})</h2>
           <p style={subtle}>가입자 목록에서 시스템 관리자로 추가할 사람을 선택하세요.</p>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr auto', gap: '0.5rem' }}>
             <select
@@ -474,33 +474,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
                 </li>
               );
             })}
-            {adminEmails.map((em) => {
-              const isMine = myEmailLower && em.toLowerCase() === myEmailLower;
-              const u = users.find((x) => (x.email || '').toLowerCase() === em.toLowerCase());
-              const name = u?.realName || u?.nickname || '(가입 안 된 이메일)';
-              const idLabel = u?.profileId || '-';
-              const contactLabel = u?.contact || '-';
-              const lastLoginLabel = u?.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString('ko-KR') : '-';
-              return (
-                <li key={`em-${em}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', padding: '0.65rem 0.85rem', border: isMine ? '1px solid #F59E0B' : '1px solid #BFDBFE', borderRadius: 10, background: isMine ? '#FEF3C7' : '#EFF6FF' }}>
-                  <div style={{ display: 'grid', gap: '0.25rem', minWidth: 0, flex: 1, fontSize: '0.85rem' }}>
-                    <p style={{ margin: 0, fontWeight: 700, color: '#182527', fontSize: '0.92rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                      <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#1E40AF', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>EMAIL</span>
-                      <span>{name}</span>
-                      {isMine && <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#F59E0B', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>나</span>}
-                    </p>
-                    <p style={{ margin: 0, color: '#2D4048', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'auto 1fr', gap: isMobile ? '0.1rem' : '0.4rem', rowGap: '0.15rem' }}>
-                      <span style={{ color: '#1E40AF', fontWeight: 700 }}>아이디</span><span style={{ wordBreak: 'break-all' }}>{idLabel}</span>
-                      <span style={{ color: '#1E40AF', fontWeight: 700 }}>이메일</span><span style={{ wordBreak: 'break-all' }}>{em}</span>
-                      <span style={{ color: '#1E40AF', fontWeight: 700 }}>연락처</span><span>{contactLabel}</span>
-                      <span style={{ color: '#1E40AF', fontWeight: 700 }}>최근접속</span><span>{lastLoginLabel}</span>
-                    </p>
-                  </div>
-                  <button disabled={busy} onClick={() => removeAdmin(em, 'email')} style={{ ...btn, minHeight: 40, background: '#b91c1c', color: '#fff', flexShrink: 0 }}>{t('admin.remove')}</button>
-                </li>
-              );
-            })}
-            {admins.length === 0 && adminEmails.length === 0 && <li><p style={subtle}>관리자가 없습니다.</p></li>}
+            {admins.length === 0 && <li><p style={subtle}>관리자가 없습니다.</p></li>}
           </ul>
         </section>
         )}
