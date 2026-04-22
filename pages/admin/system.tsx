@@ -465,7 +465,6 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
                     </p>
                     <p style={{ margin: 0, color: '#2D4048', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'auto 1fr', gap: isMobile ? '0.1rem' : '0.4rem', rowGap: '0.15rem' }}>
                       <span style={{ color: '#65A30D', fontWeight: 700 }}>아이디</span><span style={{ wordBreak: 'break-all' }}>{idLabel}</span>
-                      <span style={{ color: '#65A30D', fontWeight: 700 }}>이메일</span><span style={{ wordBreak: 'break-all' }}>{u?.email || '-'}</span>
                       <span style={{ color: '#65A30D', fontWeight: 700 }}>연락처</span><span>{contactLabel}</span>
                       <span style={{ color: '#65A30D', fontWeight: 700 }}>최근접속</span><span>{lastLoginLabel}</span>
                     </p>
