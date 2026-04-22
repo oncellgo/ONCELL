@@ -14,10 +14,12 @@ const CompleteSignupPage = () => {
   const fields = useMemo(() => fieldsParam.split(',').filter(Boolean), [fieldsParam]);
   const needRealName = fields.includes('realName');
   const needContact = fields.includes('contact');
+  const needPrivacy = fields.includes('privacyConsent');
 
   const [realName, setRealName] = useState('');
   const [countryCode, setCountryCode] = useState('+65');
   const [contactLocal, setContactLocal] = useState('');
+  const [privacyChecked, setPrivacyChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,6 +33,7 @@ const CompleteSignupPage = () => {
     setError(null);
     if (needRealName && !realName.trim()) { setError('실명을 입력해주세요.'); return; }
     if (needContact && !contactLocal.trim()) { setError('연락처를 입력해주세요.'); return; }
+    if (needPrivacy && !privacyChecked) { setError('개인정보 수집 및 이용에 동의해주세요.'); return; }
 
     const fullContact = needContact ? `${countryCode} ${contactLocal.trim()}` : '';
 
@@ -43,6 +46,7 @@ const CompleteSignupPage = () => {
           profileId,
           ...(needRealName ? { realName: realName.trim() } : {}),
           ...(needContact ? { contact: fullContact } : {}),
+          ...(needPrivacy ? { privacyConsent: true } : {}),
         }),
       });
       if (!res.ok) {
@@ -70,7 +74,7 @@ const CompleteSignupPage = () => {
     <>
       <Head><title>KCIS | 가입정보 입력</title></Head>
       <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', fontFamily: 'var(--font-sans)' }}>
-        <div style={{ width: '100%', maxWidth: 440, padding: '2rem 1.5rem', borderRadius: 16, background: '#fff', border: '1px solid #D9F09E', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1.1rem' }}>
+        <div style={{ width: '100%', maxWidth: 520, padding: '2rem 1.5rem', borderRadius: 16, background: '#fff', border: '1px solid #D9F09E', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1.1rem' }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '2.5rem', lineHeight: 1 }}>📝</div>
             <h1 style={{ margin: '0.5rem 0 0', fontSize: '1.2rem', color: '#3F6212' }}>가입정보 입력</h1>
@@ -116,6 +120,52 @@ const CompleteSignupPage = () => {
                 />
               </div>
             </label>
+          )}
+
+          {needPrivacy && (
+            <section style={{ padding: '0.9rem 1rem', borderRadius: 10, background: '#F7FEE7', border: '1px solid #D9F09E', display: 'grid', gap: '0.65rem' }}>
+              <h2 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#3F6212', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span aria-hidden>🔒</span>
+                <span>개인정보 수집 및 이용 동의 <span style={{ color: '#DC2626' }}>[필수]</span></span>
+              </h2>
+
+              <div style={{ display: 'grid', gap: '0.55rem', fontSize: '0.82rem', color: '#4B5563', lineHeight: 1.6 }}>
+                <div>
+                  <p style={{ margin: 0, fontWeight: 800, color: '#365314' }}>1. 수집 항목 및 목적</p>
+                  <p style={{ margin: '0.15rem 0 0' }}>
+                    <strong style={{ color: '#365314' }}>수집 항목:</strong> 이름, 연락처(휴대전화 번호), 소셜 연동 정보(이메일, 프로필 사진)
+                  </p>
+                  <p style={{ margin: '0.15rem 0 0' }}>
+                    <strong style={{ color: '#365314' }}>수집 목적:</strong> 교인 식별, 장소 예약 확인 및 관리, 긴급 공지 전달, 개인화 서비스(큐티/성경통독 기록) 제공
+                  </p>
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontWeight: 800, color: '#365314' }}>2. 보유 및 이용 기간</p>
+                  <p style={{ margin: '0.15rem 0 0' }}>회원 탈퇴 시 즉시 파기 (단, 법령에 의거 보존이 필요한 경우 해당 기간 보관)</p>
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontWeight: 800, color: '#365314' }}>3. 동의 거부 권리 및 불이익 안내</p>
+                  <p style={{ margin: '0.15rem 0 0' }}>
+                    귀하는 정보 수집에 동의하지 않을 수 있습니다. 단, 이름과 연락처는 서비스 제공을 위한 <strong style={{ color: '#B91C1C' }}>필수 정보</strong>로, 입력을 거부하거나 허위 정보를 입력할 경우 회원가입 및 장소 예약 서비스 이용이 제한됩니다.
+                  </p>
+                  <p style={{ margin: '0.15rem 0 0', color: '#B91C1C' }}>
+                    입력된 정보가 허위로 판명될 경우, 사전 고지 없이 예약이 임의 취소될 수 있음을 알려드립니다.
+                  </p>
+                </div>
+              </div>
+
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.65rem 0.8rem', borderRadius: 8, background: '#fff', border: '1px solid #D9F09E', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={privacyChecked}
+                  onChange={(e) => setPrivacyChecked(e.target.checked)}
+                  style={{ width: 18, height: 18, marginTop: 2, flexShrink: 0, accentColor: '#65A30D', cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#3F6212', lineHeight: 1.5 }}>
+                  본 사이트 이용을 위해 개인정보 수집 및 이용에 동의하십니까? <span style={{ color: '#DC2626' }}>*</span>
+                </span>
+              </label>
+            </section>
           )}
 
           {error && <p style={{ margin: 0, fontSize: '0.82rem', color: '#DC2626', fontWeight: 700 }}>{error}</p>}

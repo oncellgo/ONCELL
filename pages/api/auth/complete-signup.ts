@@ -8,10 +8,12 @@ type Approval = {
   email: string;
   realName?: string;
   contact?: string;
+  privacyConsent?: boolean;
+  privacyConsentAt?: string;
   firstLoginAt: string;
   lastLoginAt: string;
   loginCount: number;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'blocked' | 'withdrawn';
 };
 
 type Profile = {
@@ -27,7 +29,7 @@ type Profile = {
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed.' });
 
-  const { profileId, realName, contact } = req.body as { profileId?: string; realName?: string; contact?: string };
+  const { profileId, realName, contact, privacyConsent } = req.body as { profileId?: string; realName?: string; contact?: string; privacyConsent?: boolean };
   if (!profileId) return res.status(400).json({ error: 'profileId required.' });
 
   let list: Approval[] = [];
@@ -38,6 +40,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   if (typeof realName === 'string' && realName.trim()) list[idx].realName = realName.trim();
   if (typeof contact === 'string' && contact.trim()) list[idx].contact = contact.trim();
+  // 개인정보 수집·이용 동의 — true 로만 저장(감사용 타임스탬프 포함). false 전달 무시.
+  if (privacyConsent === true && !list[idx].privacyConsent) {
+    list[idx].privacyConsent = true;
+    list[idx].privacyConsentAt = new Date().toISOString();
+  }
 
   await setSignupApprovals(list);
 

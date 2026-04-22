@@ -8,6 +8,8 @@ type Approval = {
   email: string;
   realName?: string;
   contact?: string;
+  privacyConsent?: boolean;
+  privacyConsentAt?: string;
   firstLoginAt: string;
   lastLoginAt: string;
   loginCount: number;
@@ -16,8 +18,8 @@ type Approval = {
   withdrawnAt?: string;
 };
 
-type SignupField = 'realName' | 'contact';
-type Settings = { signupApproval?: 'auto' | 'admin'; signupRequiredFields?: SignupField[] };
+type SignupField = 'realName' | 'contact' | 'privacyConsent';
+type Settings = { signupApproval?: 'auto' | 'admin'; signupRequiredFields?: Array<'realName' | 'contact'> };
 
 const readApprovals = async (): Promise<Approval[]> => {
   try { return ((await getSignupApprovals()) || []) as Approval[]; } catch { return []; }
@@ -32,6 +34,7 @@ const computeMissingFields = (approval: Approval, required: SignupField[]): Sign
   const missing: SignupField[] = [];
   if (required.includes('realName') && !approval.realName) missing.push('realName');
   if (required.includes('contact') && !approval.contact) missing.push('contact');
+  if (required.includes('privacyConsent') && !approval.privacyConsent) missing.push('privacyConsent');
   return missing;
 };
 
@@ -43,9 +46,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const settings = await readSettings();
   const approvalMode: 'auto' | 'admin' = settings.signupApproval === 'admin' ? 'admin' : 'auto';
-  const required: SignupField[] = Array.isArray(settings.signupRequiredFields)
-    ? settings.signupRequiredFields.filter((f): f is SignupField => f === 'realName' || f === 'contact')
+  const configured: SignupField[] = Array.isArray(settings.signupRequiredFields)
+    ? settings.signupRequiredFields.filter((f): f is 'realName' | 'contact' => f === 'realName' || f === 'contact')
     : ['realName', 'contact'];
+  // 개인정보 수집·이용 동의(privacyConsent) 는 법적 의무라 설정과 무관하게 항상 required.
+  const required: SignupField[] = Array.from(new Set<SignupField>([...configured, 'privacyConsent']));
 
   const list = await readApprovals();
   const now = new Date().toISOString();
