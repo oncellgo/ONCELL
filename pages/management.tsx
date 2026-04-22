@@ -9,6 +9,7 @@ import DateTimePicker from '../components/DateTimePicker';
 import WorshipBulletinEditor, { WorshipBulletinPreview } from '../components/WorshipBulletinEditor';
 import { getSystemAdminHref } from '../lib/adminGuard';
 import { useIsMobile } from '../lib/useIsMobile';
+import { isAllDayEvent } from '../lib/events';
 import { getCommunities, getUsers } from '../lib/dataStore';
 
 type Community = {
@@ -1023,11 +1024,13 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
               const yearOptions: number[] = [];
               for (let y = year - 5; y <= year + 5; y++) yearOptions.push(y);
 
-              // 예배/기도회 주간표: 최근 일요일 기준 일~토 (worshipWeekOffset만큼 주 이동)
+              // 예배/기도회 주간표: 월요일 기준 월~일 (worshipWeekOffset 만큼 주 이동)
               const [tY, tM, tD] = todayKey.split('-').map(Number);
               const todayLocal = new Date(tY, tM - 1, tD);
-              const dowToday = todayLocal.getDay();
-              const weekStartOffset = -dowToday + worshipWeekOffset * 7;
+              const dowToday = todayLocal.getDay();  // 0=일 ~ 6=토
+              // 월요일이 주 시작 → 오늘이 일요일(0)이면 -6, 월(1)이면 0, 화(2)면 -1, ...
+              const mondayDelta = dowToday === 0 ? -6 : 1 - dowToday;
+              const weekStartOffset = mondayDelta + worshipWeekOffset * 7;
               const weekDaysCal: Array<{ key: string; date: Date; events: any[] }> = [];
               for (let i = 0; i < 7; i++) {
                 const d = new Date(tY, tM - 1, tD + weekStartOffset + i);
@@ -1070,7 +1073,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
 
               return (
                 <>
-                <section style={{ padding: '1.25rem 1.5rem', borderRadius: 16, background: '#fff', border: '1px solid #D9F09E', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '0.75rem' }}>
+                <section style={{ padding: '1.25rem 1.5rem', borderRadius: 16, background: '#fff', border: '1px solid #D9F09E', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '0.75rem', order: 2 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
                     <h2 style={{ margin: 0, fontSize: '1.1rem', color: '#3F6212', letterSpacing: '-0.01em', fontWeight: 800 }}>⛪ 교회일정 ({weekLabel})</h2>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -1141,12 +1144,13 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                               {oList.length > 0 && (
                                 <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: '0.15rem' }}>
                                   {oList.map((ev: any) => {
+                                    const allDay = isAllDayEvent(ev.startAt, ev.endAt);
                                     const raw = new Date(ev.startAt);
                                     const hour = raw.getHours();
                                     const minute = raw.getMinutes();
                                     const ampm = hour < 12 ? '오전' : '오후';
                                     const h12 = ((hour + 11) % 12) + 1;
-                                    const timeLabel = `${ampm} ${String(h12).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                                    const timeLabel = allDay ? '종일' : `${ampm} ${String(h12).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
                                     const dot = bulletColor(ev.category);
                                     return (
                                       <li key={ev.id + ev.startAt} style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', fontSize: '0.8rem', lineHeight: 1.35 }}>
@@ -1186,7 +1190,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                   </div>
                 </section>
 
-                <section style={{ padding: isMobile ? '1rem' : '1.5rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
+                <section style={{ padding: isMobile ? '1rem' : '1.5rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem', order: 1 }}>
                   {(() => {
                     const panelKey = selectedCalDay || todayKey;
                     const isAdmin = Boolean(community?.adminProfileId === profileId);
