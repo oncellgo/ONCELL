@@ -554,7 +554,7 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
   return (
     <>
       <Head>
-        <title>KCIS | 장소예약</title>
+        <title>KCIS | 예약현황보기</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 

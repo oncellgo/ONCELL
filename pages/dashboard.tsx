@@ -745,14 +745,14 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
           <section style={cardBase}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
               <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>📍 다가오는 나의 장소예약</h2>
-              <a href="/reservation" style={{ color: 'var(--color-primary-deep)', fontSize: isMobile ? '0.85rem' : '0.82rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 40, padding: '0 0.25rem' }}>새 예약 →</a>
+              <a href="/reservations/grid" style={{ color: 'var(--color-primary-deep)', fontSize: isMobile ? '0.85rem' : '0.82rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 40, padding: '0 0.25rem' }}>새 예약 →</a>
             </div>
             {!profileId ? (
               <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>로그인 후 이용해 주세요.</p>
             ) : myReservations === null ? (
               <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>불러오는 중…</p>
             ) : myReservations.length === 0 ? (
-              <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>다가오는 예약이 없습니다. <a href="/reservation" style={{ color: 'var(--color-primary-deep)', textDecoration: 'underline', fontWeight: 700 }}>장소 예약하기 →</a></p>
+              <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>다가오는 예약이 없습니다. <a href="/reservations/grid" style={{ color: 'var(--color-primary-deep)', textDecoration: 'underline', fontWeight: 700 }}>장소 예약하기 →</a></p>
             ) : (
               <ul style={{ listStyle: 'none', margin: '0.6rem 0 0', padding: 0, display: 'grid', gap: isMobile ? '0.55rem' : '0.45rem' }}>
                 {myReservations.slice(0, 5).map((r) => {

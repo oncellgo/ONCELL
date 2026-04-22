@@ -70,7 +70,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
       setShowPendingModal(true);
       return;
     }
-    router.push('/reservation');
+    router.push('/reservations/grid');
   };
 
   // 로그인 필요 메뉴(큐티·구역모임교안·문의)의 공통 가드
@@ -120,7 +120,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
             </p>
 
             <div className={styles.menuGrid}>
-              <a className={styles.menuCard} style={{ gridColumn: '1 / -1' }} href="/reservation" onClick={handleReservationClick}>
+              <a className={styles.menuCard} style={{ gridColumn: '1 / -1' }} href="/reservations/grid" onClick={handleReservationClick}>
                 <span className={styles.menuIcon} aria-hidden>
                   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 21s-7-7.5-7-12a7 7 0 1 1 14 0c0 4.5-7 12-7 12z" />
@@ -206,7 +206,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
             setShowRequiredModal(false);
             const d = await refreshStatus(effectiveProfileId);
             if (d?.status === 'pending') setShowPendingModal(true);
-            else if (d?.status === 'approved' || d?.status === null) router.push('/reservation');
+            else if (d?.status === 'approved' || d?.status === null) router.push('/reservations/grid');
           }}
           onCancel={() => setShowRequiredModal(false)}
         />

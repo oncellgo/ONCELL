@@ -96,7 +96,7 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
             <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>나의 장소예약</h2>
             <Link
-              href={`/reservation${effectiveProfileId ? `?profileId=${encodeURIComponent(effectiveProfileId)}` : ''}`}
+              href={`/reservations/grid${effectiveProfileId ? `?profileId=${encodeURIComponent(effectiveProfileId)}` : ''}`}
               style={{ padding: '0.5rem 1rem', borderRadius: 999, border: '1px solid var(--color-primary)', background: '#fff', color: 'var(--color-primary)', fontWeight: 800, fontSize: '0.86rem', textDecoration: 'none' }}
             >
               + 새 예약하기
