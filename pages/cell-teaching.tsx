@@ -280,7 +280,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
               enText={guide.bibleTextEn || null}
               source="koreanchurch.sg 구역예배지 PDF · 본문: 개역한글/KJV 공공영역"
               collapsible
-              defaultOpen
+              defaultOpen={false}
             />
           )}
 
