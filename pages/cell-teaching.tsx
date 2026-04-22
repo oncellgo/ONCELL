@@ -24,13 +24,14 @@ type Props = {
 const pad = (n: number) => String(n).padStart(2, '0');
 const keyFor = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-// 현재 속한 주의 일요일 — 오늘이 일요일이면 오늘, 월~토이면 다음 주일.
-// (월요일 이후부터 이미 그 주의 주보/구역예배지가 대상이 됨)
+// 가장 최근의 지난 주일 — 오늘이 일요일이면 오늘, 그 외에는 직전 주일.
+// 자료는 보통 목~토에 업로드되므로 주 초반 접속 시 '다음 주일'을 기본으로 두면
+// 아직 없는 자료를 가리켜 빈 화면이 됨. 확정된 가장 최근 주일을 기본 선택.
 const mostRecentSunday = (now: Date): Date => {
   const d = new Date(now);
   d.setHours(0, 0, 0, 0);
   const dow = d.getDay();
-  if (dow !== 0) d.setDate(d.getDate() + (7 - dow));
+  if (dow !== 0) d.setDate(d.getDate() - dow);
   return d;
 };
 
@@ -164,7 +165,9 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
               // 해당 주일 직전 일~토 (Nth주 금요 구역예배 내용이 다루는 한 주)
               const start = new Date(d); start.setDate(d.getDate() - 7);
               const end = new Date(d); end.setDate(d.getDate() - 1);
-              const rangeLabel = `${start.getMonth() + 1}/${start.getDate()}-${end.getMonth() + 1}/${end.getDate()}`;
+              const startLabel = `${start.getMonth() + 1}/${start.getDate()}`;
+              const endLabel = `${end.getMonth() + 1}/${end.getDate()}`;
+              const rangeLabel = `${startLabel}-${endLabel}`;
               const isSelected = selectedKey === key;
               const isToday = key === todayKey;
               const weekOrd = Math.ceil(d.getDate() / 7);
@@ -172,7 +175,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
               return (
                 <button
                   key={key} type="button" onClick={() => setSelectedKey(key)}
-                  aria-label={`${rangeLabel} ${weekLabel}`}
+                  aria-label={`${startLabel}(주일)-${endLabel}(토) ${weekLabel}`}
                   aria-pressed={isSelected}
                   style={{
                     padding: isMobile ? '0.45rem 0.2rem' : '0.4rem 0.3rem',
@@ -188,7 +191,8 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
                   }}
                 >
                   <span style={{ fontSize: isMobile ? '0.72rem' : '0.8rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1, whiteSpace: 'nowrap' }}>
-                    {rangeLabel}
+                    <span style={{ color: '#DC2626' }}>{startLabel}</span>
+                    -{endLabel}
                   </span>
                   <span style={{ fontSize: isMobile ? '0.68rem' : '0.72rem', fontWeight: 700, color: '#DC2626', lineHeight: 1 }}>{weekLabel}</span>
                   {isToday && (

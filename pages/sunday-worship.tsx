@@ -24,13 +24,14 @@ type Props = {
 const pad = (n: number) => String(n).padStart(2, '0');
 const keyFor = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-// 현재 속한 주의 일요일 — 오늘이 일요일이면 오늘, 월~토이면 다음 주일.
-// (월요일 이후부터 이미 그 주의 주보/구역예배지가 대상이 됨)
+// 가장 최근의 지난 주일 — 오늘이 일요일이면 오늘, 그 외에는 직전 주일.
+// 자료는 보통 목~토에 업로드되므로 주 초반 접속 시 '다음 주일'을 기본으로 두면
+// 아직 없는 자료를 가리켜 빈 화면이 됨. 확정된 가장 최근 주일을 기본 선택.
 const mostRecentSunday = (now: Date): Date => {
   const d = new Date(now);
   d.setHours(0, 0, 0, 0);
   const dow = d.getDay();
-  if (dow !== 0) d.setDate(d.getDate() + (7 - dow));
+  if (dow !== 0) d.setDate(d.getDate() - dow);
   return d;
 };
 
