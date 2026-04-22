@@ -212,7 +212,7 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                       minHeight: isMobile ? 60 : 72, minWidth: 0, position: 'relative',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '0.3rem', lineHeight: 1 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.15rem', lineHeight: 1 }}>
                       <span style={{ fontSize: isMobile ? '0.72rem' : '0.85rem', fontWeight: 800, color: isDayCompleted ? '#fff' : dowColor, lineHeight: 1 }}>
                         {m}/{day}
                       </span>
