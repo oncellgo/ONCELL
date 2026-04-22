@@ -100,6 +100,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const availableEnd = typeof s.venueAvailableEnd === 'string' && /^\d{2}:\d{2}$/.test(s.venueAvailableEnd) ? s.venueAvailableEnd : '22:00';
     const reservationLimitMode: 'unlimited' | 'perUser' = (s.reservationLimitMode === 'perUser' && !isAdmin) ? 'perUser' : 'unlimited';
     const reservationLimitPerUser = Math.max(1, Math.min(10, Number(s.reservationLimitPerUser) || 3));
+    const bwRaw = Number(s.reservationBookingWindowMonths);
+    const reservationBookingWindowMonths = (bwRaw === 2 || bwRaw === 3 || bwRaw === 6) ? bwRaw : 1;
 
     return res.status(200).json({
       venues,
@@ -110,6 +112,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       availableEnd,
       reservationLimitMode,
       reservationLimitPerUser,
+      reservationBookingWindowMonths,
       isAdmin: !!isAdmin,
     });
   } catch (error) {

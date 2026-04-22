@@ -248,6 +248,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
     availableEnd: string;
     reservationLimitMode: 'unlimited' | 'perUser';
     reservationLimitPerUser: number;
+    bookingWindowMonths: 1 | 2 | 3 | 6;
   };
   const [editModalRes, setEditModalRes] = useState<MyReservation | null>(null);
   const [editCtx, setEditCtx] = useState<ResCtx | null>(null);
@@ -257,7 +258,13 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
   const reloadMyReservations = async () => {
     if (!profileId) return;
     try {
-      const qs = new URLSearchParams({ communityId: 'kcis', type: 'reservation', profileId });
+      // 다가오는 예약 전체를 놓치지 않도록 오늘 ~ +12개월 범위로 요청 (서버 기본 ±2개월은 좁음)
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const now = new Date();
+      const fromStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+      const end = new Date(now); end.setMonth(end.getMonth() + 12);
+      const toStr = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}`;
+      const qs = new URLSearchParams({ communityId: 'kcis', type: 'reservation', profileId, from: fromStr, to: toStr });
       const r = await fetch(`/api/events?${qs.toString()}`);
       const d = await r.json();
       const all = Array.isArray(d.events) ? d.events : [];
@@ -290,6 +297,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
         availableEnd: d.availableEnd || '22:00',
         reservationLimitMode: d.reservationLimitMode || 'unlimited',
         reservationLimitPerUser: d.reservationLimitPerUser || 3,
+        bookingWindowMonths: (d.reservationBookingWindowMonths === 2 || d.reservationBookingWindowMonths === 3 || d.reservationBookingWindowMonths === 6) ? d.reservationBookingWindowMonths : 1,
       });
     } catch {
       setEditCtxError('예약 정보를 불러오지 못했습니다. 다시 시도해 주세요.');
@@ -365,7 +373,13 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
 
   useEffect(() => {
     if (!profileId) { setMyReservations([]); return; }
-    const qs = new URLSearchParams({ communityId: 'kcis', type: 'reservation', profileId });
+    // 서버 기본 ±2개월 창을 넘는 예약까지 포함되도록 오늘 ~ +12개월로 명시적 범위 지정
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const now = new Date();
+    const fromStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const end = new Date(now); end.setMonth(end.getMonth() + 12);
+    const toStr = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}`;
+    const qs = new URLSearchParams({ communityId: 'kcis', type: 'reservation', profileId, from: fromStr, to: toStr });
     fetch(`/api/events?${qs.toString()}`)
       .then((r) => r.json())
       .then((d) => {
@@ -869,7 +883,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
               <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>다가오는 예약이 없습니다. <a href="/reservations/grid" style={{ color: 'var(--color-primary-deep)', textDecoration: 'underline', fontWeight: 700 }}>장소 예약하기 →</a></p>
             ) : (
               <ul style={{ listStyle: 'none', margin: '0.6rem 0 0', padding: 0, display: 'grid', gap: isMobile ? '0.55rem' : '0.45rem' }}>
-                {myReservations.slice(0, 5).map((r) => {
+                {myReservations.map((r) => {
                   const s = new Date(r.startAt);
                   const e = new Date(r.endAt);
                   const pad = (n: number) => String(n).padStart(2, '0');
@@ -905,11 +919,6 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                     </li>
                   );
                 })}
-                {myReservations.length > 5 && (
-                  <li style={{ fontSize: '0.82rem', color: 'var(--color-ink-2)', textAlign: 'center', padding: '0.3rem 0' }}>
-                    <a href={`/reservations/my${profileId ? `?profileId=${encodeURIComponent(profileId)}` : ''}`} style={{ color: 'var(--color-primary-deep)', textDecoration: 'underline', fontWeight: 700 }}>전체 {myReservations.length}건 보기 →</a>
-                  </li>
-                )}
               </ul>
             )}
           </section>
@@ -922,7 +931,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
             const lv = cur >= 100 ? 7 : cur >= 50 ? 6 : cur >= 30 ? 5 : cur >= 14 ? 4 : cur >= 7 ? 3 : cur >= 3 ? 2 : cur >= 1 ? 1 : 0;
             const tiers = [
               { emoji: '🌱', title: '오늘 묵상을 시작해볼까요?', sub: '하루 한 구절, 짧아도 괜찮아요.', ring: '#E5E7EB', bg: '#F9FAFB', fg: '#6B7280' },
-              { emoji: '🌿', title: `${cur}일 연속 묵상 중`, sub: '첫걸음을 내딛었어요. 내일도 이어가볼까요?', ring: '#BBF7D0', bg: '#F0FDF4', fg: '#15803D' },
+              { emoji: '🌿', title: cur === 1 ? `${cur}일 묵상 중` : `${cur}일 연속 묵상 중`, sub: '첫걸음을 내딛었어요. 내일도 이어가볼까요?', ring: '#BBF7D0', bg: '#F0FDF4', fg: '#15803D' },
               { emoji: '✨', title: `${cur}일 연속 — 습관이 시작됐어요`, sub: '작은 반복이 큰 변화를 만듭니다.', ring: '#D9F09E', bg: '#F7FEE7', fg: '#3F6212' },
               { emoji: '🔥', title: `${cur}일 연속 — 일주일 달성!`, sub: '영적 리듬이 자리잡고 있어요.', ring: '#FCD34D', bg: '#FEF3C7', fg: '#92400E' },
               { emoji: '🏆', title: `${cur}일 연속 — 2주 돌파!`, sub: '꾸준함이 빛납니다. 계속 나아가요.', ring: '#FBBF24', bg: '#FEF3C7', fg: '#78350F' },
@@ -1389,6 +1398,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                     availableStart={editCtx.availableStart}
                     availableEnd={editCtx.availableEnd}
                     reservationLimitMode={editCtx.reservationLimitMode}
+                    bookingWindowMonths={editCtx.bookingWindowMonths}
                     reservationLimitPerUser={editCtx.reservationLimitPerUser}
                     profileId={profileId}
                     displayName={storedProfile?.realName || userEntries[0]?.realName || userEntries[0]?.nickname || nickname || null}

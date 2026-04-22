@@ -27,6 +27,7 @@ type Props = {
   availableEnd: string;
   reservationLimitMode: 'unlimited' | 'perUser';
   reservationLimitPerUser: number;
+  bookingWindowMonths: 1 | 2 | 3 | 6;
   profileId: string | null;
   displayName: string | null;
   contact: string | null;
@@ -35,12 +36,12 @@ type Props = {
   systemAdminHref: string | null;
 };
 
-const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, availableEnd, reservationLimitMode, reservationLimitPerUser, profileId, displayName, contact, nickname, email, systemAdminHref }: Props) => {
+const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, availableEnd, reservationLimitMode, reservationLimitPerUser, bookingWindowMonths, profileId, displayName, contact, nickname, email, systemAdminHref }: Props) => {
   const isMobile = useIsMobile();
   const router = useRouter();
   useRequireLogin(profileId);
 
-  // create 성공 후 /reservations/my 로 이동
+  // create 성공(사용자가 성공 모달에서 확인 누른 뒤) 후 대시보드로 이동
   const handleCreated = () => {
     const qs = new URLSearchParams();
     let effPid = profileId;
@@ -48,9 +49,10 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
       try { effPid = window.localStorage.getItem('kcisProfileId'); } catch {}
     }
     if (effPid) qs.set('profileId', effPid);
-    if (displayName) qs.set('nickname', displayName);
+    if (nickname) qs.set('nickname', nickname);
     if (email) qs.set('email', email);
-    router.push(`/reservations/my${qs.toString() ? `?${qs.toString()}` : ''}`);
+    qs.set('focus', 'my-reservations');
+    router.push(`/dashboard${qs.toString() ? `?${qs.toString()}` : ''}#my-reservations`);
   };
 
   return (
@@ -92,6 +94,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
             availableEnd={availableEnd}
             reservationLimitMode={reservationLimitMode}
             reservationLimitPerUser={reservationLimitPerUser}
+            bookingWindowMonths={bookingWindowMonths}
             profileId={profileId}
             displayName={displayName}
             contact={contact}
@@ -166,13 +169,15 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
   }
   const adhocTyped: Block[] = adhocBlocks.map((b) => ({ ...b, kind: b.kind || 'block' }));
   const blocks: Block[] = [...adhocTyped, ...eventBlocks];
-  const settings = (settingsObj || {}) as { venueSlotMin?: number; venueAvailableStart?: string; venueAvailableEnd?: string; reservationLimitMode?: string; reservationLimitPerUser?: number };
+  const settings = (settingsObj || {}) as { venueSlotMin?: number; venueAvailableStart?: string; venueAvailableEnd?: string; reservationLimitMode?: string; reservationLimitPerUser?: number; reservationBookingWindowMonths?: number };
   const slotMin = settings.venueSlotMin === 60 ? 60 : 30;
   const availableStart = typeof settings.venueAvailableStart === 'string' && /^\d{2}:\d{2}$/.test(settings.venueAvailableStart) ? settings.venueAvailableStart : '06:00';
   const availableEnd = typeof settings.venueAvailableEnd === 'string' && /^\d{2}:\d{2}$/.test(settings.venueAvailableEnd) ? settings.venueAvailableEnd : '22:00';
   // 관리자는 한도 무시하도록 서버에서 모드 자체를 unlimited 로 덮어 씀 (클라이언트 로직 단순화)
   const reservationLimitMode: 'unlimited' | 'perUser' = (settings.reservationLimitMode === 'perUser' && !isAdmin) ? 'perUser' : 'unlimited';
   const reservationLimitPerUser = Math.max(1, Math.min(10, Number(settings.reservationLimitPerUser) || 3));
+  const bwRaw = Number(settings.reservationBookingWindowMonths);
+  const bookingWindowMonths: 1 | 2 | 3 | 6 = (bwRaw === 2 || bwRaw === 3 || bwRaw === 6) ? bwRaw : 1;
 
   const profileId = queryProfileId;
   const nickname = typeof ctx.query.nickname === 'string' ? ctx.query.nickname : null;
@@ -190,7 +195,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
 
   const systemAdminHref = await getSystemAdminHref(profileId, { nickname, email });
 
-  return { props: { venues, blocks, groups, slotMin, availableStart, availableEnd, reservationLimitMode, reservationLimitPerUser, profileId, displayName, contact, nickname, email, systemAdminHref } };
+  return { props: { venues, blocks, groups, slotMin, availableStart, availableEnd, reservationLimitMode, reservationLimitPerUser, bookingWindowMonths, profileId, displayName, contact, nickname, email, systemAdminHref } };
 };
 
 export default ReservationGridPage;

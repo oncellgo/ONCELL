@@ -146,6 +146,27 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           return res.status(400).json({ error: '시간이 올바르지 않습니다.' });
         }
 
+        // 과거 시간 예약 방지 — 관리자 포함 전원
+        const nowMs = Date.now();
+        if (newStart < nowMs) {
+          return res.status(400).json({ error: '지난 시간은 예약할 수 없습니다.' });
+        }
+
+        // 예약 가능 기간 제한 (관리자는 예외)
+        if (!isAdmin) {
+          try {
+            const s = await getSettings();
+            const bwRaw = Number(s?.reservationBookingWindowMonths);
+            const windowMonths = (bwRaw === 2 || bwRaw === 3 || bwRaw === 6) ? bwRaw : 1;
+            const limitDate = new Date();
+            limitDate.setMonth(limitDate.getMonth() + windowMonths);
+            limitDate.setHours(23, 59, 59, 999);
+            if (newStart > limitDate.getTime()) {
+              return res.status(400).json({ error: `현재 날짜부터 ${windowMonths}개월 이내 날짜만 예약할 수 있습니다.` });
+            }
+          } catch { /* 설정 조회 실패 시 차단 안 함 */ }
+        }
+
         // 같은 venueId를 쓰는 모든 이벤트의 occurrence를 범위 내로 펼쳐 겹침 확인
         const from = new Date(newStart - 1); const to = new Date(newEnd + 1);
         const conflictTarget = events.filter((e) => (e.venueId && e.venueId === venueId) || (!e.venueId && e.location && location && e.location === location));
@@ -222,6 +243,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       if ((row.scope === 'community' || row.scope === 'worship') && !isAdmin) return res.status(403).json({ error: '권한 없음' });
       if (row.scope === 'personal' && !isOwner && !isAdmin) return res.status(403).json({ error: '권한 없음' });
 
+      // 이미 지난 예약은 수정 불가 (reservation + rule 없는 단일 건 기준). 관리자도 소급 수정 금지.
+      if ((row.type || 'event') === 'reservation' && !row.rule) {
+        const endMs = new Date(row.endAt).getTime();
+        if (Number.isFinite(endMs) && endMs < Date.now()) {
+          return res.status(400).json({ error: '이미 지난 예약은 수정할 수 없습니다.' });
+        }
+      }
+
       // 예약(reservation) 타입: 시간/장소 변경 시 충돌 검증.
       // 같은 장소에서 같은 시간대에 이미 다른 예약/일정이 있으면 409.
       if ((row.type || 'event') === 'reservation' && fields && (fields.startAt || fields.endAt || fields.venueId || fields.location)) {
@@ -234,6 +263,24 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           const newEnd = new Date(newEndAt).getTime();
           if (!Number.isFinite(newStart) || !Number.isFinite(newEnd) || newEnd <= newStart) {
             return res.status(400).json({ error: '시간이 올바르지 않습니다.' });
+          }
+          // 과거 시간으로 변경 금지
+          if (newStart < Date.now()) {
+            return res.status(400).json({ error: '지난 시간으로는 예약을 옮길 수 없습니다.' });
+          }
+          // 예약 가능 기간 초과 금지 (관리자 제외)
+          if (!isAdmin) {
+            try {
+              const s = await getSettings();
+              const bwRaw = Number(s?.reservationBookingWindowMonths);
+              const windowMonths = (bwRaw === 2 || bwRaw === 3 || bwRaw === 6) ? bwRaw : 1;
+              const limitDate = new Date();
+              limitDate.setMonth(limitDate.getMonth() + windowMonths);
+              limitDate.setHours(23, 59, 59, 999);
+              if (newStart > limitDate.getTime()) {
+                return res.status(400).json({ error: `현재 날짜부터 ${windowMonths}개월 이내 날짜만 예약할 수 있습니다.` });
+              }
+            } catch { /* ignore */ }
           }
           const from = new Date(newStart - 1); const to = new Date(newEnd + 1);
           const conflictTarget = events.filter((e) =>

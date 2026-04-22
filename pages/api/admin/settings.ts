@@ -16,6 +16,7 @@ type Settings = {
   reservationLimitPerUser: number; // 1..10 (valid when mode='perUser')
   contactPersons: ContactPerson[]; // 담당자 연락처 (최대 2명)
   qtYoutubeHandle: string; // QT 새벽예배 영상을 가져올 유튜브 채널 핸들 (@ 제외)
+  reservationBookingWindowMonths: 1 | 2 | 3 | 6; // 사용자가 예약할 수 있는 미래 범위 (개월)
 };
 
 const DEFAULT_QT_HANDLE = 'KoreanChurchInSingapore';
@@ -24,6 +25,11 @@ const sanitizeHandle = (v: any, fallback: string): string => {
   if (typeof v !== 'string') return fallback;
   const h = v.trim().replace(/^@/, '').slice(0, 60);
   return h || fallback;
+};
+
+const sanitizeBookingWindow = (v: any): 1 | 2 | 3 | 6 => {
+  const n = typeof v === 'number' ? v : parseInt(String(v), 10);
+  return (n === 2 || n === 3 || n === 6) ? (n as 2 | 3 | 6) : 1;
 };
 
 const sanitizeFields = (v: any): SignupField[] => {
@@ -74,6 +80,7 @@ const readSettings = async (): Promise<Settings> => {
       reservationLimitPerUser: sanitizePerUser(parsed.reservationLimitPerUser),
       contactPersons: sanitizeContactPersons(parsed.contactPersons),
       qtYoutubeHandle: sanitizeHandle(parsed.qtYoutubeHandle, DEFAULT_QT_HANDLE),
+      reservationBookingWindowMonths: sanitizeBookingWindow(parsed.reservationBookingWindowMonths),
     };
   } catch {
     return {
@@ -86,6 +93,7 @@ const readSettings = async (): Promise<Settings> => {
       reservationLimitPerUser: 3,
       contactPersons: [],
       qtYoutubeHandle: DEFAULT_QT_HANDLE,
+      reservationBookingWindowMonths: 1,
     };
   }
 };
@@ -100,7 +108,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   if (req.method === 'PATCH') {
     const current = await readSettings();
-    const { venueSlotMin, signupApproval, signupRequiredFields, venueAvailableStart, venueAvailableEnd, reservationLimitMode, reservationLimitPerUser, contactPersons, qtYoutubeHandle } = req.body as Partial<Settings>;
+    const { venueSlotMin, signupApproval, signupRequiredFields, venueAvailableStart, venueAvailableEnd, reservationLimitMode, reservationLimitPerUser, contactPersons, qtYoutubeHandle, reservationBookingWindowMonths } = req.body as Partial<Settings>;
     const next: Settings = {
       ...current,
       ...(typeof venueSlotMin === 'number' && (venueSlotMin === 30 || venueSlotMin === 60) ? { venueSlotMin } : {}),
@@ -112,6 +120,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       ...(typeof reservationLimitPerUser !== 'undefined' ? { reservationLimitPerUser: sanitizePerUser(reservationLimitPerUser) } : {}),
       ...(Array.isArray(contactPersons) ? { contactPersons: sanitizeContactPersons(contactPersons) } : {}),
       ...(typeof qtYoutubeHandle === 'string' ? { qtYoutubeHandle: sanitizeHandle(qtYoutubeHandle, current.qtYoutubeHandle) } : {}),
+      ...(typeof reservationBookingWindowMonths !== 'undefined' ? { reservationBookingWindowMonths: sanitizeBookingWindow(reservationBookingWindowMonths) } : {}),
     };
     await setSettings(next);
     return res.status(200).json({ settings: next });

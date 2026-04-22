@@ -37,6 +37,8 @@ export type ReservationSlotPickerProps = {
   availableEnd: string;
   reservationLimitMode: 'unlimited' | 'perUser';
   reservationLimitPerUser: number;
+  /** 예약 가능 기간 — 현재날짜부터 N개월 이내. 기본 1. 관리자는 서버에서 예외 처리. */
+  bookingWindowMonths?: 1 | 2 | 3 | 6;
   profileId: string | null;
   displayName: string | null;
   contact: string | null;
@@ -69,6 +71,7 @@ const ReservationSlotPicker = ({
   availableEnd,
   reservationLimitMode,
   reservationLimitPerUser,
+  bookingWindowMonths = 1,
   profileId,
   displayName,
   contact,
@@ -121,6 +124,7 @@ const ReservationSlotPicker = ({
   const shake = (setter: (v: boolean) => void) => { setter(true); setTimeout(() => setter(false), 650); };
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [successModal, setSuccessModal] = useState<{ date: string; start: string; end: string; venue: string } | null>(null);
 
   // 기본 날짜: edit 모드 → editReservation.date, create → 오늘
   const todayKey = dateKey(new Date());
@@ -393,6 +397,22 @@ const ReservationSlotPicker = ({
       setSubmitError('예약자 이름과 연락처를 먼저 등록해주세요. 대시보드에서 내 정보를 확인하세요.');
       return;
     }
+    // 과거 시간 + 예약 가능 기간 초과 체크 (서버에서도 방어되지만 클라 경고를 먼저)
+    {
+      const [y, mo, d] = selectedDate.split('-').map(Number);
+      const startMs = new Date(y, mo - 1, d, Math.floor(selection.startMin / 60), selection.startMin % 60).getTime();
+      if (startMs < Date.now()) {
+        setSubmitError('지난 시간은 예약할 수 없습니다. 다른 시간을 선택해주세요.');
+        return;
+      }
+      const limitDate = new Date();
+      limitDate.setMonth(limitDate.getMonth() + bookingWindowMonths);
+      limitDate.setHours(23, 59, 59, 999);
+      if (startMs > limitDate.getTime()) {
+        setSubmitError(`현재 날짜부터 ${bookingWindowMonths}개월 이내 날짜만 예약할 수 있습니다.`);
+        return;
+      }
+    }
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -456,9 +476,14 @@ const ReservationSlotPicker = ({
         setSubmitting(false);
         return;
       }
-      alert(`예약이 완료되었습니다.\n\n${selectedDate} ${selection.startLabel}~${selection.endLabel}\n${v.floor} ${v.name}\n\n나의 장소예약 페이지로 이동합니다.`);
       setConfirmOpen(false);
-      onSubmitted?.();
+      setSubmitting(false);
+      setSuccessModal({
+        date: selectedDate,
+        start: selection.startLabel,
+        end: selection.endLabel,
+        venue: `${v.floor} ${v.name}`,
+      });
     } catch (e: any) {
       setSubmitError(e?.message || '처리 중 오류가 발생했습니다.');
       setSubmitting(false);
@@ -540,25 +565,39 @@ const ReservationSlotPicker = ({
       {/* 상단: 날짜 + 장소 */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? '0.5rem' : '0.75rem' }}>
         <div style={{ display: 'grid', gap: '0.35rem' }}>
-          <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-primary-deep)', letterSpacing: '0.02em' }}>📅 날짜</span>
-          <DateTimePicker
-            dateOnly
-            value={`${selectedDate}T00:00`}
-            onChange={(v) => setSelectedDate(v.slice(0, 10))}
-            placeholder="날짜 선택"
-            buttonStyle={{
-              width: '100%',
-              padding: isMobile ? '0.7rem 0.8rem' : '0.8rem 0.95rem',
-              minHeight: 48,
-              borderRadius: 12,
-              border: '1.5px solid var(--color-primary)',
-              fontWeight: 800,
-              fontSize: isMobile ? '0.95rem' : '1rem',
-              textAlign: 'center',
-              color: 'var(--color-ink)',
-              background: '#fff',
-            }}
-          />
+          <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-primary-deep)', letterSpacing: '0.02em' }}>
+            📅 날짜 <span style={{ fontSize: '0.66rem', fontWeight: 600, color: 'var(--color-ink-2)' }}>(오늘부터 {bookingWindowMonths}개월 이내)</span>
+          </span>
+          {(() => {
+            // 날짜 선택 범위: 오늘 ~ 오늘 + bookingWindowMonths 개월. 과거/범위초과 날짜 비활성.
+            const pad = (n: number) => String(n).padStart(2, '0');
+            const today = new Date();
+            const minDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+            const maxD = new Date(today.getFullYear(), today.getMonth() + bookingWindowMonths, today.getDate());
+            const maxDate = `${maxD.getFullYear()}-${pad(maxD.getMonth() + 1)}-${pad(maxD.getDate())}`;
+            return (
+              <DateTimePicker
+                dateOnly
+                value={`${selectedDate}T00:00`}
+                onChange={(v) => setSelectedDate(v.slice(0, 10))}
+                placeholder="날짜 선택"
+                minDate={minDate}
+                maxDate={maxDate}
+                buttonStyle={{
+                  width: '100%',
+                  padding: isMobile ? '0.7rem 0.8rem' : '0.8rem 0.95rem',
+                  minHeight: 48,
+                  borderRadius: 12,
+                  border: '1.5px solid var(--color-primary)',
+                  fontWeight: 800,
+                  fontSize: isMobile ? '0.95rem' : '1rem',
+                  textAlign: 'center',
+                  color: 'var(--color-ink)',
+                  background: '#fff',
+                }}
+              />
+            );
+          })()}
           <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -636,7 +675,7 @@ const ReservationSlotPicker = ({
             {mode === 'edit' && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                 <span style={{ width: 14, height: 14, borderRadius: 3, background: 'rgba(167, 243, 208, 0.45)', border: '1.5px dashed #20CD8D' }} />
-                <span style={{ color: '#EAB308', fontWeight: 800 }}>★</span> 원래 예약
+                <span style={{ color: '#EAB308', fontWeight: 800 }}>★</span> 기존 예약
               </span>
             )}
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
@@ -960,6 +999,53 @@ const ReservationSlotPicker = ({
       )}
 
       {/* edit 모드 닫기 버튼 (선택적) */}
+      {successModal && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 120, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', padding: isMobile ? 0 : '1rem' }}
+        >
+          <div role="dialog" aria-modal="true" style={{
+            width: '100%', maxWidth: 420,
+            background: '#fff',
+            borderRadius: isMobile ? '18px 18px 0 0' : 16,
+            boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+            overflow: 'hidden',
+          }}>
+            <div style={{ padding: '1rem 1.25rem 0.85rem', background: '#ECFDF5', borderBottom: '1px solid #86EFAC', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <span aria-hidden style={{ fontSize: '1.5rem', lineHeight: 1 }}>✅</span>
+              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#065F46' }}>예약이 등록되었습니다</h3>
+            </div>
+            <div style={{ padding: '1rem 1.25rem', display: 'grid', gap: '0.5rem' }}>
+              <div style={{ padding: '0.7rem 0.85rem', borderRadius: 10, background: '#F9FAFB', border: '1px solid var(--color-surface-border)', display: 'grid', gap: '0.3rem', fontSize: '0.9rem' }}>
+                <div style={{ color: 'var(--color-ink)', fontWeight: 800 }}>{successModal.date}</div>
+                <div style={{ color: 'var(--color-ink)', fontWeight: 600 }}>{successModal.start}~{successModal.end}</div>
+                <div style={{ color: 'var(--color-ink-2)', fontWeight: 600 }}>📍 {successModal.venue}</div>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-ink-2)', lineHeight: 1.5 }}>
+                확인을 누르시면 <strong style={{ color: 'var(--color-primary-deep)' }}>내 대시보드</strong>로 이동합니다.
+              </p>
+            </div>
+            <div style={{ padding: '0.85rem 1.25rem 1.1rem', borderTop: '1px solid var(--color-surface-border)', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => { setSuccessModal(null); onSubmitted?.(); }}
+                style={{
+                  padding: '0.75rem 1.6rem',
+                  minHeight: 48,
+                  borderRadius: 12,
+                  border: 'none',
+                  background: 'var(--color-primary)',
+                  color: '#fff',
+                  fontWeight: 800,
+                  fontSize: '0.95rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(32,205,141,0.25)',
+                }}
+              >확인</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {mode === 'edit' && onCancel && (
         <div style={{ marginTop: '0.5rem' }}>
           <button

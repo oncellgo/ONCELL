@@ -191,10 +191,89 @@ export const fetchPlaylistItems = async (playlistId: string, maxResults = 50): P
   }
 };
 
+// -------- RSS fallback (API key 없이/쿼터 초과 시) --------
+// YouTube 는 각 채널의 업로드 playlist 에 대해 RSS feed 를 제공한다.
+//   https://www.youtube.com/feeds/videos.xml?channel_id=UCxxx
+// API 가 unauthorized/quota/network 실패할 때 RSS 로 최근 업로드 ~15 개를 받아오는 fallback.
+const channelIdFromHandleHtml = async (handle: string): Promise<string | null> => {
+  try {
+    const h = handle.replace(/^@/, '');
+    const res = await fetch(`https://www.youtube.com/@${encodeURIComponent(h)}`, {
+      headers: { 'User-Agent': 'KCIS-app/1.0 (+https://kcis.app)' },
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const m = html.match(/"channelId":"(UC[\w-]+)"/);
+    return m?.[1] || null;
+  } catch {
+    return null;
+  }
+};
+
+const parseYoutubeRss = (xml: string): YTVideo[] => {
+  const items: YTVideo[] = [];
+  const entryRe = /<entry>([\s\S]*?)<\/entry>/g;
+  let match: RegExpExecArray | null;
+  while ((match = entryRe.exec(xml))) {
+    const entry = match[1];
+    const idMatch = entry.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
+    const titleMatch = entry.match(/<title>([^<]+)<\/title>/);
+    const pubMatch = entry.match(/<published>([^<]+)<\/published>/);
+    if (!idMatch || !titleMatch || !pubMatch) continue;
+    items.push({
+      videoId: idMatch[1],
+      title: decodeHtmlEntities(titleMatch[1]),
+      publishedAt: pubMatch[1],
+    });
+  }
+  return items;
+};
+
+const fetchChannelUploadsByRSS = async (handle: string): Promise<YTResult> => {
+  await loadPersist();
+  const h = handle.replace(/^@/, '');
+  // 캐시된 channelId 있으면 재사용, 없으면 HTML scrape 시도.
+  let channelId: string | null = memChannels.get(h)?.id || null;
+  if (!channelId) {
+    channelId = await channelIdFromHandleHtml(handle);
+    if (channelId) {
+      memChannels.set(h, { id: channelId, at: Date.now() });
+      void flushPersist();
+    }
+  }
+  if (!channelId) return { items: [], status: 'network' };
+  try {
+    const rssRes = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(channelId)}`, {
+      headers: { 'User-Agent': 'KCIS-app/1.0 (+https://kcis.app)' },
+    });
+    if (!rssRes.ok) return { items: [], status: 'network' };
+    const xml = await rssRes.text();
+    const items = parseYoutubeRss(xml);
+    return { items, status: items.length === 0 ? 'empty' : 'ok' };
+  } catch {
+    return { items: [], status: 'network' };
+  }
+};
+
 export const fetchChannelUploadsByHandle = async (handle: string, maxResults = 50): Promise<YTResult> => {
   const ch = await resolveChannelIdByHandle(handle);
-  if (!ch.id) return { items: [], status: ch.status };
-  const up = await getUploadsPlaylistId(ch.id);
-  if (!up.id) return { items: [], status: up.status };
-  return fetchPlaylistItems(up.id, maxResults);
+  if (ch.id) {
+    const up = await getUploadsPlaylistId(ch.id);
+    if (up.id) {
+      const result = await fetchPlaylistItems(up.id, maxResults);
+      // API 로 items 획득 성공 or stale 캐시 사용 중이면 그대로 반환
+      if (result.status === 'ok' || result.items.length > 0) return result;
+      // API 쿼터/인증 실패 → RSS fallback
+      if (result.status === 'quota' || result.status === 'unauthorized' || result.status === 'network') {
+        const rss = await fetchChannelUploadsByRSS(handle);
+        if (rss.items.length > 0) return { items: rss.items, status: 'ok' };
+        return result;
+      }
+      return result;
+    }
+  }
+  // API key 미설정 또는 handle 해석 실패 → 순수 RSS 경로
+  const rss = await fetchChannelUploadsByRSS(handle);
+  if (rss.items.length > 0) return { items: rss.items, status: 'ok' };
+  return { items: [], status: ch.status === 'ok' ? 'network' : ch.status };
 };

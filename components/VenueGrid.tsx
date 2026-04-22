@@ -172,6 +172,18 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
   const selectedDateObj = new Date(y, mo - 1, d);
   const selectedDow = selectedDateObj.getDay();
 
+  // 과거 시간 차단:
+  //  - selectedDate 가 오늘보다 이전 날짜 → 전 슬롯 불가
+  //  - selectedDate 가 오늘 → 현재 분 이전 슬롯 불가
+  const nowForGrid = new Date();
+  const todayStart = new Date(nowForGrid.getFullYear(), nowForGrid.getMonth(), nowForGrid.getDate()).getTime();
+  const selectedStart = new Date(y, mo - 1, d).getTime();
+  const isPastDate = selectedStart < todayStart;
+  const isSelectedToday = selectedStart === todayStart;
+  const pastCutoffMin = isPastDate ? 24 * 60 /* 전부 과거 */
+    : isSelectedToday ? (nowForGrid.getHours() * 60 + nowForGrid.getMinutes())
+    : -1;
+
   // 가로 = 장소 / 세로 = 시간
   const availableStartMin = toMin(availableStart);
   const availableEndMin = toMin(availableEnd);
@@ -352,7 +364,8 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                   // 블럭 연속 영역의 첫 행 외에는 위 행이 rowSpan으로 덮으므로 td 자체를 생략
                   if (info && info.blocked && !info.isStart) return null;
                   const isAvailableDay = v.availableDays.includes(selectedDow);
-                  const inAvailable = isAvailableDay && m >= availableStartMin && m < availableEndMin;
+                  const isPast = pastCutoffMin >= 0 && m < pastCutoffMin;
+                  const inAvailable = isAvailableDay && m >= availableStartMin && m < availableEndMin && !isPast;
                   const blocked = info?.blocked || false;
                   const reason = info?.reason || '';
                   const span = info?.span || 1;
@@ -380,14 +393,14 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                   const clickable = !!onSlotClick && inAvailable;
                   const kindLabel = kind === 'event' ? '교회일정' : kind === 'reservation' ? '예약됨' : '예약불가';
                   const titleParts = [`${v.floor} ${v.name} ${toHHMM(m)}`];
-                  if (!inAvailable) titleParts.push('예약 불가 시간대');
+                  if (!inAvailable) titleParts.push(isPast ? '지난 시간 — 예약 불가' : '예약 불가 시간대');
                   else if (blocked) {
                     titleParts.push(`${kindLabel}${mine ? ' (내 예약)' : ''}: ${reason}`);
                     if (kind === 'reservation' && reserverName) titleParts.push(`예약자: ${reserverName}`);
                     if (kind === 'reservation' && reserverContact) titleParts.push(`연락처: ${reserverContact}`);
                   } else if (isSelected) titleParts.push('예약 시간 선택됨');
                   else if (isAlternate) titleParts.push('후보 (클릭하여 이 장소로 전환)');
-                  else if (isGhost) titleParts.push('원래 예약 — 새 시간을 선택할 수 있어요');
+                  else if (isGhost) titleParts.push('기존 예약 — 새 시간을 선택할 수 있어요');
                   else titleParts.push('예약 가능 — 클릭하거나, 시작 셀에서 끝 셀까지 드래그하면 한 번에 선택됩니다');
                   // 셀 내부: reservation kind이면 가능한 한 항상 예약자 실명까지 표시.
                   // span ≥ 2 → 스택 (reason + reserverName + contact 각 줄)
@@ -400,24 +413,26 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                       <button
                         type="button"
                         disabled={!clickable}
-                        onClick={() => onSlotClick && onSlotClick(v, m, blocked)}
+                        onClick={() => { if (!clickable) return; onSlotClick && onSlotClick(v, m, blocked); }}
                         onPointerDown={onSlotPointerDown ? (e) => {
                           // 모바일(터치)은 드래그 선택을 건너뛰고 페이지 스크롤을 우선 — onClick 만으로 토글
                           if (e.pointerType === 'touch') return;
+                          if (!inAvailable) return;  // 과거/불가 시간 슬롯은 드래그 시작 금지
                           try { (e.currentTarget as HTMLButtonElement).releasePointerCapture(e.pointerId); } catch {}
                           onSlotPointerDown(v, m, blocked);
                         } : undefined}
                         onPointerEnter={onSlotPointerEnter ? (e) => {
                           if (e.pointerType === 'touch') return;
+                          if (!inAvailable) return;  // 과거/불가 시간 슬롯으로 드래그 확장 금지
                           onSlotPointerEnter(v, m, blocked);
                         } : undefined}
                         title={titleParts.join(' | ')}
-                        style={{ width: '100%', height: '100%', minHeight: blocked ? span * SLOT_ROW_H : SLOT_ROW_H, display: 'block', border: isAlternate ? '1.5px dashed #20CD8D' : isGhost ? '1.5px dashed #20CD8D' : mine ? '2px solid #20CD8D' : 'none', outline: mine ? '2px solid #20CD8D' : undefined, outlineOffset: mine ? '-2px' : undefined, background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: isMobile ? '0.62rem' : '0.6rem', fontWeight: mine || isGhost ? 800 : 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box', touchAction: 'manipulation', userSelect: 'none', boxShadow: mine ? 'inset 0 0 0 1px rgba(255,255,255,0.7)' : undefined }}
+                        style={{ width: '100%', height: '100%', minHeight: blocked ? span * SLOT_ROW_H : SLOT_ROW_H, display: 'block', border: isAlternate ? '1.5px dashed #20CD8D' : isGhost ? '1.5px dashed #20CD8D' : mine ? '2px solid #20CD8D' : 'none', outline: mine ? '2px solid #20CD8D' : undefined, outlineOffset: mine ? '-2px' : undefined, background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: isMobile ? '0.62rem' : '0.6rem', fontWeight: mine || isGhost ? 800 : 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box', touchAction: 'manipulation', userSelect: 'none', boxShadow: mine ? 'inset 0 0 0 1px rgba(255,255,255,0.7)' : undefined, pointerEvents: clickable ? undefined : 'none' }}
                       >
                         {isConflict ? '예약불가' : isSelected ? '예약가능' : isAlternate ? '○' : isGhost ? (
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: '0.58rem' }}>
                             <span style={{ color: '#EAB308' }}>★</span>
-                            <span style={{ color: '#064E3B', fontWeight: 700 }}>원래</span>
+                            <span style={{ color: '#064E3B', fontWeight: 700 }}>기존 예약</span>
                           </span>
                         ) : (blocked ? (
                           showStacked ? (

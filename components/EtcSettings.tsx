@@ -23,6 +23,7 @@ const EtcSettings = ({ profileId, k }: Props) => {
   const [eventCategories, setEventCategories] = useState<string[]>([]);
   const [newCategoryInput, setNewCategoryInput] = useState<string>('');
   const [qtYoutubeHandle, setQtYoutubeHandle] = useState<string>('KoreanChurchInSingapore');
+  const [bookingWindowMonths, setBookingWindowMonths] = useState<1 | 2 | 3 | 6>(1);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -82,6 +83,8 @@ const EtcSettings = ({ profileId, k }: Props) => {
           if (data?.settings?.reservationLimitMode === 'unlimited' || data?.settings?.reservationLimitMode === 'perUser') setReservationLimitMode(data.settings.reservationLimitMode);
           if (typeof data?.settings?.reservationLimitPerUser === 'number') setReservationLimitPerUser(data.settings.reservationLimitPerUser);
           if (typeof data?.settings?.qtYoutubeHandle === 'string' && data.settings.qtYoutubeHandle) setQtYoutubeHandle(data.settings.qtYoutubeHandle);
+          const bw = data?.settings?.reservationBookingWindowMonths;
+          if (bw === 1 || bw === 2 || bw === 3 || bw === 6) setBookingWindowMonths(bw);
         }
       } finally {
         setLoading(false);
@@ -327,6 +330,32 @@ const EtcSettings = ({ profileId, k }: Props) => {
                   </>
                 )}
               </div>
+            </div>
+
+            {/* 예약 가능 기간: 현재날짜 + N개월 */}
+            <div style={{ display: 'grid', gap: '0.4rem' }}>
+              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--color-ink)' }}>예약 가능 기간</div>
+              <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>현재날짜부터</span>
+                <select
+                  value={bookingWindowMonths}
+                  disabled={saving}
+                  onChange={async (e) => {
+                    const n = Number(e.target.value);
+                    const next = (n === 1 || n === 2 || n === 3 || n === 6 ? n : 1) as 1 | 2 | 3 | 6;
+                    setBookingWindowMonths(next);
+                    await patch({ reservationBookingWindowMonths: next });
+                  }}
+                  style={{ padding: '0.4rem 0.55rem', minHeight: 36, borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-ink)', background: '#fff' }}
+                >
+                  <option value={1}>1개월</option>
+                  <option value={2}>2개월</option>
+                  <option value={3}>3개월</option>
+                  <option value={6}>6개월</option>
+                </select>
+                <span style={{ fontSize: '0.82rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>이내</span>
+              </div>
+              <span style={{ fontSize: '0.74rem', color: 'var(--color-ink-2)', fontWeight: 500 }}>사용자가 장소예약할 수 있는 미래 범위. 초과 날짜는 선택 불가.</span>
             </div>
           </div>
 

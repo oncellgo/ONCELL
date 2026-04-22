@@ -7,6 +7,8 @@ type Props = {
   style?: React.CSSProperties;
   buttonStyle?: React.CSSProperties;
   dateOnly?: boolean; // true면 시간 선택 UI 숨김 및 표시도 날짜만
+  minDate?: string;   // 'YYYY-MM-DD' — 이 날짜 이전은 비활성
+  maxDate?: string;   // 'YYYY-MM-DD' — 이 날짜 이후는 비활성
 };
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -17,7 +19,7 @@ const parseValue = (v: string): { y: number; m: number; d: number; hh: number; m
   return { y: Number(match[1]), m: Number(match[2]), d: Number(match[3]), hh: Number(match[4]), mm: Number(match[5]) };
 };
 
-const DateTimePicker = ({ value, onChange, placeholder, style, buttonStyle, dateOnly = false }: Props) => {
+const DateTimePicker = ({ value, onChange, placeholder, style, buttonStyle, dateOnly = false, minDate, maxDate }: Props) => {
   const [open, setOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [alignRight, setAlignRight] = useState(false);
@@ -123,22 +125,26 @@ const DateTimePicker = ({ value, onChange, placeholder, style, buttonStyle, date
                   const cellKey = `${viewYear}-${pad(viewMonth + 1)}-${pad(d)}`;
                   const isSelected = cur && cur.y === viewYear && cur.m === viewMonth + 1 && cur.d === d;
                   const isToday = cellKey === todayKey;
+                  const disabled = (!!minDate && cellKey < minDate) || (!!maxDate && cellKey > maxDate);
                   return (
                     <button
                       key={idx}
                       type="button"
-                      onClick={() => selectDate(d)}
+                      disabled={disabled}
+                      onClick={() => { if (!disabled) selectDate(d); }}
+                      title={disabled ? '선택 불가 날짜' : undefined}
                       style={{
                         position: 'relative',
                         height: 36,
                         borderRadius: 8,
                         border: isToday && !isSelected ? '1px solid var(--color-primary)' : '1px solid transparent',
                         background: isSelected ? 'var(--color-primary)' : 'transparent',
-                        color: isSelected ? '#fff' : dow === 0 ? '#dc2626' : dow === 6 ? '#2563eb' : 'var(--color-ink)',
+                        color: disabled ? '#D1D5DB' : isSelected ? '#fff' : dow === 0 ? '#dc2626' : dow === 6 ? '#2563eb' : 'var(--color-ink)',
                         fontSize: '0.88rem',
                         fontWeight: isSelected || isToday ? 800 : 600,
-                        cursor: 'pointer',
+                        cursor: disabled ? 'not-allowed' : 'pointer',
                         padding: 0,
+                        opacity: disabled ? 0.4 : 1,
                       }}
                     >
                       {d}
@@ -188,22 +194,26 @@ const DateTimePicker = ({ value, onChange, placeholder, style, buttonStyle, date
                 const cellKey = `${viewYear}-${pad(viewMonth + 1)}-${pad(d)}`;
                 const isSelected = cur && cur.y === viewYear && cur.m === viewMonth + 1 && cur.d === d;
                 const isToday = cellKey === todayKey;
+                const disabled = (!!minDate && cellKey < minDate) || (!!maxDate && cellKey > maxDate);
                 return (
                   <button
                     key={idx}
                     type="button"
-                    onClick={() => selectDate(d)}
+                    disabled={disabled}
+                    onClick={() => { if (!disabled) selectDate(d); }}
+                    title={disabled ? '선택 불가 날짜' : undefined}
                     style={{
                       position: 'relative',
                       height: 28,
                       borderRadius: 6,
                       border: isToday && !isSelected ? '1px solid var(--color-primary)' : '1px solid transparent',
                       background: isSelected ? 'var(--color-primary)' : 'transparent',
-                      color: isSelected ? '#fff' : dow === 0 ? '#dc2626' : dow === 6 ? '#2563eb' : 'var(--color-ink)',
+                      color: disabled ? '#D1D5DB' : isSelected ? '#fff' : dow === 0 ? '#dc2626' : dow === 6 ? '#2563eb' : 'var(--color-ink)',
                       fontSize: '0.78rem',
                       fontWeight: isSelected || isToday ? 800 : 600,
-                      cursor: 'pointer',
+                      cursor: disabled ? 'not-allowed' : 'pointer',
                       padding: 0,
+                      opacity: disabled ? 0.4 : 1,
                     }}
                   >
                     {d}
