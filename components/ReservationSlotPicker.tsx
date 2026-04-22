@@ -417,6 +417,7 @@ const ReservationSlotPicker = ({
               description: description.trim(),
               startAt,
               endAt,
+              venueId: v.id,
               location: `${v.floor} ${v.name}(${v.code})`,
             },
           }),

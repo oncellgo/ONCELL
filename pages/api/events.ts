@@ -255,8 +255,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         }
       }
 
-      // 장소 정합성: fields.venueId 가 주어지면 현재 venue 데이터로 location 을 재합성해 override.
-      // PATCH 도 POST 와 동일하게 venueId 를 진실의 원천으로 취급.
+      // 장소 정합성: fields.venueId 가 주어지면 현재 venue 데이터로 location 을 재합성.
       const fieldsSanitized: any = { ...(fields || {}) };
       if (fieldsSanitized.venueId) {
         try {
@@ -266,6 +265,20 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         } catch { /* fallback: keep fields.location as-is */ }
       }
 
+      // 예약(reservation) 타입은 단일 occurrence — overrides 우회하고 base row 직접 업데이트.
+      // overrides 는 expandOccurrences 에서 venueId 를 propagate 하지 않아 GET 재합성이 구 venueId 로 역전됨.
+      if ((row.type || 'event') === 'reservation' && !row.rule) {
+        if (typeof fieldsSanitized.title === 'string') row.title = fieldsSanitized.title;
+        if (typeof fieldsSanitized.description === 'string') row.description = fieldsSanitized.description;
+        if (typeof fieldsSanitized.startAt === 'string') row.startAt = fieldsSanitized.startAt;
+        if (typeof fieldsSanitized.endAt === 'string') row.endAt = fieldsSanitized.endAt;
+        if (typeof fieldsSanitized.venueId === 'string') row.venueId = fieldsSanitized.venueId;
+        if (typeof fieldsSanitized.location === 'string') row.location = fieldsSanitized.location;
+        await setEvents(events);
+        return res.status(200).json({ event: row });
+      }
+
+      // 일반/반복 이벤트: overrides 경로
       const overrides = row.overrides || {};
       overrides[occurrenceDate] = { ...(overrides[occurrenceDate] || {}), ...fieldsSanitized };
       row.overrides = overrides;
