@@ -55,11 +55,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (idx >= 0 && list[idx].status === 'blocked') {
     return res.status(403).json({ error: 'blocked', approval: list[idx], approvalMode, requiredFields: required, missingFields: [] });
   }
-
-  // 자진 탈퇴 후 재로그인 — 자동/관리자 승인 모드에 따라 복구. withdrawReason 은 이력 유지.
-  if (idx >= 0 && list[idx].status === 'withdrawn') {
-    list[idx].status = approvalMode === 'admin' ? 'pending' : 'approved';
-  }
+  // 탈퇴 사용자는 approval row 가 이미 파기되어 idx === -1 → 아래 신규 가입 분기로 자연스럽게 이어짐.
 
   if (idx === -1) {
     const entry: Approval = {
