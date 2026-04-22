@@ -453,14 +453,15 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
             {admins.map((id) => {
               const u = users.find((x) => x.profileId === id);
               const name = u?.realName || u?.nickname || '(이름 미입력)';
-              const sub = u?.email || id;
+              // email 이 있으면 email, 없으면 표시 생략 (내부 profileId 노출 방지)
+              const sub = u?.email || '';
               return (
                 <li key={`pid-${id}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', padding: '0.55rem 0.75rem', border: '1px solid #E7F3EE', borderRadius: 10, background: '#F9FCFB' }}>
                   <p style={{ margin: 0, fontWeight: 700, color: '#182527', fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
                     <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#20CD8D', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>ID</span>
                     <span>{name}</span>
                     {id === profileId && <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#F59E0B', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>나</span>}
-                    <span style={{ color: '#2D4048', fontWeight: 500 }}>{sub}</span>
+                    {sub && <span style={{ color: '#2D4048', fontWeight: 500 }}>{sub}</span>}
                   </p>
                   <button disabled={busy || id === profileId} onClick={() => removeAdmin(id, 'profileId')} style={{ ...btn, minHeight: 40, background: id === profileId ? '#e5e7eb' : '#b91c1c', color: id === profileId ? '#6b7280' : '#fff', cursor: id === profileId ? 'not-allowed' : 'pointer', flexShrink: 0 }}>{t('admin.remove')}</button>
                 </li>
