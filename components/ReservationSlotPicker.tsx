@@ -952,14 +952,22 @@ const ReservationSlotPicker = ({
                     style={{ padding: '0.5rem 0.7rem', minHeight: 38, borderRadius: 8, border: '1px solid #FED7AA', background: '#fff', fontSize: '0.9rem', color: 'var(--color-ink)', fontWeight: 700 }}
                   />
                   <span style={{ color: '#9A3412', fontWeight: 800 }}>연락처</span>
-                  <input
-                    type="tel"
-                    value={stagedContact}
-                    onChange={(e) => setStagedContact(e.target.value)}
-                    placeholder="+65 1234-5678"
-                    inputMode="tel"
-                    style={{ padding: '0.5rem 0.7rem', minHeight: 38, borderRadius: 8, border: '1px solid #FED7AA', background: '#fff', fontSize: '0.9rem', color: 'var(--color-ink)', fontWeight: 700, fontFamily: 'monospace' }}
-                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.7rem', minHeight: 38, borderRadius: 8, border: '1px solid #FED7AA', background: '#fff' }}>
+                    <span style={{ fontSize: '0.9rem', color: 'var(--color-ink-2)', fontWeight: 700, fontFamily: 'monospace', flexShrink: 0 }}>+65</span>
+                    <input
+                      type="tel"
+                      value={(() => { const s = (stagedContact || '').trim(); const m = s.match(/^\+\d{1,3}[\s-]*(.+)$/); return m ? m[1].trim() : s; })()}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, '').slice(0, 8);
+                        const formatted = digits.length <= 4 ? digits : `${digits.slice(0, 4)}-${digits.slice(4)}`;
+                        setStagedContact(formatted ? `+65 ${formatted}` : '');
+                      }}
+                      placeholder="1234-5678"
+                      inputMode="numeric"
+                      maxLength={9}
+                      style={{ flex: 1, minWidth: 0, padding: 0, border: 'none', outline: 'none', background: 'transparent', fontSize: '0.9rem', color: 'var(--color-ink)', fontWeight: 700, fontFamily: 'monospace' }}
+                    />
+                  </div>
                 </div>
                 {stagedInfoError && (
                   <p style={{ margin: 0, padding: '0.5rem 0.7rem', borderRadius: 8, background: '#FEE2E2', color: '#B91C1C', fontSize: '0.84rem', fontWeight: 700 }}>⚠ {stagedInfoError}</p>
