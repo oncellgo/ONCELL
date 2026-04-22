@@ -326,8 +326,10 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
     }
     setBusy(true);
     try {
+      // authQS 에는 호출자 본인의 profileId/email 이 포함되어 있어 같은 query key 가 두 번 들어가는 충돌 발생.
+      // 인증은 헤더(x-profile-id, x-admin-token, x-email) 로 충분 → URL 에는 token 만 보조로.
       const param = kind === 'email' ? `email=${encodeURIComponent(id)}` : `profileId=${encodeURIComponent(id)}`;
-      const res = await fetch(`/api/admin/system-admins?${param}&${authQS}`, {
+      const res = await fetch(`/api/admin/system-admins?${param}&k=${encodeURIComponent(k)}`, {
         method: 'DELETE',
         headers: authHeaders,
       });

@@ -45,11 +45,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   if (req.method === 'DELETE') {
-    const profileId = typeof req.query.profileId === 'string' ? req.query.profileId : (req.body as any)?.profileId;
+    // query.profileId 가 호출자 인증(authQS) 용으로도 함께 실려 오는 경우가 있어,
+    // 호출자 본인 profileId(=ok) 와 일치하면 삭제 대상이 아닌 인증용으로 간주.
+    // 본인 자기-제거 시도는 클라이언트 button disabled 로 이미 차단됨.
+    const rawProfileId = typeof req.query.profileId === 'string' ? req.query.profileId : (req.body as any)?.profileId;
+    const profileId = rawProfileId && rawProfileId !== ok ? rawProfileId : undefined;
     const email = typeof req.query.email === 'string' ? req.query.email : (req.body as any)?.email;
-    if (!profileId && !email) return res.status(400).json({ error: 'profileId 또는 email이 필요합니다.' });
+    if (!profileId && !email) return res.status(400).json({ error: '제거할 profileId 또는 email 이 필요합니다.' });
     if (profileId) {
-      if (profileId === ok) return res.status(400).json({ error: '자기 자신은 제거할 수 없습니다.' });
       file.profileIds = file.profileIds.filter((id) => id !== profileId);
     }
     if (email) {
