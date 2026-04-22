@@ -147,7 +147,7 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
       for (const s of slots) {
         if (s.dow !== dow) continue;
         if (!map.has(g.venueId)) map.set(g.venueId, new Map());
-        map.get(g.venueId)!.set(s.startMin, g.reason || '블럭');
+        map.get(g.venueId)!.set(s.startMin, g.reason || '교회사용');
       }
     }
     return map;
@@ -175,10 +175,14 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
   const TIME_MIN_W = isMobile ? 26 : 32;
   // 장소 헤더(층+이름+코드)가 겹치지 않는 최소 폭 — 너무 작으면 텍스트가 이웃 칸과 겹쳐 보임
   const VENUE_MIN_W = isMobile ? 72 : 96;
+  // 모바일에서 그리드 행 높이를 터치 타겟 기준에 맞춰 상향
+  const SLOT_ROW_H = isMobile ? 28 : 20;
   // 장소 수가 많으면 화면을 넘어서도 테이블을 넓혀 outer div 의 overflowX 로 좌우 스크롤되게 한다
   const tableMinWidth = TIME_HOUR_W + TIME_MIN_W + venues.length * VENUE_MIN_W;
+  // 그리드 최대 높이 — iPhone SE(568px) 기준으로 SubHeader(~56px)·섹션 패딩 고려해 모바일은 60vh
+  const gridMaxHeight = isMobile ? '60vh' : '75vh';
   return (
-    <div className="responsive-x-scroll" style={{ overflowX: 'auto', overflowY: 'visible', WebkitOverflowScrolling: 'touch', border: '1px solid var(--color-surface-border)', borderRadius: 10, background: '#fff', maxHeight: '75vh' }}>
+    <div className="responsive-x-scroll" style={{ overflowX: 'auto', overflowY: 'auto', WebkitOverflowScrolling: 'touch', border: '1px solid var(--color-surface-border)', borderRadius: 10, background: '#fff', maxHeight: gridMaxHeight }}>
       <table style={{ width: '100%', minWidth: tableMinWidth, borderCollapse: 'collapse', fontSize: isMobile ? '0.68rem' : '0.72rem', tableLayout: 'fixed' }}>
         <colgroup>
           <col style={{ width: TIME_HOUR_W }} />
@@ -268,14 +272,14 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                       borderRight: '1px solid #E5E7EB',
                       color: '#0F172A',
                       fontWeight: 400,
-                      fontSize: '1.05rem',
+                      fontSize: isMobile ? '0.82rem' : '1.05rem',
                       textAlign: 'center',
                       verticalAlign: 'middle',
                       zIndex: 1,
                       lineHeight: 1,
                     }}
                   >{hour}</td>
-                )}
+                )}{/* hour 셀 끝 */}
                 <td style={{ padding: '0 0.3rem', position: 'sticky', left: TIME_HOUR_W, background: '#FFFFFF', borderRight: '1.5px solid #D9F09E', color: '#4D7C0F', fontWeight: 400, fontSize: '0.68rem', whiteSpace: 'nowrap', textAlign: 'right', zIndex: 1, opacity: 0.85 }}>:{String(minPart).padStart(2, '0')}</td>
                 {venues.map((v) => {
                   const info = venueSlotInfos.get(v.id)?.[rowIdx];
@@ -295,13 +299,13 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                   // 사용자 선택이 기존 예약/블럭과 겹치면 "예약불가" 경고 상태
                   const isConflict = isSelected && blocked;
                   // 색상: 충돌=주황경고, 선택=민트, 대체=반투명민트+점선, 불가시간=연회색, 교회일정=진빨강,
-                  //       내 예약=딥민트(노랑 테두리 강조), 타인 예약=중간회색, 교회 사용=보라(교회일정/예약과 분리), 예약가능=연녹
+                  //       내 예약=딥민트(노랑 테두리 강조), 타인 예약=중간회색, 교회사용=보라(교회일정/예약과 분리), 예약가능=연녹
                   const kindBg = kind === 'event' ? '#DC2626' : kind === 'reservation' ? (mine ? '#0F7A52' : '#9CA3AF') : '#7C3AED';
                   const kindFg = '#FFFFFF';
                   const bg = isConflict ? '#F59E0B' : isSelected ? '#20CD8D' : isAlternate ? 'rgba(32, 205, 141, 0.18)' : (!inAvailable ? '#E5E7EB' : blocked ? kindBg : '#F7FEE7');
                   const color = isConflict ? '#FFFFFF' : isSelected ? '#fff' : isAlternate ? '#3F6212' : (!inAvailable ? '#9CA3AF' : blocked ? kindFg : '#4D7C0F');
                   const clickable = !!onSlotClick && inAvailable;
-                  const kindLabel = kind === 'event' ? '교회일정' : kind === 'reservation' ? '예약됨' : '교회 사용';
+                  const kindLabel = kind === 'event' ? '교회일정' : kind === 'reservation' ? '예약됨' : '교회사용';
                   const titleParts = [`${v.floor} ${v.name} ${toHHMM(m)}`];
                   if (!inAvailable) titleParts.push('예약 불가 시간대');
                   else if (blocked) {
@@ -330,7 +334,7 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                           onSlotPointerEnter(v, m, blocked);
                         } : undefined}
                         title={titleParts.join(' | ')}
-                        style={{ width: '100%', height: blocked ? span * 20 : 20, border: isAlternate ? '1.5px dashed #20CD8D' : mine ? '2px solid #FBBF24' : 'none', outline: mine ? '2px solid #FBBF24' : undefined, outlineOffset: mine ? '-2px' : undefined, background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: '0.6rem', fontWeight: mine ? 800 : 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box', touchAction: 'manipulation', userSelect: 'none', boxShadow: mine ? 'inset 0 0 0 1px rgba(255,255,255,0.6)' : undefined }}
+                        style={{ width: '100%', height: blocked ? span * SLOT_ROW_H : SLOT_ROW_H, border: isAlternate ? '1.5px dashed #20CD8D' : mine ? '2px solid #FBBF24' : 'none', outline: mine ? '2px solid #FBBF24' : undefined, outlineOffset: mine ? '-2px' : undefined, background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: isMobile ? '0.62rem' : '0.6rem', fontWeight: mine ? 800 : 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box', touchAction: 'manipulation', userSelect: 'none', boxShadow: mine ? 'inset 0 0 0 1px rgba(255,255,255,0.6)' : undefined }}
                       >
                         {isConflict ? '예약불가' : isSelected ? '예약가능' : isAlternate ? '○' : (blocked ? (
                           showStacked ? (

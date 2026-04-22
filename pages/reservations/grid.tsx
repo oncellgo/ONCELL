@@ -449,7 +449,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
           {hasBoth ? (
             <>
               {/* 범례 */}
-              <div style={{ display: 'flex', gap: '0.85rem', fontSize: '0.76rem', color: 'var(--color-ink-2)', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: isMobile ? '0.5rem' : '0.85rem', fontSize: '0.76rem', color: 'var(--color-ink-2)', flexWrap: 'wrap', alignItems: 'center', rowGap: '0.4rem' }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                   <span style={{ width: 14, height: 14, borderRadius: 3, background: '#F7FEE7', border: '1px solid #D9F09E' }} /> 예약 가능
                 </span>
@@ -463,7 +463,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                   <span style={{ width: 14, height: 14, borderRadius: 3, background: '#9CA3AF' }} /> 타인 예약
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <span style={{ width: 14, height: 14, borderRadius: 3, background: '#7C3AED' }} /> 교회 사용
+                  <span style={{ width: 14, height: 14, borderRadius: 3, background: '#7C3AED' }} /> 교회사용
                 </span>
               </div>
 
@@ -484,23 +484,23 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
               {/* 선택 요약 + 예약하기 바로가기 */}
               {selection ? (
                 <div style={{
-                  display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'wrap',
+                  display: 'flex', alignItems: isMobile ? 'stretch' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '0.55rem',
                   padding: '0.7rem 0.9rem', borderRadius: 12,
                   background: '#ECFDF5', border: '1px solid #20CD8D',
                 }}>
-                  <span style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-primary-deep)' }}>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-primary-deep)', lineHeight: 1.4 }}>
                     ✓ {selection.venue.floor} {selection.venue.name} · {selection.startLabel}~{selection.endLabel} ({selection.totalLabel})
                   </span>
-                  <div style={{ marginLeft: 'auto', display: 'inline-flex', gap: '0.35rem' }}>
+                  <div style={{ display: 'flex', gap: '0.35rem', marginLeft: isMobile ? 0 : 'auto' }}>
                     <button
                       type="button"
                       onClick={clearSelectedSlots}
-                      style={{ padding: '0.45rem 0.85rem', minHeight: 40, borderRadius: 999, border: '1px solid #6B7280', background: '#fff', color: '#374151', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
+                      style={{ flex: isMobile ? 1 : undefined, padding: '0.45rem 0.85rem', minHeight: 40, borderRadius: 999, border: '1px solid #6B7280', background: '#fff', color: '#374151', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
                     >선택 해제</button>
                     <button
                       type="button"
                       onClick={openConfirmModal}
-                      style={{ padding: '0.45rem 0.95rem', minHeight: 40, display: 'inline-flex', alignItems: 'center', borderRadius: 999, border: 'none', background: 'var(--color-primary)', color: '#fff', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer' }}
+                      style={{ flex: isMobile ? 1 : undefined, padding: '0.45rem 0.95rem', minHeight: 40, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: 'none', background: 'var(--color-primary)', color: '#fff', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer' }}
                     >✓ 예약하기</button>
                   </div>
                 </div>

@@ -455,9 +455,9 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
 
       <main style={{ maxWidth: 1040, margin: '0 auto', padding: isMobile ? '1rem 0.6rem 4rem' : '1.5rem 1rem 5rem', display: 'grid', gap: '1rem' }}>
         <section style={{ padding: isMobile ? '0.85rem' : '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: isMobile ? '0.55rem' : '0.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'wrap' }}>
-              <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>📖 예약현황보기</h2>
+              <h2 style={{ margin: 0, fontSize: isMobile ? '1.05rem' : '1.2rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>📖 예약현황보기</h2>
               {(() => {
                 const [y, mo, d] = selectedDate.split('-').map(Number);
                 if (!y || !mo || !d) return null;
@@ -488,12 +488,12 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
               style={{ padding: '0.5rem 0.95rem', minHeight: 40, borderRadius: 999, border: '1px solid #65A30D', background: '#fff', color: '#3F6212', fontSize: '0.86rem', fontWeight: 800, cursor: 'pointer' }}
             >날짜·장소 변경</button>
           </div>
-          <div style={{ display: 'flex', gap: '0.85rem', fontSize: '0.78rem', color: 'var(--color-ink-2)', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: isMobile ? '0.5rem' : '0.85rem', fontSize: '0.78rem', color: 'var(--color-ink-2)', flexWrap: 'wrap', alignItems: 'center', rowGap: '0.4rem' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#F7FEE7', border: '1px solid #D9F09E' }} /> 예약 가능</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#DC2626' }} /> 교회일정</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#0F7A52', outline: '2px solid #FBBF24', outlineOffset: -1 }} /> ⭐ 내 예약</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#9CA3AF' }} /> 타인 예약</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#7C3AED' }} /> 교회 사용</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#7C3AED' }} /> 교회사용</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#E5E7EB' }} /> 예약 불가 시간</span>
           </div>
           <VenueGrid
@@ -525,12 +525,12 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
       {pickerOpen && (
         <div
           onClick={(e) => { if (e.target === e.currentTarget) setPickerOpen(false); }}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.55)', zIndex: 90, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.55)', zIndex: 90, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', padding: isMobile ? 0 : '1rem' }}
         >
-          <div role="dialog" className="modal-card" style={{ width: '100%', maxWidth: 560, maxHeight: '90vh', background: '#fff', borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--color-surface-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+          <div role="dialog" className="modal-card" style={{ width: '100%', maxWidth: 560, maxHeight: isMobile ? '92vh' : '90vh', background: '#fff', borderRadius: isMobile ? '18px 18px 0 0' : 16, boxShadow: '0 -8px 40px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ padding: isMobile ? '0.9rem 1rem' : '1rem 1.25rem', borderBottom: '1px solid var(--color-surface-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
               <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-ink)' }}>예약시간/장소조회</h3>
-              <button type="button" onClick={() => setPickerOpen(false)} aria-label="닫기" style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-ink-2)' }}>✕</button>
+              <button type="button" onClick={() => setPickerOpen(false)} aria-label="닫기" style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-ink-2)', minWidth: 40, minHeight: 40, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
             </div>
 
             <div style={{ padding: '1rem 1.25rem', overflowY: 'auto', display: 'grid', gap: '1rem' }}>
@@ -649,24 +649,25 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
 
             </div>
 
-            <div style={{ padding: '0.85rem 1.25rem', borderTop: '1px solid var(--color-surface-border)', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+            <div style={{ padding: isMobile ? '0.85rem 1rem' : '0.85rem 1.25rem', borderTop: '1px solid var(--color-surface-border)', display: 'flex', flexDirection: isMobile ? 'column-reverse' : 'row', justifyContent: isMobile ? 'stretch' : 'flex-end', gap: '0.5rem' }}>
               <button
                 type="button"
                 onClick={() => setPickerOpen(false)}
-                style={{ padding: '0.55rem 1rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', fontWeight: 700, cursor: 'pointer' }}
+                style={{ padding: '0.65rem 1rem', minHeight: 44, borderRadius: 10, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem' }}
               >취소</button>
               <button
                 type="button"
                 onClick={confirmPicker}
                 style={{
-                  padding: '0.55rem 1.1rem',
-                  borderRadius: 'var(--radius-lg)',
+                  padding: '0.65rem 1.1rem',
+                  minHeight: 44,
+                  borderRadius: 10,
                   border: 'none',
                   background: 'var(--color-primary)',
                   color: '#fff',
                   fontWeight: 800,
                   cursor: 'pointer',
-                  opacity: 1,
+                  fontSize: '0.9rem',
                 }}
               >완료</button>
             </div>
