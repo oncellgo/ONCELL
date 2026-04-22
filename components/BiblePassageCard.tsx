@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import { useIsMobile } from '../lib/useIsMobile';
 import { useBibleLang, BibleLangView } from '../lib/useBibleLang';
 
@@ -27,6 +27,10 @@ type Props = {
    * 헤더 아래에 회색 텍스트로 노출.
    */
   source?: string | null;
+  /** 참조 pill 클릭으로 본문 접기/펼치기 허용. 기본 false. */
+  collapsible?: boolean;
+  /** collapsible 일 때 최초 표시 상태. 기본 true(펼침). */
+  defaultOpen?: boolean;
 };
 
 type Block = { chapter?: string; verse?: string; text?: string };
@@ -47,9 +51,10 @@ const parseBlocks = (text: string): Block[] => {
   return blocks;
 };
 
-const BiblePassageCard = ({ reference, koText, enText, passageText, source }: Props) => {
+const BiblePassageCard = ({ reference, koText, enText, passageText, source, collapsible = false, defaultOpen = true }: Props) => {
   const isMobile = useIsMobile();
   const [lang, setLang] = useBibleLang();
+  const [open, setOpen] = useState<boolean>(defaultOpen);
 
   const effectiveKo = koText ?? passageText ?? null;
   const effectiveEn = enText ?? null;
@@ -219,22 +224,48 @@ const BiblePassageCard = ({ reference, koText, enText, passageText, source }: Pr
           <span>데이터 출처: {source}</span>
         </div>
       )}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.75rem', paddingBottom: '0.6rem', borderBottom: '1px solid #ECFCCB', flexWrap: 'wrap' }}>
-        <span style={{
-          padding: '0.38rem 0.85rem',
-          borderRadius: 999,
-          border: '1px solid #65A30D',
-          background: '#fff',
-          color: '#3F6212',
-          fontSize: '0.86rem',
-          fontWeight: 700,
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.35rem',
-        }}>
-          <span aria-hidden>📖</span>
-          <span>{reference}</span>
-        </span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: open ? '0.75rem' : 0, paddingBottom: open ? '0.6rem' : 0, borderBottom: open ? '1px solid #ECFCCB' : 'none', flexWrap: 'wrap' }}>
+        {collapsible ? (
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-label={open ? '말씀 본문 접기' : '말씀 본문 펼치기'}
+            style={{
+              padding: '0.38rem 0.85rem',
+              borderRadius: 999,
+              border: '1px solid #65A30D',
+              background: '#fff',
+              color: '#3F6212',
+              fontSize: '0.86rem',
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              cursor: 'pointer',
+            }}
+          >
+            <span aria-hidden>📖</span>
+            <span>{reference}</span>
+            <span aria-hidden style={{ fontSize: '0.75rem', transition: 'transform 0.15s', transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▾</span>
+          </button>
+        ) : (
+          <span style={{
+            padding: '0.38rem 0.85rem',
+            borderRadius: 999,
+            border: '1px solid #65A30D',
+            background: '#fff',
+            color: '#3F6212',
+            fontSize: '0.86rem',
+            fontWeight: 700,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+          }}>
+            <span aria-hidden>📖</span>
+            <span>{reference}</span>
+          </span>
+        )}
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {(hasKo || hasEn) && (
             <span role="group" aria-label="성경 언어" style={{ display: 'inline-flex', borderRadius: 999, overflow: 'hidden', border: '1px solid #D9F09E' }}>
@@ -266,7 +297,7 @@ const BiblePassageCard = ({ reference, koText, enText, passageText, source }: Pr
         </span>
       </div>
 
-      {resolved === 'both' ? (
+      {open && (resolved === 'both' ? (
         <div style={{ display: 'grid', gap: '0.4rem' }}>
           <div style={{ display: 'inline-flex', gap: '0.4rem', fontSize: '0.7rem', fontWeight: 700, color: '#65A30D' }}>
             <span>개역한글</span><span style={{ opacity: 0.55 }}>·</span><span style={{ fontStyle: 'italic' }}>KJV</span>
@@ -277,7 +308,7 @@ const BiblePassageCard = ({ reference, koText, enText, passageText, source }: Pr
         renderBlocks(enBlocks)
       ) : (
         renderBlocks(koBlocks)
-      )}
+      ))}
     </div>
   );
 };

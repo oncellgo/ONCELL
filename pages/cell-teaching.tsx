@@ -93,8 +93,6 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
   const [guideLoading, setGuideLoading] = useState(false);
   const [guideError, setGuideError] = useState<string | null>(null);
   const guideCacheRef = useRef(new Map<string, CellGuide>());
-  const [showBibleText, setShowBibleText] = useState(true);
-  useEffect(() => { setShowBibleText(true); }, [selectedKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -233,20 +231,13 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
                 "{sermonTitle}"
               </div>
             )}
-            {/* 성경참조 + PDF 버튼. 참조 클릭 시 아래 말씀 본문 카드 토글. */}
+            {/* 성경참조 + PDF 버튼 */}
             {guide?.found && (guide.normalizedRef || guide.biblePassage) && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowBibleText((v) => !v)}
-                  aria-expanded={showBibleText}
-                  aria-label={showBibleText ? '말씀 본문 숨기기' : '말씀 본문 보이기'}
-                  style={{ padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: isMobile ? '0.86rem' : '0.9rem', fontWeight: 700, color: 'var(--color-ink-2)' }}
-                >
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: isMobile ? '0.86rem' : '0.9rem', fontWeight: 700, color: 'var(--color-ink-2)' }}>
                   <span aria-hidden>📖</span>
-                  <span style={{ textDecoration: 'underline', textUnderlineOffset: 2 }}>{guide.normalizedRef || guide.biblePassage}</span>
-                  <span aria-hidden style={{ fontSize: '0.75rem', transition: 'transform 0.15s', transform: showBibleText ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▾</span>
-                </button>
+                  <span>{guide.normalizedRef || guide.biblePassage}</span>
+                </div>
                 {guide.idx && (
                   <a
                     href={`/api/bulletin-file?idx=${encodeURIComponent(guide.idx)}&n=0`}
@@ -278,13 +269,15 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
             </section>
           )}
 
-          {/* 말씀 본문 — design.md §2.3 Bible passage rule 준수 (BiblePassageCard). 성경참조 클릭으로 토글. */}
-          {guide?.found && showBibleText && (guide.bibleText || guide.bibleTextEn) && (
+          {/* 말씀 본문 — design.md §2.3 Bible passage rule 준수 (BiblePassageCard). 카드 내 참조 클릭으로 본문 토글. */}
+          {guide?.found && (guide.bibleText || guide.bibleTextEn) && (
             <BiblePassageCard
               reference={guide.normalizedRef || guide.biblePassage || '말씀'}
               koText={guide.bibleText || null}
               enText={guide.bibleTextEn || null}
               source="koreanchurch.sg 구역예배지 PDF · 본문: 개역한글/KJV 공공영역"
+              collapsible
+              defaultOpen
             />
           )}
 
