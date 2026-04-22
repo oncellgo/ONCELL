@@ -118,8 +118,8 @@ type BulletinItem = { idx: string; title: string; dateKey: string };
 type ListPayload = { items: ListItem[]; bulletins: BulletinItem[]; year: number };
 
 // Supabase KV 기반 영속 캐시 — 람다 콜드스타트에도 재사용.
-// v2: 제목 파싱에 M/D 슬래시 형식 추가 — 기존 v1 캐시는 이 형식을 놓쳤음
-const listCache = makeKvCache<ListPayload>('cell_worship_list_cache_v2', LIST_TTL);
+// v3: 상위 3페이지 크롤로 확장 (2페이지 이상에 있는 과거 구역예배지까지 포함)
+const listCache = makeKvCache<ListPayload>('cell_worship_list_cache_v3', LIST_TTL);
 const detailCache = makeKvCache<any>('cell_worship_detail_cache_v1', DETAIL_TTL);
 
 const ORDINAL_MAP: Record<string, number> = { '첫': 1, '둘': 2, '셋': 3, '넷': 4, '다섯': 5 };
@@ -145,21 +145,34 @@ const decodeEntities = (s: string): string =>
 const stripTags = (s: string): string =>
   s.replace(/<\/?(?:p|br|div|span)[^>]*>/gi, '\n').replace(/<[^>]+>/g, '').replace(/\n{2,}/g, '\n\n').trim();
 
-// 게시글 목록 파싱: idx + 제목 추출 후 '구역예배지' + '주보' 두 타입 분류
+// 게시판은 페이지당 ~15~20 건 → 최근 2~3개월 커버하려면 상위 3 페이지가 적당.
+const LIST_PAGES = 3;
+const listPageUrl = (page: number) => (page <= 1 ? LIST_URL : `${LIST_URL}?page=${page}`);
+
+// 게시글 목록 파싱: idx + 제목 추출 후 '구역예배지' + '주보' 두 타입 분류. 상위 N페이지 병렬 크롤.
 const fetchList = async (year: number): Promise<{ items: ListItem[]; bulletins: BulletinItem[] }> => {
   const cacheKey = `y${year}`;
   const cached = await listCache.get(cacheKey);
   if (cached) return { items: cached.items, bulletins: cached.bulletins };
 
-  const res = await fetch(LIST_URL, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-  const html = await res.text();
+  const htmls = await Promise.all(
+    Array.from({ length: LIST_PAGES }, (_, i) =>
+      fetch(listPageUrl(i + 1), { headers: { 'User-Agent': 'Mozilla/5.0' } })
+        .then((r) => (r.ok ? r.text() : ''))
+        .catch(() => ''),
+    ),
+  );
 
   const items: ListItem[] = [];
   const bulletins: BulletinItem[] = [];
-  const re = /idx=(\d+)[^"]*"[\s\S]{0,2000}?<span[^>]*>\s*([^<]{3,100})\s*<\/span>/g;
   const seen = new Set<string>();
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(html)) !== null) {
+
+  // 페이지 경계를 넘나드는 regex 매칭을 피하려 페이지별로 개별 파싱.
+  for (const html of htmls) {
+    if (!html) continue;
+    const re = /idx=(\d+)[^"]*"[\s\S]{0,2000}?<span[^>]*>\s*([^<]{3,100})\s*<\/span>/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(html)) !== null) {
     const idx = m[1];
     if (seen.has(idx)) continue;
     const rawTitle = decodeEntities(m[2]).trim();
@@ -210,6 +223,7 @@ const fetchList = async (year: number): Promise<{ items: ListItem[]; bulletins: 
       if (!dm) continue;
       const dateKey = `${dm[1]}-${pad(Number(dm[2]))}-${pad(Number(dm[3]))}`;
       bulletins.push({ idx, title: rawTitle, dateKey });
+    }
     }
   }
   await listCache.set(cacheKey, { items, bulletins, year });
