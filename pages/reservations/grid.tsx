@@ -462,7 +462,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                   <span style={{ width: 14, height: 14, borderRadius: 3, background: '#DC2626' }} /> 교회일정
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <span style={{ width: 14, height: 14, borderRadius: 3, background: '#2563EB', outline: '2px solid #FBBF24', outlineOffset: -1 }} /> ⭐ 내 예약
+                  <span style={{ width: 14, height: 14, borderRadius: 3, background: '#F97316', outline: '2px solid #FBBF24', outlineOffset: -1 }} /> ⭐ 내 예약
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                   <span style={{ width: 14, height: 14, borderRadius: 3, background: '#9CA3AF' }} /> 타인 예약
@@ -792,7 +792,8 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
     const occType = (occ as any).type || 'event';
     const kind: 'event' | 'reservation' = occType === 'reservation' ? 'reservation' : 'event';
     const isOwner = !!queryProfileId && occ.createdBy === queryProfileId;
-    const canSeeReserver = kind === 'reservation' && (isAdmin || isOwner);
+    // 로그인한 교인이면 서로 예약자 이름/연락처를 확인 가능 (연락 편의). 비로그인은 숨김.
+    const canSeeReserver = kind === 'reservation' && !!queryProfileId;
     const reserver = canSeeReserver ? profileMap.get(occ.createdBy) : undefined;
     const reserverName = canSeeReserver ? (reserver?.realName || occ.createdByName || '') : '';
     const reserverContact = canSeeReserver ? (reserver?.contact || '') : '';

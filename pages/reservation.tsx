@@ -520,7 +520,7 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
           <div style={{ display: 'flex', gap: isMobile ? '0.5rem' : '0.85rem', fontSize: '0.78rem', color: 'var(--color-ink-2)', flexWrap: 'wrap', alignItems: 'center', rowGap: '0.4rem' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#F7FEE7', border: '1px solid #D9F09E' }} /> 예약 가능</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#DC2626' }} /> 교회일정</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#2563EB', outline: '2px solid #FBBF24', outlineOffset: -1 }} /> ⭐ 내 예약</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#F97316', outline: '2px solid #FBBF24', outlineOffset: -1 }} /> ⭐ 내 예약</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#9CA3AF' }} /> 타인 예약</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#4B5563' }} /> 예약불가</span>
           </div>
@@ -762,7 +762,8 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
     const kind: 'event' | 'reservation' = occType === 'reservation' ? 'reservation' : 'event';
     // 예약자 개인정보 노출: 관리자이거나 본인 예약일 때만
     const isOwner = !!queryProfileId && occ.createdBy === queryProfileId;
-    const canSeeReserver = kind === 'reservation' && (isAdmin || isOwner);
+    // 로그인한 교인이면 서로 예약자 이름/연락처를 확인 가능 (연락 편의). 비로그인은 숨김.
+    const canSeeReserver = kind === 'reservation' && !!queryProfileId;
     const reserver = canSeeReserver ? profileMap.get(occ.createdBy) : undefined;
     const reserverName = canSeeReserver ? (reserver?.realName || occ.createdByName || '') : '';
     const reserverContact = canSeeReserver ? (reserver?.contact || '') : '';
