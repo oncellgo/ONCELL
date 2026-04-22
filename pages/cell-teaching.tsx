@@ -161,8 +161,10 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: isMobile ? '0.3rem' : '0.4rem' }}>
             {recentSundays.map((key) => {
               const d = new Date(key);
-              const end = new Date(d); end.setDate(d.getDate() + 6);
-              const rangeLabel = `${d.getMonth() + 1}/${d.getDate()}-${end.getMonth() + 1}/${end.getDate()}`;
+              // 해당 주일 직전 일~토 (Nth주 금요 구역예배 내용이 다루는 한 주)
+              const start = new Date(d); start.setDate(d.getDate() - 7);
+              const end = new Date(d); end.setDate(d.getDate() - 1);
+              const rangeLabel = `${start.getMonth() + 1}/${start.getDate()}-${end.getMonth() + 1}/${end.getDate()}`;
               const isSelected = selectedKey === key;
               const isToday = key === todayKey;
               const weekOrd = Math.ceil(d.getDate() / 7);
