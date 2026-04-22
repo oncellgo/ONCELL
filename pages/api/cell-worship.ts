@@ -80,7 +80,10 @@ const parsePdfSections = (text: string): { questions: string[]; prayer: Array<{ 
     const qRe = /(\d+)\.\s+([\s\S]*?)(?=\n\s*\d+\.\s|$)/g;
     let m: RegExpExecArray | null;
     while ((m = qRe.exec(witness)) !== null) {
-      const q = m[2].replace(/\s+/g, ' ').trim();
+      let q = m[2].replace(/\s+/g, ' ').trim();
+      // 끝쪽 괄호 출처 제거: "...무엇입니까? (요 20:19)" → "...무엇입니까?"
+      // 한 번 이상 반복될 수 있어 while 로 끝까지.
+      while (/\s*\([^()]*\)\s*$/.test(q)) q = q.replace(/\s*\([^()]*\)\s*$/, '').trim();
       // 진짜 질문인지 검증 — 물음표로 끝나거나 ~니까로 끝남
       if (!/[?？]$/.test(q) && !/(니까|는가요|되나요|입니까|습니까)[\s?？]*$/.test(q)) continue;
       if (q.length < 8 || q.length > 500) continue;
@@ -120,8 +123,8 @@ type ListPayload = { items: ListItem[]; bulletins: BulletinItem[]; year: number 
 // Supabase KV 기반 영속 캐시 — 람다 콜드스타트에도 재사용.
 // v4: "N째 주" 매핑을 해당 월의 N번째 금요일 기준으로 변경 (skill rule)
 const listCache = makeKvCache<ListPayload>('cell_worship_list_cache_v4', LIST_TTL);
-// v2: witness (내용 나눔 raw) 필드 추가
-const detailCache = makeKvCache<any>('cell_worship_detail_cache_v2', DETAIL_TTL);
+// v3: questions 추출에서 끝쪽 괄호 출처 제거 → 1번 같이 (요 20:19) 붙은 질문도 포함
+const detailCache = makeKvCache<any>('cell_worship_detail_cache_v3', DETAIL_TTL);
 
 const ORDINAL_MAP: Record<string, number> = { '첫': 1, '둘': 2, '셋': 3, '넷': 4, '다섯': 5 };
 
