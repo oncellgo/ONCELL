@@ -49,64 +49,61 @@ const CallbackPage = () => {
           return;
         }
 
+        // A 방안: 동의 전까지는 서버 record-login 호출·localStorage 저장을 모두 유보.
+        // OAuth 프로필은 sessionStorage 에 임시 보관 (탭 닫거나 이탈 시 자동 소멸).
         try {
-          if (nickname) window.localStorage.setItem('kcisNickname', nickname);
-          if (email) window.localStorage.setItem('kcisEmail', email);
-          window.localStorage.setItem('kcisProfileId', profileId);
+          window.sessionStorage.setItem('kcisPendingProfile', JSON.stringify({ profileId, nickname, email, provider: providerName }));
         } catch {}
 
-        let approvalStatus: 'approved' | 'pending' | 'rejected' | 'blocked' = 'approved';
-        let missingFields: string[] = [];
+        // 수집 없이 기존 상태만 조회 — 기존 가입자 + 이미 동의한 경우를 구분해 건너뛰기 위함.
+        let exists = false;
+        let privacyConsent = false;
+        let status: 'pending' | 'approved' | 'rejected' | 'blocked' | null = null;
         try {
-          const loginRes = await fetch('/api/auth/record-login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ profileId, provider: providerName, nickname, email }),
-          });
-          const loginData = await loginRes.json().catch(() => ({}));
-          if (!loginRes.ok && loginData?.error === 'blocked') {
-            approvalStatus = 'blocked';
-          } else if (loginRes.ok) {
-            approvalStatus = loginData?.approval?.status || 'approved';
-            if (Array.isArray(loginData?.missingFields)) missingFields = loginData.missingFields;
+          const checkRes = await fetch(`/api/auth/check-status?profileId=${encodeURIComponent(profileId)}`);
+          if (checkRes.ok) {
+            const d = await checkRes.json();
+            exists = !!d?.exists;
+            privacyConsent = !!d?.privacyConsent;
+            status = (d?.status as typeof status) || null;
           }
         } catch {}
 
-        if (approvalStatus === 'blocked') {
+        // 차단된 계정은 동의 여부와 무관하게 즉시 차단.
+        if (status === 'blocked') {
           try {
-            window.localStorage.removeItem('kcisProfileId');
-            window.localStorage.removeItem('kcisNickname');
-            window.localStorage.removeItem('kcisEmail');
+            window.sessionStorage.removeItem('kcisPendingProfile');
           } catch {}
           router.replace('/auth/blocked');
           return;
         }
 
-        if (missingFields.length > 0) {
-          const qs = new URLSearchParams({
-            profileId,
-            nickname,
-            email,
-            fields: missingFields.join(','),
-            next: approvalStatus,
-            provider: providerName,
-          });
-          router.replace(`/auth/complete?${qs.toString()}`);
+        // 기존 가입자 + 이미 동의 완료: 즉시 로그인 처리 (record-login 호출해 lastLoginAt 갱신).
+        if (exists && privacyConsent) {
+          try {
+            await fetch('/api/auth/record-login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ profileId, provider: providerName, nickname, email }),
+            });
+          } catch {}
+          try {
+            if (nickname) window.localStorage.setItem('kcisNickname', nickname);
+            if (email) window.localStorage.setItem('kcisEmail', email);
+            window.localStorage.setItem('kcisProfileId', profileId);
+            window.sessionStorage.removeItem('kcisPendingProfile');
+          } catch {}
+
+          if (status === 'pending') { router.replace('/auth/pending'); return; }
+          if (status === 'rejected') { router.replace('/auth/rejected'); return; }
+          router.replace(`/?profileId=${encodeURIComponent(profileId)}&nickname=${encodeURIComponent(nickname)}&email=${encodeURIComponent(email)}`);
           return;
         }
 
-        if (approvalStatus === 'pending') {
-          router.replace('/auth/pending');
-          return;
-        }
-        if (approvalStatus === 'rejected') {
-          router.replace('/auth/rejected');
-          return;
-        }
-
-        router.replace(
-          `/?profileId=${encodeURIComponent(profileId)}&nickname=${encodeURIComponent(nickname)}&email=${encodeURIComponent(email)}`,
-        );
+        // 그 외(신규 또는 소급 동의 필요): /auth/complete 로. 서버 저장 없음.
+        const qs = new URLSearchParams({ provider: providerName });
+        router.replace(`/auth/complete?${qs.toString()}`);
+        return;
       } catch (error) {
         console.error(error);
         router.replace('/');

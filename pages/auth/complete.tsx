@@ -1,25 +1,34 @@
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
+
+type PendingProfile = { profileId: string; provider: string; nickname: string; email: string };
 
 const CompleteSignupPage = () => {
   const router = useRouter();
 
-  const profileId = typeof router.query.profileId === 'string' ? router.query.profileId : '';
-  const nickname = typeof router.query.nickname === 'string' ? router.query.nickname : '';
-  const email = typeof router.query.email === 'string' ? router.query.email : '';
-  const fieldsParam = typeof router.query.fields === 'string' ? router.query.fields : '';
-  const next = typeof router.query.next === 'string' ? router.query.next : 'approved';
-  const provider = typeof router.query.provider === 'string' ? router.query.provider : '';
+  // A 방안: OAuth 프로필은 callback 에서 sessionStorage 에 보관. 여기서 읽어서 동의 후에만 서버에 저장.
+  const [pending, setPending] = useState<PendingProfile | null>(null);
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem('kcisPendingProfile');
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (p?.profileId) setPending({ profileId: p.profileId, provider: p.provider || '', nickname: p.nickname || '', email: p.email || '' });
+      }
+    } catch {}
+  }, []);
+
+  // provider 판별: sessionStorage 우선, 없으면 query fallback
+  const queryProvider = typeof router.query.provider === 'string' ? router.query.provider : '';
+  const provider = pending?.provider || queryProvider;
   const providerLabel = provider === 'kakao' ? '카카오' : provider === 'google' ? '구글' : '소셜';
   // 헤더 색상을 provider 브랜드 톤에 맞춰 조정.
   const headerTheme = provider === 'google'
     ? { bg: '#F8FAFF', badgeBg: 'rgba(26, 115, 232, 0.12)', badgeColor: '#1A73E8', titleColor: '#202124', subColor: '#5F6368', border: '1px solid #DADCE0' }
     : { bg: '#FEE500', badgeBg: 'rgba(24, 22, 0, 0.1)', badgeColor: '#181600', titleColor: '#181600', subColor: '#3D3A00', border: 'none' };
 
-  const fields = useMemo(() => fieldsParam.split(',').filter(Boolean), [fieldsParam]);
-  const needPrivacy = fields.includes('privacyConsent');
-  // 실명·연락처는 이 화면에서 받지 않음(예약 시점에 RequiredInfoModal 로 수집).
+  const needPrivacy = true; // A 방안에선 이 화면 진입 자체가 동의 받기 위함. 항상 true.
 
   const [privacyChecked, setPrivacyChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -27,34 +36,48 @@ const CompleteSignupPage = () => {
 
   const submit = async () => {
     setError(null);
-    if (needPrivacy && !privacyChecked) { setError('개인정보 수집 및 이용에 동의해주세요.'); return; }
+    if (!privacyChecked) { setError('개인정보 수집 및 이용에 동의해주세요.'); return; }
+    if (!pending) { setError('로그인 정보를 찾을 수 없습니다. 다시 로그인해주세요.'); return; }
 
     setSubmitting(true);
     try {
-      const res = await fetch('/api/auth/complete-signup', {
+      // 동의와 함께 서버에 approval 생성·업데이트 (privacyConsent 저장) — 여기가 유일한 "수집" 시점.
+      const res = await fetch('/api/auth/record-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          profileId,
-          ...(needPrivacy ? { privacyConsent: true } : {}),
+          profileId: pending.profileId,
+          provider: pending.provider,
+          nickname: pending.nickname,
+          email: pending.email,
+          privacyConsent: true,
         }),
       });
+      const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
+        if (d?.error === 'blocked') {
+          try { window.sessionStorage.removeItem('kcisPendingProfile'); } catch {}
+          router.replace('/auth/blocked');
+          return;
+        }
         setError(`저장 실패 (${res.status})${d?.error ? `: ${d.error}` : ''}`);
         setSubmitting(false);
         return;
       }
 
-      if (next === 'pending') {
-        router.replace('/auth/pending');
-        return;
-      }
-      if (next === 'rejected') {
-        router.replace('/auth/rejected');
-        return;
-      }
-      router.replace(`/dashboard?profileId=${encodeURIComponent(profileId)}&nickname=${encodeURIComponent(nickname)}&email=${encodeURIComponent(email)}`);
+      const approvalStatus: 'pending' | 'approved' | 'rejected' | 'blocked' = d?.approval?.status || 'approved';
+
+      // 동의·저장 성공 시점에만 브라우저 로그인 플래그 기록.
+      try {
+        if (pending.nickname) window.localStorage.setItem('kcisNickname', pending.nickname);
+        if (pending.email) window.localStorage.setItem('kcisEmail', pending.email);
+        window.localStorage.setItem('kcisProfileId', pending.profileId);
+        window.sessionStorage.removeItem('kcisPendingProfile');
+      } catch {}
+
+      if (approvalStatus === 'pending') { router.replace('/auth/pending'); return; }
+      if (approvalStatus === 'rejected') { router.replace('/auth/rejected'); return; }
+      router.replace(`/dashboard?profileId=${encodeURIComponent(pending.profileId)}&nickname=${encodeURIComponent(pending.nickname)}&email=${encodeURIComponent(pending.email)}`);
     } catch {
       setError('저장 실패. 다시 시도해주세요.');
       setSubmitting(false);
