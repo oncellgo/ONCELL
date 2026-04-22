@@ -1347,7 +1347,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                             }}
                           >
                             {hasEvent && multi && !isSelected && (
-                              <span aria-hidden="true" style={{ position: 'absolute', inset: 0, display: 'flex', zIndex: 0, borderRadius: 7 }}>
+                              <span aria-hidden="true" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', zIndex: 0, borderRadius: 7 }}>
                                 {categories.map((c) => {
                                   const cx = colorFor(c);
                                   return <span key={c} title={c} style={{ flex: 1, background: cx.bg }} />;
