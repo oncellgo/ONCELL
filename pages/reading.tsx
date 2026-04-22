@@ -1,5 +1,6 @@
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { useEffect, useMemo, useState } from 'react';
 import SubHeader from '../components/SubHeader';
 import BiblePassageCard from '../components/BiblePassageCard';
@@ -22,6 +23,7 @@ const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
 const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, systemAdminHref }: Props) => {
   const isMobile = useIsMobile();
+  const router = useRouter();
   // SSR 프롭에 profileId 가 없으면 localStorage에서 복구 — MenuBar 링크가 authQs 없이 이동했을 때도 동작.
   const [effProfileId, setEffProfileId] = useState<string | null>(profileId);
   useEffect(() => {
@@ -45,6 +47,23 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
 
   const [weekOffset, setWeekOffset] = useState<number>(0);
   const [selectedDow, setSelectedDow] = useState<number>(todayDow);
+
+  // ?date=YYYY-MM-DD 쿼리 파라미터로 특정 날짜 직접 진입 (대시보드 요일 pill 에서 링크)
+  useEffect(() => {
+    if (!router.isReady) return;
+    const q = router.query.date;
+    const dateStr = typeof q === 'string' ? q : '';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return;
+    const target = new Date(`${dateStr}T00:00:00`);
+    if (isNaN(target.getTime())) return;
+    // week offset: (target 주 시작) - (현재 weekStart) 의 일 차이 / 7
+    const targetWeekStart = new Date(target);
+    targetWeekStart.setHours(0, 0, 0, 0);
+    targetWeekStart.setDate(target.getDate() - target.getDay());
+    const diffDays = Math.round((targetWeekStart.getTime() - weekStart.getTime()) / (24 * 60 * 60 * 1000));
+    setWeekOffset(Math.round(diffDays / 7));
+    setSelectedDow(target.getDay());
+  }, [router.isReady, router.query.date, weekStart]);
 
   const dateForDow = (dow: number): Date => {
     const d = new Date(weekStart);
@@ -183,9 +202,9 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                     title={planLabel}
                     style={{
                       padding: isMobile ? '0.3rem 0.1rem' : '0.4rem 0.25rem',
-                      border: isSelected ? '2px solid #20CD8D' : isDayCompleted ? '1.5px solid #20CD8D' : isToday ? '1.5px solid #D9F09E' : '1px solid var(--color-gray)',
+                      border: isSelected ? '2px solid #20CD8D' : isDayCompleted ? '1.5px solid #20CD8D' : '1px solid var(--color-gray)',
                       borderRadius: 8,
-                      background: isDayCompleted ? '#20CD8D' : isToday ? '#ECFCCB' : '#fff',
+                      background: isDayCompleted ? '#20CD8D' : '#fff',
                       cursor: 'pointer',
                       textAlign: 'center',
                       boxShadow: isSelected ? '0 2px 6px rgba(32,205,141,0.28)' : 'none',
@@ -318,7 +337,7 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                       <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>본문을 찾을 수 없습니다.</span>
                     </div>
                   );
-                  return <BiblePassageCard key={i} reference={ref} koText={texts.ko || null} enText={texts.en || null} />;
+                  return <BiblePassageCard key={i} reference={ref} koText={texts.ko || null} enText={texts.en || null} source="KCIS 통독 일정표 · 본문: 개역한글/KJV 공공영역" />;
                 })}
               </div>
             )

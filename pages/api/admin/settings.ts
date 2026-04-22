@@ -15,6 +15,15 @@ type Settings = {
   reservationLimitMode: 'unlimited' | 'perUser';
   reservationLimitPerUser: number; // 1..10 (valid when mode='perUser')
   contactPersons: ContactPerson[]; // 담당자 연락처 (최대 2명)
+  qtYoutubeHandle: string; // QT 새벽예배 영상을 가져올 유튜브 채널 핸들 (@ 제외)
+};
+
+const DEFAULT_QT_HANDLE = 'KoreanChurchInSingapore';
+
+const sanitizeHandle = (v: any, fallback: string): string => {
+  if (typeof v !== 'string') return fallback;
+  const h = v.trim().replace(/^@/, '').slice(0, 60);
+  return h || fallback;
 };
 
 const sanitizeFields = (v: any): SignupField[] => {
@@ -64,6 +73,7 @@ const readSettings = async (): Promise<Settings> => {
       reservationLimitMode: parsed.reservationLimitMode === 'perUser' ? 'perUser' : 'unlimited',
       reservationLimitPerUser: sanitizePerUser(parsed.reservationLimitPerUser),
       contactPersons: sanitizeContactPersons(parsed.contactPersons),
+      qtYoutubeHandle: sanitizeHandle(parsed.qtYoutubeHandle, DEFAULT_QT_HANDLE),
     };
   } catch {
     return {
@@ -75,6 +85,7 @@ const readSettings = async (): Promise<Settings> => {
       reservationLimitMode: 'unlimited',
       reservationLimitPerUser: 3,
       contactPersons: [],
+      qtYoutubeHandle: DEFAULT_QT_HANDLE,
     };
   }
 };
@@ -89,7 +100,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   if (req.method === 'PATCH') {
     const current = await readSettings();
-    const { venueSlotMin, signupApproval, signupRequiredFields, venueAvailableStart, venueAvailableEnd, reservationLimitMode, reservationLimitPerUser, contactPersons } = req.body as Partial<Settings>;
+    const { venueSlotMin, signupApproval, signupRequiredFields, venueAvailableStart, venueAvailableEnd, reservationLimitMode, reservationLimitPerUser, contactPersons, qtYoutubeHandle } = req.body as Partial<Settings>;
     const next: Settings = {
       ...current,
       ...(typeof venueSlotMin === 'number' && (venueSlotMin === 30 || venueSlotMin === 60) ? { venueSlotMin } : {}),
@@ -100,6 +111,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       ...(reservationLimitMode === 'unlimited' || reservationLimitMode === 'perUser' ? { reservationLimitMode } : {}),
       ...(typeof reservationLimitPerUser !== 'undefined' ? { reservationLimitPerUser: sanitizePerUser(reservationLimitPerUser) } : {}),
       ...(Array.isArray(contactPersons) ? { contactPersons: sanitizeContactPersons(contactPersons) } : {}),
+      ...(typeof qtYoutubeHandle === 'string' ? { qtYoutubeHandle: sanitizeHandle(qtYoutubeHandle, current.qtYoutubeHandle) } : {}),
     };
     await setSettings(next);
     return res.status(200).json({ settings: next });

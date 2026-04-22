@@ -235,6 +235,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
               reference={guide.normalizedRef || guide.biblePassage || '말씀'}
               koText={guide.bibleText || null}
               enText={guide.bibleTextEn || null}
+              source="koreanchurch.sg 구역예배지 PDF · 본문: 개역한글/KJV 공공영역"
             />
           )}
 

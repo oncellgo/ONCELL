@@ -266,10 +266,15 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
   const openConfirmModal = async () => {
     if (!selection) return;
     setSubmitError(null);
+    // profileId 가 SSR (URL) 에 없을 수 있음 — localStorage 로 보완.
+    let effPid: string | null = profileId;
+    if (!effPid) {
+      try { effPid = window.localStorage.getItem('kcisProfileId'); } catch {}
+    }
     // 예약 한도 사전 체크 (관리자는 SSR 에서 mode=unlimited 로 내려오므로 여기서 스킵됨)
-    if (profileId && reservationLimitMode === 'perUser') {
+    if (effPid && reservationLimitMode === 'perUser') {
       try {
-        const r = await fetch(`/api/events?communityId=kcis&profileId=${encodeURIComponent(profileId)}&type=reservation`);
+        const r = await fetch(`/api/events?communityId=kcis&profileId=${encodeURIComponent(effPid)}&type=reservation`);
         if (r.ok) {
           const d = await r.json();
           const all: any[] = Array.isArray(d?.events) ? d.events : [];
@@ -278,7 +283,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
           if (futureCnt >= reservationLimitPerUser) {
             alert(`예약 한도(${reservationLimitPerUser}건)를 초과했습니다.\n기존 예약 중 하나를 취소한 뒤 다시 시도해주세요.\n\n내 대시보드의 '다가오는 내 장소예약' 으로 이동합니다.`);
             const qs = new URLSearchParams();
-            if (profileId) qs.set('profileId', profileId);
+            if (effPid) qs.set('profileId', effPid);
             if (nickname) qs.set('nickname', nickname);
             if (email) qs.set('email', email);
             qs.set('focus', 'my-reservations');
@@ -292,7 +297,19 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
   };
 
   const submitReservation = async () => {
-    if (!selection || !profileId) return;
+    if (!selection) {
+      setSubmitError('시간/장소 선택이 초기화되었습니다. 모달을 닫고 다시 선택해 주세요.');
+      return;
+    }
+    // profileId 가 SSR (URL) 에서 비어있을 수 있음 — localStorage 에서 보완.
+    let effProfileId: string | null = profileId;
+    if (!effProfileId) {
+      try { effProfileId = window.localStorage.getItem('kcisProfileId'); } catch {}
+    }
+    if (!effProfileId) {
+      setSubmitError('로그인이 만료되었습니다. 다시 로그인 후 시도해 주세요.');
+      return;
+    }
     // 유효성
     let ok = true;
     if (!description.trim()) { shake(setShakeDesc); ok = false; }
@@ -317,7 +334,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           communityId: 'kcis',
-          profileId,
+          profileId: effProfileId,
           title: description.trim(),
           description: description.trim(),
           startAt, endAt,
@@ -336,7 +353,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
       }
       alert(`예약이 완료되었습니다.\n\n${selectedDate} ${selection.startLabel}~${selection.endLabel}\n${v.floor} ${v.name}\n\n나의 장소예약 페이지로 이동합니다.`);
       const qs = new URLSearchParams();
-      if (profileId) qs.set('profileId', profileId);
+      qs.set('profileId', effProfileId);
       if (displayName) qs.set('nickname', displayName);
       if (email) qs.set('email', email);
       router.push(`/reservations/my${qs.toString() ? `?${qs.toString()}` : ''}`);
@@ -402,11 +419,12 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
   const venueSummary = (() => {
     const n = selectedVenueIds.size;
     if (n === 0) return null;
-    if (n === 1) {
-      const v = selectedVenues[0];
-      return `${v.floor} ${v.name}`;
-    }
-    return `${selectedVenues[0].floor} ${selectedVenues[0].name} 외 ${n - 1}곳`;
+    const sorted = [...selectedVenues].sort((a, b) =>
+      `${a.floor} ${a.name}`.localeCompare(`${b.floor} ${b.name}`, 'ko'),
+    );
+    const head = sorted[0];
+    if (n === 1) return `${head.floor} ${head.name}`;
+    return `${head.floor} ${head.name} 외 ${n - 1}곳`;
   })();
 
   const hasBoth = selectedVenueIds.size > 0;
@@ -517,13 +535,14 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                   <span style={{ width: 14, height: 14, borderRadius: 3, background: '#F7FEE7', border: '1px solid #D9F09E' }} /> 예약 가능
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <span style={{ width: 14, height: 14, borderRadius: 3, background: '#F97316', outline: '2px solid #FBBF24', outlineOffset: -1 }} /> ⭐ 내 예약
+                  <span style={{ width: 14, height: 14, borderRadius: 3, background: '#A7F3D0', outline: '2px solid #20CD8D', outlineOffset: -1 }} />
+                  <span style={{ color: '#EAB308', fontWeight: 800 }}>★</span> 내 예약
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <span style={{ width: 14, height: 14, borderRadius: 3, background: '#9CA3AF' }} /> 타인 예약
+                  <span style={{ width: 14, height: 14, borderRadius: 3, background: '#9CA089' }} /> 타인 예약
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <span style={{ width: 14, height: 14, borderRadius: 3, background: '#4B5563' }} /> 예약불가
+                  <span style={{ width: 14, height: 14, borderRadius: 3, background: '#4A4E3A' }} /> 예약불가
                 </span>
               </div>
 
@@ -847,11 +866,14 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
     const occType = (occ as any).type || 'event';
     const kind: 'event' | 'reservation' = occType === 'reservation' ? 'reservation' : 'event';
     const isOwner = !!queryProfileId && occ.createdBy === queryProfileId;
-    // 로그인한 교인이면 서로 예약자 이름/연락처를 확인 가능 (연락 편의). 비로그인은 숨김.
-    const canSeeReserver = kind === 'reservation' && !!queryProfileId;
-    const reserver = canSeeReserver ? profileMap.get(occ.createdBy) : undefined;
-    const reserverName = canSeeReserver ? (reserver?.realName || occ.createdByName || '') : '';
-    const reserverContact = canSeeReserver ? (reserver?.contact || '') : '';
+    // 예약자 실명은 로그인 여부와 무관하게 항상 채움 (화면 자체가 client-side useRequireLogin 으로 보호됨).
+    // 이전엔 queryProfileId 유무로 게이트했더니, URL 에 profileId 가 안 실린 진입(메뉴 링크 등)에서 SSR 은
+    // 비로그인 취급 → reserverName 이 비어 누구 예약인지 안 보이는 증상 발생. 근본 해결로 게이트 제거.
+    // 연락처는 여전히 관리자·본인 전용.
+    const canSeeReserverContact = kind === 'reservation' && (isOwner || !!isAdmin);
+    const reserver = kind === 'reservation' ? profileMap.get(occ.createdBy) : undefined;
+    const reserverName = kind === 'reservation' ? (reserver?.realName || occ.createdByName || '') : '';
+    const reserverContact = canSeeReserverContact ? (reserver?.contact || '') : '';
     const block: Block = {
       id: `occ-${occ.occurrenceId}`,
       venueId: vid,

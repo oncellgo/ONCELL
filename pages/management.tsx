@@ -7,9 +7,10 @@ import AdminTabBar from '../components/AdminTabBar';
 import CommunityBadge from '../components/CommunityBadge';
 import DateTimePicker from '../components/DateTimePicker';
 import WorshipBulletinEditor, { WorshipBulletinPreview } from '../components/WorshipBulletinEditor';
-import { getSystemAdminHref } from '../lib/adminGuard';
+import { getSystemAdminHref, requireAdminAccessSSR } from '../lib/adminGuard';
 import { useIsMobile } from '../lib/useIsMobile';
-import { isAllDayEvent } from '../lib/events';
+import { isAllDayEvent, getSGDateKey, getSGTodayKey, addDaysToKey } from '../lib/events';
+import { categoryColorFor, sortCategories } from '../lib/categoryColors';
 import { getCommunities, getUsers } from '../lib/dataStore';
 
 type Community = {
@@ -231,23 +232,55 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
   useEffect(() => {
     if (!calCommunityId) { setCalEvents([]); return; }
     let cancelled = false;
-    // 뷰 월 기준 ±1개월 범위로 펼침 — 캘린더 그리드 양쪽 끝 overflow 날짜 + 이전/다음 버튼 프리페치 포함
+    // 월달력(calView)과 주별표(worshipWeekOffset)는 독립 스크롤.
+    // 두 뷰가 먼 달(예: 2026-04 vs 2030-06)에 있을 때 union 범위로 fetch 하면 수년치를 한 번에 가져오므로
+    // 각 뷰에 맞는 **좁은 윈도우 2개**를 병렬 fetch 후 id 기준 dedup 해서 merge.
     const now = new Date();
-    const viewYear = calView ? calView.year : now.getFullYear();
-    const viewMonth = calView ? calView.month : now.getMonth() + 1; // 1-12
-    const from = new Date(viewYear, viewMonth - 2, 1);
-    const to = new Date(viewYear, viewMonth + 1, 0, 23, 59, 59);
     const pad = (n: number) => String(n).padStart(2, '0');
-    const fromStr = `${from.getFullYear()}-${pad(from.getMonth() + 1)}-${pad(from.getDate())}`;
-    const toStr = `${to.getFullYear()}-${pad(to.getMonth() + 1)}-${pad(to.getDate())}`;
-    const qs = new URLSearchParams({ communityId: calCommunityId, type: 'event', from: fromStr, to: toStr });
-    if (profileId) qs.set('profileId', profileId);
-    fetch(`/api/events?${qs.toString()}`)
-      .then((r) => r.json())
-      .then((data) => { if (!cancelled) setCalEvents(data.events || []); })
-      .catch(() => {});
+    const fmtKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+    // 월달력 윈도우: viewMonth ± 1개월
+    const viewYear = calView ? calView.year : now.getFullYear();
+    const viewMonth = calView ? calView.month : now.getMonth() + 1;
+    const monthFrom = fmtKey(new Date(viewYear, viewMonth - 2, 1));
+    const monthTo = fmtKey(new Date(viewYear, viewMonth + 1, 0));
+
+    // 주별표 윈도우: 해당 주가 속한 달 ± 1주 (작게)
+    const dowToday = now.getDay();
+    const mondayDelta = dowToday === 0 ? -6 : 1 - dowToday;
+    const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayDelta + worshipWeekOffset * 7);
+    const weekFrom = fmtKey(new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() - 7));
+    const weekTo = fmtKey(new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 14));
+
+    const makeUrl = (from: string, to: string) => {
+      const qs = new URLSearchParams({ communityId: calCommunityId, type: 'event', from, to });
+      if (profileId) qs.set('profileId', profileId);
+      return `/api/events?${qs.toString()}`;
+    };
+
+    // 두 윈도우가 겹치면 한 번만, 아니면 둘 다 병렬로 호출
+    const monthFromT = new Date(monthFrom).getTime();
+    const monthToT = new Date(monthTo).getTime();
+    const weekFromT = new Date(weekFrom).getTime();
+    const weekToT = new Date(weekTo).getTime();
+    const overlaps = weekFromT <= monthToT && weekToT >= monthFromT;
+    const calls = overlaps
+      ? [makeUrl(fmtKey(new Date(Math.min(monthFromT, weekFromT))), fmtKey(new Date(Math.max(monthToT, weekToT))))]
+      : [makeUrl(monthFrom, monthTo), makeUrl(weekFrom, weekTo)];
+
+    Promise.all(calls.map((u) => fetch(u).then((r) => r.json()).catch(() => ({ events: [] }))))
+      .then((results) => {
+        if (cancelled) return;
+        const byId = new Map<string, any>();
+        for (const res of results) {
+          for (const ev of (res.events || [])) {
+            if (ev && ev.id) byId.set(ev.id, ev);
+          }
+        }
+        setCalEvents(Array.from(byId.values()));
+      });
     return () => { cancelled = true; };
-  }, [calCommunityId, profileId, calView?.year, calView?.month]);
+  }, [calCommunityId, profileId, calView?.year, calView?.month, worshipWeekOffset]);
 
   // Auto-update count/until when startAt changes while recurring (worship: 3mo horizon, community: 12mo)
   useEffect(() => {
@@ -286,10 +319,12 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
       // 주의: 반복 예배는 이제 events.json에 단일 row + rule 로 저장. 루프 금지.
       // 아래 공통 events.json POST 경로를 통해 처리됨 (scope=worship).
       // worship은 endAt이 form에 없으므로 start+1h 기본값 사용
-      const startIso = new Date(calForm.startAt).toISOString();
+      // 저장은 항상 SG 벽시계 시각을 +08:00 으로 강제 인코딩 (관리자 브라우저 TZ 무관).
+      const toSGIso = (local: string) => new Date(`${local}:00+08:00`).toISOString();
+      const startIso = toSGIso(calForm.startAt);
       const endIso = calForm.endAt
-        ? new Date(calForm.endAt).toISOString()
-        : new Date(new Date(calForm.startAt).getTime() + 60 * 60 * 1000).toISOString();
+        ? toSGIso(calForm.endAt)
+        : new Date(new Date(`${calForm.startAt}:00+08:00`).getTime() + 60 * 60 * 1000).toISOString();
 
       // "이 회차만 수정": PATCH overrides 로 처리하고 종료
       if (editingEventId && editScope === 'one') {
@@ -960,17 +995,11 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
               const webcalUrl = icsUrl.replace(/^https?:/, 'webcal:');
               const gcalUrl = icsUrl ? `https://calendar.google.com/calendar/u/0/r?cid=${encodeURIComponent(icsUrl)}` : '';
 
-              const communityTz = community?.timezone || 'Asia/Seoul';
-              const formatInTz = (d: Date, opts: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-CA', { timeZone: communityTz, ...opts }).formatToParts(d);
-              const toKey = (d: Date) => {
-                const parts = formatInTz(d, { year: 'numeric', month: '2-digit', day: '2-digit' });
-                const y = parts.find((p) => p.type === 'year')!.value;
-                const m = parts.find((p) => p.type === 'month')!.value;
-                const da = parts.find((p) => p.type === 'day')!.value;
-                return `${y}-${m}-${da}`;
-              };
+              // 일정 표시·버켓팅은 항상 SG(UTC+8) 기준. 브라우저 로컬 TZ 로 getDate()/getHours() 금지.
+              // 서버는 SG 벽시계 시각을 +08:00 ISO로 저장하므로, 읽을 때도 SG 로 풀어야 같은 날짜가 나온다.
+              const toKey = (d: Date): string => getSGDateKey(d.toISOString()) || '';
               const now = new Date();
-              const todayKey = toKey(now);
+              const todayKey = getSGTodayKey();
               const [tyStr, tmStr] = todayKey.split('-');
               const year = calView ? calView.year : Number(tyStr);
               const monthIdx = calView ? calView.month - 1 : Number(tmStr) - 1;
@@ -986,25 +1015,23 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
               while (cells.length % 7 !== 0) cells.push(null);
               const eventsByDay = new Map<string, CalendarEvent[]>();
               calEvents.forEach((ev) => {
-                const startKey = toKey(new Date(ev.startAt));
-                const endKey = toKey(new Date(ev.endAt));
-                const [sy, sm, sd] = startKey.split('-').map(Number);
-                const [ey, em, ed] = endKey.split('-').map(Number);
-                let cursor = new Date(sy, sm - 1, sd);
-                const endLocal = new Date(ey, em - 1, ed);
+                const startKey = getSGDateKey(ev.startAt);
+                const endKey = getSGDateKey(ev.endAt);
+                if (!startKey || !endKey) return;
+                // SG 문자열 day walk (로컬 TZ Date 연산 금지 — KST 사용자에서 하루씩 밀림 발생)
+                let cursorKey = startKey;
                 let safety = 0;
-                while (cursor.getTime() <= endLocal.getTime() && safety < 400) {
-                  const k = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`;
-                  if (!eventsByDay.has(k)) eventsByDay.set(k, []);
-                  eventsByDay.get(k)!.push(ev);
-                  cursor.setDate(cursor.getDate() + 1);
+                while (cursorKey <= endKey && safety < 400) {
+                  if (!eventsByDay.has(cursorKey)) eventsByDay.set(cursorKey, []);
+                  eventsByDay.get(cursorKey)!.push(ev);
+                  cursorKey = addDaysToKey(cursorKey, 1);
                   safety++;
                 }
               });
               // Merge worship services as pseudo events so they show on this calendar too
               worshipServices.filter((s) => s.startAt && s.communityId === calCommunityId).forEach((s) => {
-                const d = new Date(s.startAt);
-                const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                const k = getSGDateKey(s.startAt);
+                if (!k) return;
                 const pseudo: any = {
                   id: s.id,
                   communityId: (s as any).communityId || calCommunityId,
@@ -1061,15 +1088,8 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                 const filtered = list.filter((e: any) => !isWorshipCat(e));
                 if (filtered.length > 0) eventsByDayNonWorship.set(k, filtered);
               }
-              // 카테고리별 색상 매핑
-              const CATEGORY_COLORS: Record<string, { bg: string; fg: string; border: string }> = {
-                '행사': { bg: '#DBEAFE', fg: '#1E40AF', border: '#93C5FD' },
-                '기념일': { bg: '#FEE2E2', fg: '#991B1B', border: '#FCA5A5' },
-                '수련회': { bg: '#FEF3C7', fg: '#92400E', border: '#FCD34D' },
-                '특별예배': { bg: '#FEF3C7', fg: '#78350F', border: '#FCD34D' },
-                '특별기도회': { bg: '#FCE7F3', fg: '#9D174D', border: '#F9A8D4' },
-              };
-              const colorFor = (cat?: string) => CATEGORY_COLORS[cat || ''] || { bg: '#ECFCCB', fg: '#3F6212', border: '#D9F09E' };
+              // 카테고리별 색상 매핑은 lib/categoryColors.ts에서 일괄 관리
+              const colorFor = categoryColorFor;
 
               return (
                 <>
@@ -1113,55 +1133,89 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                         const isToday = d.key === todayKey;
                         const worshipAll = d.worship.slice().sort((a: any, b: any) => (a.startAt || '').localeCompare(b.startAt || ''));
                         const othersAll = d.others.slice().sort((a: any, b: any) => (a.startAt || '').localeCompare(b.startAt || ''));
-                        const badgePalette = (cat: string) => (
-                          cat === '특별예배' ? { bg: '#FEF3C7', border: '#FCD34D', fg: '#78350F' } :
-                          cat === '기도회' ? { bg: '#E0F2FE', border: '#7DD3FC', fg: '#075985' } :
-                          cat === '특별기도회' ? { bg: '#FCE7F3', border: '#F9A8D4', fg: '#9D174D' } :
-                          { bg: '#ECFCCB', border: '#D9F09E', fg: '#3F6212' }
-                        );
+                        const badgePalette = (cat: string) => colorFor(cat);
                         const bulletColor = (cat?: string) => {
                           const c = colorFor(cat);
                           return c.fg;
                         };
+                        // 캘린더의 수정 버튼은 "일정 수정" 모달만 연다.
+                        // pseudo worship service(_isWorshipService) 는 events DB에 존재하지 않아 저장이 깨지므로
+                        // 애초에 수정/삭제 버튼을 렌더하지 않고, 주보 편집은 예배일정 탭으로 분리.
+                        const openEditForEvent = (ev: any) => {
+                          const seriesId = ev.seriesId || ev.id;
+                          const siblings = calEvents.filter((e) => e.id !== ev.id && ((e as any).seriesId || e.id) === seriesId);
+                          const isSeries = siblings.length > 0 || !!ev.rule;
+                          if (isSeries) {
+                            setEditChoiceModal({ target: ev, siblings });
+                            return;
+                          }
+                          const toLocal = (iso: string) => {
+                            const d = new Date(iso);
+                            const pad = (n: number) => String(n).padStart(2, '0');
+                            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                          };
+                          setEventScope((ev.scope as any) || 'community');
+                          setEventShared(!!ev.shared);
+                          setCalForm({ title: ev.title, startAt: toLocal(ev.startAt), endAt: toLocal(ev.endAt), location: ev.location || '', description: ev.description || '' });
+                          setRecurType('none');
+                          setEditingEventId(ev.id);
+                          setEditScope('all');
+                          setEventModalOpen(true);
+                        };
+                        const rowGridCols = '1fr auto auto';
+                        const editBtnStyle: React.CSSProperties = { minHeight: 28, background: 'transparent', border: 'none', color: 'var(--color-primary-deep)', fontSize: '0.76rem', cursor: 'pointer', padding: '0 0.4rem', whiteSpace: 'nowrap', fontWeight: 700 };
+                        const delBtnStyle: React.CSSProperties = { minHeight: 28, background: 'transparent', border: 'none', color: 'var(--color-danger)', fontSize: '0.76rem', cursor: 'pointer', padding: '0 0.4rem', whiteSpace: 'nowrap' };
                         const renderList = (wList: any[], oList: any[]) => {
                           if (wList.length === 0 && oList.length === 0) {
                             return <span style={{ fontSize: '0.78rem', color: 'var(--color-ink-2)' }}>—</span>;
                           }
                           return (
-                            <div style={{ display: 'grid', gap: '0.35rem' }}>
-                              {wList.length > 0 && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
-                                  {wList.map((ev: any) => {
-                                    const pal = badgePalette(ev.category);
-                                    return (
-                                      <span key={ev.id + ev.startAt} title={ev.title} style={{ display: 'inline-block', padding: '0.12rem 0.5rem', borderRadius: 999, background: pal.bg, border: `1px solid ${pal.border}`, color: pal.fg, fontSize: '0.72rem', fontWeight: 800, lineHeight: 1.3 }}>
-                                        {ev.title}
-                                      </span>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                              {oList.length > 0 && (
-                                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: '0.15rem' }}>
-                                  {oList.map((ev: any) => {
-                                    const allDay = isAllDayEvent(ev.startAt, ev.endAt);
-                                    const raw = new Date(ev.startAt);
-                                    const hour = raw.getHours();
-                                    const minute = raw.getMinutes();
-                                    const ampm = hour < 12 ? '오전' : '오후';
-                                    const h12 = ((hour + 11) % 12) + 1;
-                                    const timeLabel = allDay ? '종일' : `${ampm} ${String(h12).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-                                    const dot = bulletColor(ev.category);
-                                    return (
-                                      <li key={ev.id + ev.startAt} style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', fontSize: '0.8rem', lineHeight: 1.35 }}>
-                                        <span style={{ flex: '0 0 auto', width: 6, height: 6, borderRadius: 999, background: dot, marginTop: 4 }} />
-                                        <span style={{ color: 'var(--color-ink-2)', fontWeight: 600, fontSize: '0.72rem', whiteSpace: 'nowrap' }}>{timeLabel}</span>
-                                        <span style={{ color: 'var(--color-ink)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis' }}>{ev.title}</span>
-                                      </li>
-                                    );
-                                  })}
-                                </ul>
-                              )}
+                            <div style={{ display: 'grid', gap: '0.2rem' }}>
+                              {wList.map((ev: any) => {
+                                const pal = badgePalette(ev.category);
+                                const isPseudo = !!ev._isWorshipService;
+                                const cols = isPseudo ? '1fr' : rowGridCols;
+                                return (
+                                  <div key={ev.id + ev.startAt} style={{ display: 'grid', gridTemplateColumns: cols, alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', lineHeight: 1.35 }}>
+                                    <span title={ev.title} style={{ justifySelf: 'start', padding: '0.12rem 0.5rem', borderRadius: 999, background: pal.bg, border: `1px solid ${pal.border}`, color: pal.fg, fontSize: '0.72rem', fontWeight: 800, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                                      {ev.title}
+                                    </span>
+                                    {!isPseudo && (
+                                      <>
+                                        <button type="button" aria-label={`${ev.title} 수정`} onClick={() => openEditForEvent(ev)} style={editBtnStyle}>수정</button>
+                                        <button type="button" aria-label={`${ev.title} 삭제`} onClick={() => deleteCalEvent(ev.id)} style={delBtnStyle}>삭제</button>
+                                      </>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              {oList.map((ev: any) => {
+                                const allDay = isAllDayEvent(ev.startAt, ev.endAt);
+                                const raw = new Date(ev.startAt);
+                                const hour = raw.getHours();
+                                const minute = raw.getMinutes();
+                                const ampm = hour < 12 ? '오전' : '오후';
+                                const h12 = ((hour + 11) % 12) + 1;
+                                const timeLabel = allDay ? '종일' : `${ampm} ${String(h12).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                                const dot = bulletColor(ev.category);
+                                const isPseudo = !!ev._isWorshipService;
+                                const cols = isPseudo ? '1fr' : rowGridCols;
+                                return (
+                                  <div key={ev.id + ev.startAt} style={{ display: 'grid', gridTemplateColumns: cols, alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', lineHeight: 1.35 }}>
+                                    <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: '0.35rem', minWidth: 0 }}>
+                                      <span style={{ flex: '0 0 auto', width: 6, height: 6, borderRadius: 999, background: dot, alignSelf: 'center' }} />
+                                      <span style={{ color: 'var(--color-ink-2)', fontWeight: 600, fontSize: '0.72rem', whiteSpace: 'nowrap' }}>{timeLabel}</span>
+                                      <span style={{ color: 'var(--color-ink)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</span>
+                                    </span>
+                                    {!isPseudo && (
+                                      <>
+                                        <button type="button" aria-label={`${ev.title} 수정`} onClick={() => openEditForEvent(ev)} style={editBtnStyle}>수정</button>
+                                        <button type="button" aria-label={`${ev.title} 삭제`} onClick={() => deleteCalEvent(ev.id)} style={delBtnStyle}>삭제</button>
+                                      </>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           );
                         };
@@ -1194,11 +1248,14 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                   {(() => {
                     const panelKey = selectedCalDay || todayKey;
                     const isAdmin = Boolean(community?.adminProfileId === profileId);
+                    const [pkY, pkM, pkD] = panelKey.split('-').map(Number);
+                    const panelDow = (pkY && pkM && pkD) ? new Date(pkY, pkM - 1, pkD).getDay() : -1;
+                    const panelDowLabel = panelDow >= 0 ? ['일','월','화','수','목','금','토'][panelDow] : '';
                     return (
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                         <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>일정확인 <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-ink-2)' }}>(일자별)</span></h2>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <strong style={{ color: 'var(--color-ink)', fontSize: '0.9rem' }}>{panelKey}{panelKey === todayKey ? ' (오늘)' : ''}</strong>
+                          <span style={{ padding: '0.3rem 0.7rem', borderRadius: 999, background: '#ECFCCB', color: '#3F6212', fontSize: isMobile ? '0.88rem' : '0.95rem', fontWeight: 800, letterSpacing: '0.01em' }}>{panelKey}{panelDowLabel ? ` (${panelDowLabel})` : ''}{panelKey === todayKey ? ' · 오늘' : ''}</span>
                           <button
                             type="button"
                             onClick={() => {
@@ -1388,7 +1445,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                       })}
                     </div>
                     <div style={{ textAlign: 'right', marginTop: '0.2rem' }}>
-                      <span style={{ fontSize: '0.6rem', color: 'var(--color-ink-2)', fontWeight: 500 }}>{communityTz}</span>
+                      <span style={{ fontSize: '0.6rem', color: 'var(--color-ink-2)', fontWeight: 500 }}>Asia/Singapore</span>
                     </div>
                   </div>
                     <button type="button" onClick={goNext} aria-label="다음 달" style={{ flex: '0 0 auto', width: 40, borderRadius: 12, border: '1px solid var(--color-surface-border)', background: '#F9FCFB', color: 'var(--color-ink-2)', fontSize: '1.3rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>›</button>
@@ -1519,6 +1576,12 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                       <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-ink)' }}>{editingEventId ? '일정 수정' : '새 일정 등록'}</h3>
                       <button type="button" onClick={() => { setEventModalOpen(false); setEditingEventId(null); }} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-ink-2)' }}>✕</button>
                     </div>
+                    <div role="note" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.55rem 0.75rem', borderRadius: 10, background: '#EFF6FF', border: '1px solid #BFDBFE', color: '#1E40AF', fontSize: '0.8rem', lineHeight: 1.45 }}>
+                      <span aria-hidden style={{ fontSize: '0.95rem', lineHeight: 1.2 }}>ℹ️</span>
+                      <span>
+                        저장한 일정은 일반 사용자 대시보드의 <strong>‘교회일정’ 메뉴</strong>에도 자동으로 공개됩니다. 내부 확인용이라면 제목·설명에 개인정보가 포함되지 않도록 유의해 주세요.
+                      </span>
+                    </div>
                     {isCurrentAdmin && (
                       <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
                         <label style={{ display: 'inline-flex', gap: '0.35rem', alignItems: 'center', fontSize: '0.88rem', cursor: 'pointer', padding: eventScope === 'worship' ? '0.35rem 0.7rem' : '0.35rem 0.7rem', borderRadius: 999, border: eventScope === 'worship' ? '1px solid #20CD8D' : '1px solid transparent', background: eventScope === 'worship' ? 'var(--color-primary-tint)' : 'transparent', color: eventScope === 'worship' ? '#20CD8D' : 'var(--color-ink)', fontWeight: eventScope === 'worship' ? 800 : 400 }}>
@@ -1553,18 +1616,46 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                         </label>
                       </div>
                     )}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', padding: '0.5rem 0.75rem', borderRadius: 10, background: '#ECFCCB', border: '1px solid #D9F09E' }}>
-                      <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#3F6212' }}>구분</label>
-                      <select
-                        value={eventCategory}
-                        onChange={(e) => setEventCategory(e.target.value)}
-                        style={{ padding: '0.5rem 0.7rem', borderRadius: 8, border: '1px solid #D9F09E', fontSize: '0.9rem', color: 'var(--color-ink)', background: '#fff', minWidth: 140, fontWeight: 700 }}
-                      >
-                        {eventCategories.length === 0 ? <option value="">(없음)</option> : null}
-                        {eventCategories.map((c) => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                      </select>
+                    <div style={{ display: 'grid', gap: '0.3rem', padding: '0.5rem 0.75rem', borderRadius: 10, background: '#ECFCCB', border: '1px solid #D9F09E' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#3F6212' }}>구분</label>
+                        <select
+                          value={eventCategory}
+                          onChange={(e) => setEventCategory(e.target.value)}
+                          style={{ padding: '0.5rem 0.7rem', borderRadius: 8, border: '1px solid #D9F09E', fontSize: '0.9rem', color: 'var(--color-ink)', background: '#fff', minWidth: 140, fontWeight: 700 }}
+                        >
+                          {eventCategories.length === 0 ? <option value="">(없음)</option> : null}
+                          {sortCategories(eventCategories).map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                        {eventScope !== 'worship' && (() => {
+                          const sStr = calForm.startAt || '';
+                          const eStr = calForm.endAt || '';
+                          const allDay = sStr.endsWith('T00:00') && eStr.endsWith('T23:59');
+                          return (
+                            <label style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', fontWeight: 700, color: '#3F6212', cursor: 'pointer', padding: '0.25rem 0.55rem', borderRadius: 8, background: allDay ? '#fff' : 'transparent', border: `1px solid ${allDay ? '#D9F09E' : 'transparent'}` }}>
+                              <input
+                                type="checkbox"
+                                checked={allDay}
+                                onChange={(e) => {
+                                  const sDate = sStr.slice(0, 10);
+                                  const eDate = (eStr.slice(0, 10) || sDate);
+                                  if (!sDate) return;
+                                  if (e.target.checked) {
+                                    setCalForm({ ...calForm, startAt: `${sDate}T00:00`, endAt: `${eDate}T23:59` });
+                                  } else {
+                                    setCalForm({ ...calForm, startAt: `${sDate}T09:00`, endAt: `${sDate}T10:00` });
+                                  }
+                                }}
+                                style={{ width: 15, height: 15, cursor: 'pointer', accentColor: '#65A30D' }}
+                              />
+                              종일
+                              <span style={{ fontSize: '0.7rem', fontWeight: 500, color: 'var(--color-ink-2)' }}>(체크 시 시간 미표시)</span>
+                            </label>
+                          );
+                        })()}
+                      </div>
                       <span style={{ fontSize: '0.72rem', color: '#65A30D' }}>※ 기타설정에서 추가·삭제</span>
                     </div>
                     <input
@@ -1610,12 +1701,24 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                       </div>
                     ) : (
                       <>
+                        {(() => {
+                          const sStr = calForm.startAt || '';
+                          const eStr = calForm.endAt || '';
+                          const isAllDay = sStr.endsWith('T00:00') && eStr.endsWith('T23:59');
+                          return (
                         <div style={{ display: 'grid', gap: '0.4rem' }}>
                           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                             <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-ink-2)', minWidth: 28 }}>시작</label>
                             <DateTimePicker
                               value={calForm.startAt}
+                              dateOnly={isAllDay}
                               onChange={(v) => {
+                                if (isAllDay) {
+                                  const sDate = v.slice(0, 10);
+                                  const eDate = (calForm.endAt || '').slice(0, 10) || sDate;
+                                  setCalForm({ ...calForm, startAt: `${sDate}T00:00`, endAt: `${eDate}T23:59` });
+                                  return;
+                                }
                                 // 시작을 바꾸면 끝이 비어있거나 시작보다 이른 경우 자동으로 +1h (같은 날짜)
                                 const startDate = new Date(v);
                                 const endDate = calForm.endAt ? new Date(calForm.endAt) : null;
@@ -1633,14 +1736,34 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                           </div>
                           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                             <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-ink-2)', minWidth: 28 }}>종료</label>
-                            <DateTimePicker value={calForm.endAt} onChange={(v) => setCalForm({ ...calForm, endAt: v })} placeholder="종료" style={isMobile ? { flex: 1, minWidth: 0 } : undefined} />
+                            <DateTimePicker
+                              value={calForm.endAt}
+                              dateOnly={isAllDay}
+                              onChange={(v) => {
+                                if (isAllDay) {
+                                  const eDate = v.slice(0, 10);
+                                  setCalForm({ ...calForm, endAt: `${eDate}T23:59` });
+                                  return;
+                                }
+                                setCalForm({ ...calForm, endAt: v });
+                              }}
+                              placeholder="종료"
+                              style={isMobile ? { flex: 1, minWidth: 0 } : undefined}
+                            />
                           </div>
                         </div>
+                          );
+                        })()}
                         {(() => {
-                          // 시작일과 종료일이 다른(멀티데이) 일정은 장소 선택도 숨김
-                          const sDate = (calForm.startAt || '').slice(0, 10);
-                          const eDate = (calForm.endAt || '').slice(0, 10);
+                          // 시작일과 종료일이 다른(멀티데이) 일정 → 장소 숨김
+                          // 종일(T00:00 ~ T23:59) 일정 → 장소 숨김 (장소가 의미 없음)
+                          const sStr = calForm.startAt || '';
+                          const eStr = calForm.endAt || '';
+                          const sDate = sStr.slice(0, 10);
+                          const eDate = eStr.slice(0, 10);
                           if (sDate && eDate && sDate !== eDate) return null;
+                          const isAllDay = sStr.endsWith('T00:00') && eStr.endsWith('T23:59');
+                          if (isAllDay) return null;
                           return (
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                           {locationMode === 'custom' ? (
@@ -2592,6 +2715,11 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
 };
 
 export const getServerSideProps: GetServerSideProps<ManagementProps> = async (context) => {
+  // 보안 가드: 비로그인 → '/', 권한 없는 로그인 → '/dashboard' 로 리다이렉트.
+  // 시스템 관리자 OR 공동체 관리자만 통과.
+  const guard = await requireAdminAccessSSR(context);
+  if ('redirect' in guard) return guard;
+
   const profileId = typeof context.query.profileId === 'string' ? context.query.profileId : null;
   const queryNickname = typeof context.query.nickname === 'string' ? context.query.nickname : null;
   const queryEmail = typeof context.query.email === 'string' ? context.query.email : null;

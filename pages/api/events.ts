@@ -51,12 +51,19 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       const typeFilter = typeof req.query.type === 'string' ? req.query.type : '';
       if (!communityId) return res.status(400).json({ error: 'communityId is required.' });
 
-      // 범위: 기본은 현재 월 ±2개월
+      // 범위: 기본은 현재 월 ±2개월. 클라이언트가 과도한 범위를 요청해도 서버에서 상한(약 13개월) 적용.
+      // 스케일 방어: 수년 범위 요청으로 occurrence 수만/수천건이 한 응답에 실리는 것을 막는다.
       const now = new Date();
       const defaultFrom = new Date(now.getFullYear(), now.getMonth() - 2, 1);
       const defaultTo = new Date(now.getFullYear(), now.getMonth() + 3, 0, 23, 59, 59);
-      const from = parseDateArg(req.query.from, defaultFrom);
-      const to = parseDateArg(req.query.to, defaultTo);
+      const requestedFrom = parseDateArg(req.query.from, defaultFrom);
+      const requestedTo = parseDateArg(req.query.to, defaultTo);
+      const MAX_RANGE_MS = 1000 * 60 * 60 * 24 * 400; // ≈ 13개월
+      const from = requestedFrom;
+      const to = requestedTo.getTime() - requestedFrom.getTime() > MAX_RANGE_MS
+        ? new Date(requestedFrom.getTime() + MAX_RANGE_MS)
+        : requestedTo;
+      const MAX_EVENTS = 5000; // 응답 상한
 
       const all = (await readEvents()).filter((e) => e.communityId === communityId);
       const visible = all.filter((e) => {
@@ -75,7 +82,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       // 기간 내 occurrence로 펼치기
       const instances = visible.flatMap((ev) => expandOccurrences(ev, { from, to }));
       instances.sort((a, b) => a.startAt.localeCompare(b.startAt));
-      return res.status(200).json({ events: instances });
+      const truncated = instances.length > MAX_EVENTS;
+      const payload = truncated ? instances.slice(0, MAX_EVENTS) : instances;
+      return res.status(200).json({ events: payload, truncated, total: instances.length });
     }
 
     if (req.method === 'POST') {

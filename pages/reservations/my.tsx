@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import SubHeader from '../../components/SubHeader';
+import ConfirmModal from '../../components/ConfirmModal';
 import { getSystemAdminHref } from '../../lib/adminGuard';
 import { useIsMobile } from '../../lib/useIsMobile';
 import { useRequireLogin } from '../../lib/useRequireLogin';
@@ -10,11 +11,14 @@ import { useRequireLogin } from '../../lib/useRequireLogin';
 type Reservation = {
   id: string;
   title: string;
+  description?: string;
   startAt: string;
   endAt: string;
   location?: string;
   venueId?: string;
   createdBy: string;
+  seriesId?: string;
+  dateKey?: string;
 };
 
 type Props = {
@@ -41,6 +45,77 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
   const [effectiveProfileId, setEffectiveProfileId] = useState<string | null>(profileId);
   const [items, setItems] = useState<Reservation[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
+  const [editBusy, setEditBusy] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<Reservation | null>(null);
+
+  const reload = async () => {
+    if (!effectiveProfileId) return;
+    setLoading(true);
+    try {
+      const r = await fetch(`/api/events?communityId=kcis&profileId=${encodeURIComponent(effectiveProfileId)}&type=reservation`);
+      const d = await r.json();
+      setItems((d?.events || []) as Reservation[]);
+    } catch { /* noop */ } finally { setLoading(false); }
+  };
+
+  const beginEdit = (r: Reservation) => {
+    setEditingId(r.id);
+    setEditValue(r.description || r.title || '');
+  };
+  const cancelEdit = () => { setEditingId(null); setEditValue(''); };
+  const submitEdit = async (r: Reservation) => {
+    if (!effectiveProfileId) return;
+    const next = editValue.trim();
+    if (!next) return;
+    setEditBusy(true);
+    try {
+      const seriesId = (r as any).seriesId || r.id;
+      const occurrenceDate = (r as any).dateKey || r.startAt.slice(0, 10);
+      const res = await fetch('/api/events', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          seriesId,
+          occurrenceDate,
+          profileId: effectiveProfileId,
+          fields: { title: next, description: next },
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({} as any));
+        alert(j?.error || '수정 실패');
+        return;
+      }
+      cancelEdit();
+      await reload();
+    } finally {
+      setEditBusy(false);
+    }
+  };
+
+  const onDelete = (r: Reservation) => setConfirmTarget(r);
+  const performDelete = async () => {
+    if (!effectiveProfileId || !confirmTarget) return;
+    const r = confirmTarget;
+    setDeletingId(r.id);
+    try {
+      const seriesId = (r as any).seriesId || r.id;
+      const qs = new URLSearchParams({ id: seriesId, profileId: effectiveProfileId, scope: 'all' });
+      const res = await fetch(`/api/events?${qs.toString()}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({} as any));
+        alert(j?.error || '삭제 실패');
+        return;
+      }
+      setConfirmTarget(null);
+      await reload();
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   useEffect(() => {
     if (!effectiveProfileId) {
@@ -52,19 +127,9 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
   }, [effectiveProfileId]);
 
   useEffect(() => {
-    if (!effectiveProfileId) return;
-    let cancelled = false;
-    setLoading(true);
-    fetch(`/api/events?communityId=kcis&profileId=${encodeURIComponent(effectiveProfileId)}&type=reservation`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (cancelled) return;
-        const mine = (d?.events || []) as Reservation[];
-        setItems(mine);
-      })
-      .catch(() => { if (!cancelled) setItems([]); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+    void reload();
+    // reload reads effectiveProfileId; deps 는 해당 id 만 필요
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveProfileId]);
 
   const { upcoming, past } = useMemo(() => {
@@ -118,6 +183,8 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
                     {upcoming.map((r) => {
                       const s = fmtDateTime(r.startAt);
                       const e = fmtDateTime(r.endAt);
+                      const isEditing = editingId === r.id;
+                      const isDeleting = deletingId === r.id;
                       return (
                         <li
                           key={r.id + r.startAt}
@@ -133,19 +200,55 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'wrap' }}>
                             <span style={{ fontSize: '1.02rem', fontWeight: 800, color: 'var(--color-ink)' }}>{s.mmdd} ({s.dow})</span>
                             <span style={{ fontSize: '0.92rem', color: 'var(--color-ink)', fontWeight: 700 }}>{s.hm}~{e.hm}</span>
-                            <span style={{
-                              marginLeft: 'auto',
-                              padding: '0.2rem 0.6rem',
-                              borderRadius: 999,
-                              background: '#DC2626',
-                              color: '#fff',
-                              fontSize: '0.72rem',
-                              fontWeight: 800,
-                              letterSpacing: '0.02em',
-                            }}>● 블록됨</span>
+                            <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: '0.3rem' }}>
+                              {!isEditing && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => beginEdit(r)}
+                                    disabled={isDeleting}
+                                    style={{ padding: '0.25rem 0.6rem', minHeight: 32, borderRadius: 8, border: '1px solid #65A30D', background: '#fff', color: '#3F6212', fontSize: '0.78rem', fontWeight: 800, cursor: isDeleting ? 'not-allowed' : 'pointer' }}
+                                  >수정</button>
+                                  <button
+                                    type="button"
+                                    onClick={() => onDelete(r)}
+                                    disabled={isDeleting}
+                                    style={{ padding: '0.25rem 0.6rem', minHeight: 32, borderRadius: 8, border: '1px solid #DC2626', background: '#fff', color: '#DC2626', fontSize: '0.78rem', fontWeight: 800, cursor: isDeleting ? 'not-allowed' : 'pointer' }}
+                                  >{isDeleting ? '삭제중…' : '삭제'}</button>
+                                </>
+                              )}
+                            </span>
                           </div>
-                          <div style={{ fontSize: '0.9rem', color: 'var(--color-ink)' }}>{r.title}</div>
-                          {r.location && (
+                          {isEditing ? (
+                            <div style={{ display: 'grid', gap: '0.4rem' }}>
+                              <input
+                                type="text"
+                                value={editValue}
+                                onChange={(ev) => setEditValue(ev.target.value)}
+                                autoFocus
+                                maxLength={80}
+                                placeholder="예약 설명 (최대 80자)"
+                                style={{ padding: '0.55rem 0.7rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.92rem', color: 'var(--color-ink)', background: '#fff' }}
+                              />
+                              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => submitEdit(r)}
+                                  disabled={editBusy || !editValue.trim()}
+                                  style={{ padding: '0.45rem 0.9rem', minHeight: 36, borderRadius: 8, border: 'none', background: editBusy || !editValue.trim() ? '#9CA3AF' : 'var(--color-primary)', color: '#fff', fontWeight: 800, fontSize: '0.82rem', cursor: editBusy || !editValue.trim() ? 'not-allowed' : 'pointer' }}
+                                >{editBusy ? '저장중…' : '저장'}</button>
+                                <button
+                                  type="button"
+                                  onClick={cancelEdit}
+                                  disabled={editBusy}
+                                  style={{ padding: '0.45rem 0.9rem', minHeight: 36, borderRadius: 8, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', fontWeight: 700, fontSize: '0.82rem', cursor: editBusy ? 'not-allowed' : 'pointer' }}
+                                >취소</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: '0.9rem', color: 'var(--color-ink)' }}>{r.title}</div>
+                          )}
+                          {r.location && !isEditing && (
                             <div style={{ fontSize: '0.82rem', color: 'var(--color-ink-2)' }}>📍 {r.location}</div>
                           )}
                         </li>
@@ -192,6 +295,22 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
           )}
         </section>
       </main>
+
+      <ConfirmModal
+        open={!!confirmTarget}
+        title="이 예약을 삭제하시겠어요?"
+        details={confirmTarget ? [
+          confirmTarget.title || confirmTarget.description || '(제목 없음)',
+          `${confirmTarget.startAt.slice(0, 10)} ${confirmTarget.startAt.slice(11, 16)}~${confirmTarget.endAt.slice(11, 16)}`,
+          confirmTarget.location || '',
+        ].filter(Boolean) : []}
+        warning="삭제 후에는 되돌릴 수 없습니다."
+        confirmLabel="삭제"
+        confirmTone="danger"
+        busy={!!deletingId}
+        onCancel={() => setConfirmTarget(null)}
+        onConfirm={performDelete}
+      />
     </>
   );
 };

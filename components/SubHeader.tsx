@@ -4,6 +4,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import { useIsMobile } from '../lib/useIsMobile';
 import ProfileModal from './ProfileModal';
 import MenuBar from './MenuBar';
+import LanguageSwitcher from './LanguageSwitcher';
 
 /**
  * 하위(서브) 페이지 공통 헤더.
@@ -123,7 +124,7 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
       <div style={{ flex: '1 1 auto', minWidth: 0 }} />
 
       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', flex: '0 0 auto' }}>
-        {effProfileId && !isMobile && (
+        {effProfileId && (
           <Link
             href={withAuth('/dashboard')}
             title="내 대시보드"
@@ -133,19 +134,22 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
               alignItems: 'center',
               gap: '0.25rem',
               minHeight: 40,
-              padding: '0.35rem 0.7rem',
+              minWidth: isMobile ? 40 : undefined,
+              padding: isMobile ? '0.35rem 0.55rem' : '0.35rem 0.7rem',
               borderRadius: 999,
               background: 'var(--color-primary-tint)',
               border: '1px solid var(--color-primary-tint)',
               color: 'var(--color-primary-deep)',
               fontWeight: 800,
-              fontSize: '0.82rem',
+              fontSize: isMobile ? '0.9rem' : '0.82rem',
               textDecoration: 'none',
               whiteSpace: 'nowrap',
               flexShrink: 0,
+              justifyContent: 'center',
             }}
           >
-            <span aria-hidden>📊</span><span>내 대시보드</span>
+            <span aria-hidden>📊</span>
+            {!isMobile && <span>내 대시보드</span>}
           </Link>
         )}
         {effProfileId && (
@@ -217,13 +221,13 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
             }}
             style={{
               minHeight: 40,
-              padding: isMobile ? '0.4rem 0.65rem' : '0.4rem 0.8rem',
-              borderRadius: 999,
-              border: '1px solid var(--color-surface-border)',
-              background: '#fff',
-              color: 'var(--color-ink-2)',
+              padding: isMobile ? '0.5rem 0.85rem' : '0.55rem 1rem',
+              borderRadius: 'var(--radius-md)',
+              border: 'none',
+              background: 'var(--color-primary)',
+              color: '#fff',
               fontWeight: 700,
-              fontSize: '0.78rem',
+              fontSize: isMobile ? '0.82rem' : '0.88rem',
               cursor: 'pointer',
               whiteSpace: 'nowrap',
               flex: '0 0 auto',
@@ -232,6 +236,7 @@ const SubHeader = ({ rightExtras, profileId, displayName, nickname, email, syste
             로그아웃
           </button>
         )}
+        <LanguageSwitcher />
         {rightExtras}
       </div>
 

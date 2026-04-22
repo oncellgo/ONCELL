@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useIsMobile } from '../lib/useIsMobile';
+import { categoryColorFor, CATEGORY_COLOR_LEGEND, sortCategories } from '../lib/categoryColors';
 
 type Props = {
   profileId: string;
@@ -21,6 +22,7 @@ const EtcSettings = ({ profileId, k }: Props) => {
   const [reservationLimitPerUser, setReservationLimitPerUser] = useState<number>(3);
   const [eventCategories, setEventCategories] = useState<string[]>([]);
   const [newCategoryInput, setNewCategoryInput] = useState<string>('');
+  const [qtYoutubeHandle, setQtYoutubeHandle] = useState<string>('KoreanChurchInSingapore');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -79,6 +81,7 @@ const EtcSettings = ({ profileId, k }: Props) => {
           if (typeof data?.settings?.venueAvailableEnd === 'string') setVenueAvailableEnd(data.settings.venueAvailableEnd);
           if (data?.settings?.reservationLimitMode === 'unlimited' || data?.settings?.reservationLimitMode === 'perUser') setReservationLimitMode(data.settings.reservationLimitMode);
           if (typeof data?.settings?.reservationLimitPerUser === 'number') setReservationLimitPerUser(data.settings.reservationLimitPerUser);
+          if (typeof data?.settings?.qtYoutubeHandle === 'string' && data.settings.qtYoutubeHandle) setQtYoutubeHandle(data.settings.qtYoutubeHandle);
         }
       } finally {
         setLoading(false);
@@ -327,6 +330,35 @@ const EtcSettings = ({ profileId, k }: Props) => {
             </div>
           </div>
 
+          <div style={{ display: 'grid', gap: '0.55rem', padding: isMobile ? '0.7rem 0.75rem' : '0.85rem 1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
+            <div>
+              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#3F6212' }}>큐티 유튜브 채널</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--color-ink-2)', marginTop: '0.2rem' }}>
+                QT 새벽예배 영상을 가져올 유튜브 채널 핸들 (예: <code>KoreanChurchInSingapore</code>)
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0 0.6rem', borderRadius: 10, background: '#fff', border: '1px solid var(--color-gray)', color: 'var(--color-ink-2)', fontWeight: 800, fontSize: '0.95rem', flex: '0 0 auto' }}>@</span>
+              <input
+                type="text"
+                value={qtYoutubeHandle}
+                onChange={(e) => setQtYoutubeHandle(e.target.value.replace(/^@/, '').trim())}
+                placeholder="KoreanChurchInSingapore"
+                style={{ flex: '1 1 200px', padding: '0.55rem 0.75rem', borderRadius: 10, border: '1px solid var(--color-gray)', fontSize: '0.9rem', minWidth: 0 }}
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  const h = qtYoutubeHandle.trim().replace(/^@/, '');
+                  if (!h) { alert('채널 핸들을 입력해주세요.'); return; }
+                  await patch({ qtYoutubeHandle: h });
+                }}
+                disabled={saving}
+                style={{ padding: '0.55rem 1rem', borderRadius: 10, border: 'none', background: saving ? '#CBD5E1' : '#65A30D', color: '#fff', fontWeight: 800, fontSize: '0.86rem', cursor: saving ? 'not-allowed' : 'pointer', flex: '0 0 auto' }}
+              >저장</button>
+            </div>
+          </div>
+
           <div style={{ display: 'grid', gap: '0.75rem', padding: isMobile ? '0.7rem 0.75rem' : '0.85rem 1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
               <div>
@@ -334,16 +366,32 @@ const EtcSettings = ({ profileId, k }: Props) => {
                 <div style={{ fontSize: '0.78rem', color: 'var(--color-ink-2)', marginTop: '0.2rem' }}>일정 등록 시 선택할 수 있는 구분 목록</div>
               </div>
             </div>
+            <div style={{ display: 'grid', gap: '0.35rem', padding: '0.55rem 0.7rem', borderRadius: 10, background: '#fff', border: '1px dashed #D9F09E' }}>
+              <div style={{ fontSize: '0.76rem', fontWeight: 800, color: '#3F6212' }}>달력 색상 안내</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                {CATEGORY_COLOR_LEGEND.map((leg) => (
+                  <span key={leg.label} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.18rem 0.55rem', borderRadius: 999, background: leg.color.bg, border: `1px solid ${leg.color.border}`, color: leg.color.fg, fontSize: '0.74rem', fontWeight: 800 }}>
+                    <span aria-hidden style={{ width: 8, height: 8, borderRadius: 999, background: leg.color.fg, opacity: 0.75 }} />
+                    {leg.label}
+                    {leg.matches.length > 0 && (
+                      <span style={{ fontSize: '0.68rem', fontWeight: 700, opacity: 0.8 }}>({leg.matches.join('·')})</span>
+                    )}
+                  </span>
+                ))}
+              </div>
+            </div>
             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
               {eventCategories.length === 0 ? (
                 <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>등록된 구분이 없습니다.</span>
-              ) : eventCategories.map((c) => {
+              ) : sortCategories(eventCategories).map((c) => {
                 const locked = ['일반예배', '특별예배', '기도회', '특별기도회'].includes(c);
+                const pal = categoryColorFor(c);
                 return (
-                  <span key={c} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.65rem', borderRadius: 999, background: locked ? '#ECFCCB' : '#fff', border: '1px solid #D9F09E', fontSize: '0.85rem', color: '#3F6212', fontWeight: 700 }}>
+                  <span key={c} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.65rem', borderRadius: 999, background: pal.bg, border: `1px solid ${pal.border}`, fontSize: '0.85rem', color: pal.fg, fontWeight: 800 }}>
+                    <span aria-hidden style={{ width: 8, height: 8, borderRadius: 999, background: pal.fg, opacity: 0.75 }} />
                     {c}
                     {locked ? (
-                      <span title="기본 구분 (삭제 불가)" style={{ fontSize: '0.78rem', color: '#65A30D' }}>🔒</span>
+                      <span title="기본 구분 (삭제 불가)" style={{ fontSize: '0.78rem', opacity: 0.7 }}>🔒</span>
                     ) : (
                       <button
                         type="button"

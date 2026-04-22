@@ -5,8 +5,9 @@ import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
 import { useAudio } from '../components/AudioPlayer';
 import AppShell from '../components/AppShell';
+import ConfirmModal from '../components/ConfirmModal';
 import { WorshipBulletinPreview } from '../components/WorshipBulletinEditor';
-import { getCommunities, getUsers, getProfiles } from '../lib/dataStore';
+import { getCommunities, getUsers, getProfiles, getSignupApprovals } from '../lib/dataStore';
 import { getSystemAdminHref } from '../lib/adminGuard';
 import { useIsMobile } from '../lib/useIsMobile';
 import { isAllDayEvent } from '../lib/events';
@@ -60,7 +61,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
   const [profileDone, setProfileDone] = useState<boolean>(!!storedProfile);
   const [realName, setRealName] = useState<string>(storedProfile?.realName || nickname || '');
   const [countryCode, setCountryCode] = useState<string>('+65');
-  const [contact, setContact] = useState<string>(storedProfile?.contact?.replace(/^\+\d+-/, '') || '');
+  const [contact, setContact] = useState<string>(storedProfile?.contact?.replace(/^\+\d+\s*/, '').trim() || '');
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMsg, setProfileMsg] = useState<string | null>(null);
   const [profileExpanded, setProfileExpanded] = useState(false);
@@ -232,6 +233,82 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
   type MyReservation = { id: string; title: string; startAt: string; endAt: string; location?: string };
   const [weekEvents, setWeekEvents] = useState<WeekEvent[] | null>(null);
   const [myReservations, setMyReservations] = useState<MyReservation[] | null>(null);
+  // 내 장소예약 수정/삭제 인라인 상태
+  const [resEditingId, setResEditingId] = useState<string | null>(null);
+  const [resEditValue, setResEditValue] = useState<string>('');
+  const [resEditBusy, setResEditBusy] = useState(false);
+  const [resDeletingId, setResDeletingId] = useState<string | null>(null);
+  const [resConfirmTarget, setResConfirmTarget] = useState<MyReservation | null>(null);
+
+  const reloadMyReservations = async () => {
+    if (!profileId) return;
+    try {
+      const qs = new URLSearchParams({ communityId: 'kcis', type: 'reservation', profileId });
+      const r = await fetch(`/api/events?${qs.toString()}`);
+      const d = await r.json();
+      const all = Array.isArray(d.events) ? d.events : [];
+      const nowTs = Date.now();
+      const future = all
+        .filter((x: any) => new Date(x.endAt).getTime() >= nowTs)
+        .sort((a: any, b: any) => a.startAt.localeCompare(b.startAt));
+      setMyReservations(future);
+    } catch { /* noop */ }
+  };
+
+  const onResEditStart = (r: MyReservation) => {
+    setResEditingId(r.id);
+    setResEditValue((r as any).description || r.title || '');
+  };
+  const onResEditCancel = () => { setResEditingId(null); setResEditValue(''); };
+  const onResEditSubmit = async (r: MyReservation) => {
+    if (!profileId) return;
+    const next = resEditValue.trim();
+    if (!next) return;
+    setResEditBusy(true);
+    try {
+      const seriesId = (r as any).seriesId || r.id;
+      const occurrenceDate = (r as any).dateKey || r.startAt.slice(0, 10);
+      const res = await fetch('/api/events', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          seriesId,
+          occurrenceDate,
+          profileId,
+          fields: { title: next, description: next },
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({} as any));
+        alert(j?.error || '수정 실패');
+        return;
+      }
+      onResEditCancel();
+      await reloadMyReservations();
+    } finally {
+      setResEditBusy(false);
+    }
+  };
+  const onResDelete = (r: MyReservation) => setResConfirmTarget(r);
+  const performResDelete = async () => {
+    if (!profileId || !resConfirmTarget) return;
+    const r = resConfirmTarget;
+    setResDeletingId(r.id);
+    try {
+      const seriesId = (r as any).seriesId || r.id;
+      const qs = new URLSearchParams({ id: seriesId, profileId, scope: 'all' });
+      const res = await fetch(`/api/events?${qs.toString()}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({} as any));
+        alert(j?.error || '삭제 실패');
+        return;
+      }
+      setResConfirmTarget(null);
+      await reloadMyReservations();
+    } finally {
+      setResDeletingId(null);
+    }
+  };
   // 이번달 목회일정 (미스바 PDF에서 추출)
   type MonthlyItem = { date: string; label: string; title: string };
   const [monthlySchedule, setMonthlySchedule] = useState<{ month: number; items: MonthlyItem[] } | null>(null);
@@ -786,16 +863,62 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                   const labels = ['일', '월', '화', '수', '목', '금', '토'];
                   const dateStr = `${pad(s.getMonth() + 1)}/${pad(s.getDate())} (${labels[s.getDay()]})`;
                   const timeStr = `${pad(s.getHours())}:${pad(s.getMinutes())}~${pad(e.getHours())}:${pad(e.getMinutes())}`;
+                  const isEditing = resEditingId === r.id;
+                  const isDeleting = resDeletingId === r.id;
                   return (
-                    <li key={r.id} style={{ padding: isMobile ? '0.65rem 0.85rem' : '0.55rem 0.75rem', borderRadius: 10, background: '#ECFCCB', border: '1px solid #D9F09E', display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '0.2rem' : '0.5rem', alignItems: isMobile ? 'flex-start' : 'baseline', flexWrap: 'wrap', fontSize: '0.88rem', minHeight: isMobile ? 44 : undefined }}>
-                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'baseline', flexWrap: 'wrap' }}>
+                    <li key={r.id} style={{ padding: isMobile ? '0.65rem 0.85rem' : '0.55rem 0.75rem', borderRadius: 10, background: '#ECFCCB', border: '1px solid #D9F09E', display: 'grid', gap: '0.35rem', fontSize: '0.88rem' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                         <span style={{ color: '#3F6212', fontWeight: 800 }}>{dateStr}</span>
                         <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>{timeStr}</span>
+                        {!isEditing && (
+                          <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: '0.3rem' }}>
+                            <button
+                              type="button"
+                              onClick={() => onResEditStart(r)}
+                              disabled={isDeleting}
+                              style={{ padding: '0.25rem 0.6rem', minHeight: 32, borderRadius: 8, border: '1px solid #65A30D', background: '#fff', color: '#3F6212', fontSize: '0.78rem', fontWeight: 800, cursor: isDeleting ? 'not-allowed' : 'pointer' }}
+                            >수정</button>
+                            <button
+                              type="button"
+                              onClick={() => onResDelete(r)}
+                              disabled={isDeleting}
+                              style={{ padding: '0.25rem 0.6rem', minHeight: 32, borderRadius: 8, border: '1px solid #DC2626', background: '#fff', color: '#DC2626', fontSize: '0.78rem', fontWeight: 800, cursor: isDeleting ? 'not-allowed' : 'pointer' }}
+                            >{isDeleting ? '삭제중…' : '삭제'}</button>
+                          </span>
+                        )}
                       </div>
-                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'baseline', flexWrap: 'wrap' }}>
-                        <span style={{ color: 'var(--color-ink)', fontWeight: isMobile ? 700 : 400 }}>{r.title}</span>
-                        {r.location && <span style={{ color: 'var(--color-ink-2)', fontSize: '0.82rem' }}>📍 {r.location}</span>}
-                      </div>
+                      {isEditing ? (
+                        <div style={{ display: 'grid', gap: '0.4rem' }}>
+                          <input
+                            type="text"
+                            value={resEditValue}
+                            onChange={(ev) => setResEditValue(ev.target.value)}
+                            autoFocus
+                            maxLength={80}
+                            placeholder="예약 설명 (최대 80자)"
+                            style={{ padding: '0.5rem 0.7rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.9rem', color: 'var(--color-ink)', background: '#fff' }}
+                          />
+                          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              onClick={() => onResEditSubmit(r)}
+                              disabled={resEditBusy || !resEditValue.trim()}
+                              style={{ padding: '0.4rem 0.85rem', minHeight: 36, borderRadius: 8, border: 'none', background: resEditBusy || !resEditValue.trim() ? '#9CA3AF' : 'var(--color-primary)', color: '#fff', fontWeight: 800, fontSize: '0.82rem', cursor: resEditBusy || !resEditValue.trim() ? 'not-allowed' : 'pointer' }}
+                            >{resEditBusy ? '저장중…' : '저장'}</button>
+                            <button
+                              type="button"
+                              onClick={onResEditCancel}
+                              disabled={resEditBusy}
+                              style={{ padding: '0.4rem 0.85rem', minHeight: 36, borderRadius: 8, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', fontWeight: 700, fontSize: '0.82rem', cursor: resEditBusy ? 'not-allowed' : 'pointer' }}
+                            >취소</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'baseline', flexWrap: 'wrap' }}>
+                          <span style={{ color: 'var(--color-ink)', fontWeight: isMobile ? 700 : 400 }}>{r.title}</span>
+                          {r.location && <span style={{ color: 'var(--color-ink-2)', fontSize: '0.82rem' }}>📍 {r.location}</span>}
+                        </div>
+                      )}
                     </li>
                   );
                 })}
@@ -833,12 +956,8 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
             const qtHref = `/qt${profileId ? `?profileId=${encodeURIComponent(profileId)}${nickname ? `&nickname=${encodeURIComponent(nickname)}` : ''}${email ? `&email=${encodeURIComponent(email)}` : ''}` : ''}`;
             return (
               <section style={cardBase}>
-                <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: '0.4rem', flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row' }}>
-                  <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>📖 큐티 연속 기록</h2>
-                  <span style={{ fontSize: isMobile ? '0.8rem' : '0.78rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>
-                    현재 <strong style={{ color: 'var(--color-primary-deep)' }}>{cur}일</strong>
-                    {best > cur && <> · 최고 {best}일</>}
-                  </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>📖 최근 큐티기록</h2>
                 </div>
                 <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '0.85rem 1rem', borderRadius: 14, background: t.bg, border: `1px solid ${t.ring}` }}>
                   <span aria-hidden style={{ fontSize: '2.4rem', lineHeight: 1 }}>{t.emoji}</span>
@@ -872,11 +991,91 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                     ✓ 오늘 묵상 완료 — 내일도 이어가요!
                   </div>
                 )}
+
+                {/* 최근 7일 큐티 현황 — 원형 pill. 완료=민트 / 미완료=흰 / 오늘 미완료=펄스 유도 */}
+                {(() => {
+                  const DOWS = ['일', '월', '화', '수', '목', '금', '토'];
+                  const padZ = (n: number) => String(n).padStart(2, '0');
+                  const today0 = new Date(); today0.setHours(0, 0, 0, 0);
+                  const days = Array.from({ length: 7 }, (_, i) => {
+                    const d = new Date(today0);
+                    d.setDate(today0.getDate() - (6 - i));
+                    return { date: d, key: `${d.getFullYear()}-${padZ(d.getMonth() + 1)}-${padZ(d.getDate())}`, isToday: i === 6 };
+                  });
+                  const todayKey = days[6].key;
+                  const todayDone = qtHistoryDates.has(todayKey);
+                  return (
+                    <div style={{ marginTop: '0.75rem' }}>
+                      <style>{`@keyframes kcisQtTodayPulse { 0%,100% { box-shadow: inset 0 0 0 0 rgba(32,205,141,0); background:#fff; } 50% { box-shadow: inset 0 0 0 3px rgba(32,205,141,0.55); background:#ECFDF5; } }`}</style>
+                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: isMobile ? '0.25rem' : '0.3rem', flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: 2 }}>
+                        {days.map((d) => {
+                          const done = qtHistoryDates.has(d.key);
+                          const dow = d.date.getDay();
+                          const dowLabel = DOWS[dow];
+                          const dowColor = dow === 0 ? '#DC2626' : dow === 6 ? '#2563EB' : 'var(--color-ink-2)';
+                          const shouldPulse = d.isToday && !done;
+                          const size = d.isToday ? (isMobile ? 56 : 48) : (isMobile ? 38 : 34);
+                          const linkParams = new URLSearchParams();
+                          if (profileId) linkParams.set('profileId', profileId);
+                          if (nickname) linkParams.set('nickname', nickname);
+                          if (email) linkParams.set('email', email);
+                          linkParams.set('date', d.key);
+                          const href = `/qt?${linkParams.toString()}`;
+                          // 도메인 규칙: 큐티는 오늘만 작성 가능. 과거는 읽기 모드 표시.
+                          const readOnlyPast = !d.isToday;
+                          return (
+                            <a
+                              key={d.key}
+                              href={href}
+                              title={`${d.key}${done ? ' · 큐티 완료' : d.isToday ? ' · 오늘 미완료' : ' · 📖 보기 모드 (큐티는 오늘만 작성 가능)'} — 클릭해서 이동`}
+                              style={{
+                                flex: '0 0 auto',
+                                width: size, height: size,
+                                borderRadius: '50%',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: done ? 'var(--color-primary)' : '#fff',
+                                color: done ? '#fff' : dowColor,
+                                border: `1.5px solid ${done ? '#20CD8D' : d.isToday ? '#20CD8D' : '#E5E7EB'}`,
+                                fontWeight: 800,
+                                fontSize: d.isToday ? (isMobile ? '0.7rem' : '0.68rem') : (isMobile ? '0.82rem' : '0.78rem'),
+                                lineHeight: 1.1,
+                                textAlign: 'center',
+                                textDecoration: 'none',
+                                cursor: 'pointer',
+                                opacity: readOnlyPast && !done ? 0.7 : 1,
+                                animation: shouldPulse ? 'kcisQtTodayPulse 1.6s ease-in-out infinite' : undefined,
+                              }}
+                            >
+                              {d.isToday ? (
+                                <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
+                                  <span>{dowLabel}</span>
+                                  <span style={{ fontSize: '0.6rem', fontWeight: 700, opacity: 0.85 }}>(오늘)</span>
+                                </span>
+                              ) : (
+                                dowLabel
+                              )}
+                            </a>
+                          );
+                        })}
+                      </div>
+                      {!todayDone && (
+                        <div style={{ marginTop: '0.4rem', fontSize: '0.76rem', color: '#65A30D', fontWeight: 700, textAlign: 'center' }}>
+                          ⏰ 오늘의 큐티를 완료해 보세요
+                        </div>
+                      )}
+                      <div style={{ marginTop: '0.3rem', fontSize: '0.7rem', color: 'var(--color-ink-2)', textAlign: 'center' }}>
+                        ※ 큐티는 오늘만 작성 가능 · 과거 요일은 보기만
+                      </div>
+                    </div>
+                  );
+                })()}
               </section>
             );
           })()}
 
-          {/* 이번주 영적 참여 — 큐티·통독 완료 수 기반 뱃지 + 응원 메세지 */}
+          {/* 이번주 영적 참여 뱃지 — 요일 pill 은 각 카드(#qt / #reading) 로 이동됨. 여기엔 카운터+응원 메세지만 */}
           {profileId && (() => {
             const qt = weekQtDates.size;
             const rd = weekReadingDates.size;
@@ -894,17 +1093,8 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
             const pct = Math.round((total / 14) * 100);
             return (
               <section style={cardBase}>
-                <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: '0.4rem', flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row' }}>
-                  <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>🏆 최근 7일 큐티/성경통독</h2>
-                  <span style={{ fontSize: isMobile ? '0.8rem' : '0.78rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>
-                    {(() => {
-                      const DOWS = ['일', '월', '화', '수', '목', '금', '토'];
-                      const now = new Date();
-                      const end = new Date(now);
-                      const start = new Date(end); start.setDate(end.getDate() - 6);
-                      return `${start.getMonth() + 1}/${start.getDate()}(${DOWS[start.getDay()]}) ~ ${end.getMonth() + 1}/${end.getDate()}(${DOWS[end.getDay()]})`;
-                    })()} · 총 {total}/14
-                  </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>🏆 최근 성경통독 기록</h2>
                 </div>
                 <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '0.85rem 1rem', borderRadius: 14, background: b.bg, border: `1px solid ${b.ring}` }}>
                   <span aria-hidden style={{ fontSize: '2.2rem', lineHeight: 1 }}>{b.emoji}</span>
@@ -917,6 +1107,80 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                 <div style={{ marginTop: '0.75rem', height: 8, borderRadius: 999, background: '#E5E7EB', overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, #20CD8D 0%, #65A30D 100%)', transition: 'width 0.3s ease' }} />
                 </div>
+
+                {/* 최근 7일 성경통독 원형 요일 기록 — 완료=민트, 오늘 미완료면 펄스 유도 */}
+                {(() => {
+                  const DOWS = ['일', '월', '화', '수', '목', '금', '토'];
+                  const padZ = (n: number) => String(n).padStart(2, '0');
+                  const today0 = new Date(); today0.setHours(0, 0, 0, 0);
+                  const days = Array.from({ length: 7 }, (_, i) => {
+                    const d = new Date(today0);
+                    d.setDate(today0.getDate() - (6 - i));
+                    return { date: d, key: `${d.getFullYear()}-${padZ(d.getMonth() + 1)}-${padZ(d.getDate())}`, isToday: i === 6 };
+                  });
+                  const todayKey = days[6].key;
+                  const todayDone = weekReadingDates.has(todayKey);
+                  return (
+                    <div style={{ marginTop: '0.75rem' }}>
+                      <style>{`@keyframes kcisReadingTodayPulse { 0%,100% { box-shadow: inset 0 0 0 0 rgba(32,205,141,0); background:#fff; } 50% { box-shadow: inset 0 0 0 3px rgba(32,205,141,0.55); background:#ECFDF5; } }`}</style>
+                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: isMobile ? '0.25rem' : '0.3rem', flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: 2 }}>
+                        {days.map((d) => {
+                          const done = weekReadingDates.has(d.key);
+                          const dow = d.date.getDay();
+                          const dowLabel = DOWS[dow];
+                          const dowColor = dow === 0 ? '#DC2626' : dow === 6 ? '#2563EB' : 'var(--color-ink-2)';
+                          const shouldPulse = d.isToday && !done;
+                          const size = d.isToday ? (isMobile ? 56 : 48) : (isMobile ? 38 : 34);
+                          const linkParams = new URLSearchParams();
+                          if (profileId) linkParams.set('profileId', profileId);
+                          if (nickname) linkParams.set('nickname', nickname);
+                          if (email) linkParams.set('email', email);
+                          linkParams.set('date', d.key);
+                          const href = `/reading?${linkParams.toString()}`;
+                          return (
+                            <a
+                              key={d.key}
+                              href={href}
+                              title={`${d.key}${done ? ' · 통독 완료' : d.isToday ? ' · 오늘 미완료' : ''} — 클릭해서 이동`}
+                              style={{
+                                flex: '0 0 auto',
+                                width: size, height: size,
+                                borderRadius: '50%',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: done ? 'var(--color-primary)' : '#fff',
+                                color: done ? '#fff' : dowColor,
+                                border: `1.5px solid ${done ? '#20CD8D' : d.isToday ? '#20CD8D' : '#E5E7EB'}`,
+                                fontWeight: 800,
+                                fontSize: d.isToday ? (isMobile ? '0.7rem' : '0.68rem') : (isMobile ? '0.82rem' : '0.78rem'),
+                                lineHeight: 1.1,
+                                textAlign: 'center',
+                                textDecoration: 'none',
+                                cursor: 'pointer',
+                                animation: shouldPulse ? 'kcisReadingTodayPulse 1.6s ease-in-out infinite' : undefined,
+                              }}
+                            >
+                              {d.isToday ? (
+                                <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
+                                  <span>{dowLabel}</span>
+                                  <span style={{ fontSize: '0.6rem', fontWeight: 700, opacity: 0.85 }}>(오늘)</span>
+                                </span>
+                              ) : (
+                                dowLabel
+                              )}
+                            </a>
+                          );
+                        })}
+                      </div>
+                      {!todayDone && (
+                        <div style={{ marginTop: '0.4rem', fontSize: '0.76rem', color: 'var(--color-ink)', fontWeight: 400, textAlign: 'center' }}>
+                          ⏰ 오늘의 성경통독을 완료해 보세요
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
                 {/* QT·통독 카운트 — 클릭 시 각 메뉴로 이동 */}
                 {(() => {
                   const params = new URLSearchParams();
@@ -976,40 +1240,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                       })}
                     </div>
                   );
-                  return (
-                    <div style={{ marginTop: '0.65rem', display: 'grid', gridTemplateColumns: '1fr', gap: '0.5rem' }}>
-                      <a
-                        href={`/qt${suffix}`}
-                        title="큐티 메뉴로 이동"
-                        style={{ padding: isMobile ? '0.75rem 0.85rem' : '0.6rem 0.75rem', borderRadius: 10, background: '#F7FEE7', border: '1px solid #D9F09E', display: 'grid', gap: isMobile ? '0.5rem' : '0.35rem', textDecoration: 'none', cursor: 'pointer', transition: 'box-shadow 0.15s ease' }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 3px 8px rgba(101, 163, 13, 0.2)'; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                          <span aria-hidden>📖</span>
-                          <span style={{ fontSize: isMobile ? '0.9rem' : '0.82rem', color: '#3F6212', fontWeight: 700 }}>큐티</span>
-                          <strong style={{ marginLeft: 'auto', fontSize: isMobile ? '0.95rem' : '0.88rem', color: '#3F6212', fontWeight: 800 }}>{qt}<span style={{ fontSize: '0.76rem', fontWeight: 700, opacity: 0.6 }}>/7</span></strong>
-                          <span aria-hidden style={{ color: '#3F6212', opacity: 0.6, fontSize: '0.82rem' }}>›</span>
-                        </div>
-                        {renderDayPills(weekQtDates, { base: '#65A30D', bg: '#F7FEE7', fg: '#3F6212', border: '#D9F09E' })}
-                      </a>
-                      <a
-                        href={`/reading${suffix}`}
-                        title="성경통독 메뉴로 이동"
-                        style={{ padding: isMobile ? '0.75rem 0.85rem' : '0.6rem 0.75rem', borderRadius: 10, background: '#F7FEE7', border: '1px solid #D9F09E', display: 'grid', gap: isMobile ? '0.5rem' : '0.35rem', textDecoration: 'none', cursor: 'pointer', transition: 'box-shadow 0.15s ease' }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 3px 8px rgba(101, 163, 13, 0.2)'; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                          <span aria-hidden>✝</span>
-                          <span style={{ fontSize: isMobile ? '0.9rem' : '0.82rem', color: '#3F6212', fontWeight: 700 }}>성경통독</span>
-                          <strong style={{ marginLeft: 'auto', fontSize: isMobile ? '0.95rem' : '0.88rem', color: '#3F6212', fontWeight: 800 }}>{rd}<span style={{ fontSize: '0.76rem', fontWeight: 700, opacity: 0.6 }}>/7</span></strong>
-                          <span aria-hidden style={{ color: '#3F6212', opacity: 0.6, fontSize: '0.82rem' }}>›</span>
-                        </div>
-                        {renderDayPills(weekReadingDates, { base: '#65A30D', bg: '#F7FEE7', fg: '#3F6212', border: '#D9F09E' })}
-                      </a>
-                    </div>
-                  );
+                  return null;
                 })()}
               </section>
             );
@@ -1106,6 +1337,21 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
         <WorshipBulletinPreview value={previewBulletin} onClose={() => setPreviewBulletin(null)} />
       )}
 
+      <ConfirmModal
+        open={!!resConfirmTarget}
+        title="이 예약을 삭제하시겠어요?"
+        details={resConfirmTarget ? [
+          resConfirmTarget.title || '(제목 없음)',
+          `${resConfirmTarget.startAt.slice(0, 10)} ${resConfirmTarget.startAt.slice(11, 16)}~${resConfirmTarget.endAt.slice(11, 16)}`,
+          resConfirmTarget.location || '',
+        ].filter(Boolean) : []}
+        warning="삭제 후에는 되돌릴 수 없습니다."
+        confirmLabel="삭제"
+        confirmTone="danger"
+        busy={!!resDeletingId}
+        onCancel={() => setResConfirmTarget(null)}
+        onConfirm={performResDelete}
+      />
     </>
   );
 };
@@ -1116,16 +1362,38 @@ export const getServerSideProps: GetServerSideProps<DashboardProps> = async (con
   const queryEmail = typeof context.query.email === 'string' ? context.query.email : null;
   const provider = profileId && profileId.includes('-') ? profileId.split('-')[0] : null;
 
-  const [communitiesArr, usersArr, profilesArr] = await Promise.all([
+  const [communitiesArr, usersArr, profilesArr, approvalsArr] = await Promise.all([
     getCommunities(),
     getUsers(),
     getProfiles().catch(() => [] as any[]),
+    getSignupApprovals().catch(() => [] as any[]),
   ]);
 
   const communities = communitiesArr as Community[];
   const users = usersArr as UserEntry[];
   const profiles = profilesArr as Array<NonNullable<StoredProfile>>;
-  const storedProfile = profileId ? profiles.find((p) => p.profileId === profileId) || null : null;
+  const approvals = approvalsArr as Array<{ profileId: string; realName?: string; contact?: string }>;
+  const rawProfile = profileId ? profiles.find((p) => p.profileId === profileId) || null : null;
+  const approval = profileId ? approvals.find((a) => a.profileId === profileId) || null : null;
+  // signup 시점에 realName/contact 를 입력하면 signup_approvals 에 저장되고 profiles에는 없을 수 있음.
+  // 두 소스를 merge해서 storedProfile 이 빠짐없이 반영되도록.
+  const storedProfile: StoredProfile = rawProfile
+    ? {
+        ...rawProfile,
+        realName: rawProfile.realName || approval?.realName || '',
+        contact: rawProfile.contact || approval?.contact || '',
+      }
+    : (approval && (approval.realName || approval.contact))
+      ? ({
+          profileId: profileId as string,
+          provider: (profileId && profileId.includes('-') ? profileId.split('-')[0] : '') as string,
+          nickname: queryNickname || '',
+          realName: approval.realName || '',
+          contact: approval.contact || '',
+          email: queryEmail || '',
+          updatedAt: '',
+        } as NonNullable<StoredProfile>)
+      : null;
 
   const providerPrefix = profileId && profileId.includes('-') ? profileId.split('-')[0] : null;
   const userEntries = profileId

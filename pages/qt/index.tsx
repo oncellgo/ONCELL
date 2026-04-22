@@ -5,16 +5,17 @@ import { Fragment, useEffect, useState } from 'react';
 import SubHeader from '../../components/SubHeader';
 import BiblePassageCard from '../../components/BiblePassageCard';
 import { getSystemAdminHref } from '../../lib/adminGuard';
-import { getProfiles, getUsers } from '../../lib/dataStore';
+import { getProfiles, getUsers, getSettings } from '../../lib/dataStore';
 import { useIsMobile } from '../../lib/useIsMobile';
 import { useRequireLogin } from '../../lib/useRequireLogin';
-import { fetchChannelUploadsByHandle } from '../../lib/youtube';
+import { fetchChannelUploadsByHandle, YTFetchStatus } from '../../lib/youtube';
 import { getSGDateKey, getSGDow, getSGSundayKey, getSGTodayKey, addDaysToKey } from '../../lib/events';
 
 type Video = { videoId: string; title: string; publishedAt: string; dow: number; dateKey: string };
 
 type Props = {
   videos: Video[];
+  videoFetchStatus: YTFetchStatus;
   weekStartISO: string;
   todayDow: number;
   profileId: string | null;
@@ -26,7 +27,7 @@ type Props = {
 
 const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
-const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickname, email, systemAdminHref }: Props) => {
+const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, displayName, nickname, email, systemAdminHref }: Props) => {
   const router = useRouter();
   const isMobile = useIsMobile();
   // localStorage fallback — MenuBar 하드 네비 시 SSR 프롭 없이 들어와도 동작
@@ -51,6 +52,27 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
     ? [...videos].sort((a, b) => (b.publishedAt || '').localeCompare(a.publishedAt || ''))[0]
     : null;
   const [selectedDow, setSelectedDow] = useState<number>(todayDow);
+
+  // ?date=YYYY-MM-DD 쿼리로 특정 날짜 직접 진입 (대시보드 요일 pill 링크)
+  useEffect(() => {
+    if (!router.isReady) return;
+    const q = router.query.date;
+    const dateStr = typeof q === 'string' ? q : '';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return;
+    // weekStartISO 는 SG 기준 이번주 일요일. target 과의 일수 차이로 offset+dow 계산.
+    const [ty, tm, td] = dateStr.split('-').map(Number);
+    const [wy, wm, wd] = weekStartISO.split('-').map(Number);
+    if (!ty || !wy) return;
+    const target = new Date(Date.UTC(ty, tm - 1, td));
+    const wStart = new Date(Date.UTC(wy, wm - 1, wd));
+    const diffDays = Math.round((target.getTime() - wStart.getTime()) / (24 * 60 * 60 * 1000));
+    // target 이 오늘 포함 일요일 기준 주에서 몇 번째 요일인지
+    const dowTarget = ((diffDays % 7) + 7) % 7;
+    const weekOff = Math.floor(diffDays / 7);
+    setWeekOffset(weekOff);
+    setSelectedDow(dowTarget);
+  }, [router.isReady, router.query.date, weekStartISO]);
+
   // 쿼리에 profileId가 없으면 localStorage에서 복구 (SubHeader/TopNav와 동일 규칙)
   const [resolvedProfileId, setResolvedProfileId] = useState<string | null>(profileId);
   useEffect(() => {
@@ -267,9 +289,9 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                       title={isFuture ? '미래 날짜는 선택할 수 없습니다' : isLatest ? '최신영상' : undefined}
                       style={{
                         padding: isMobile ? '0.25rem 0.05rem' : '0.3rem 0.2rem',
-                        border: isSelected ? '2px solid #20CD8D' : isDayCompleted ? '1.5px solid #20CD8D' : isToday ? '1.5px solid #D9F09E' : '1px solid var(--color-gray)',
+                        border: isSelected ? '2px solid #20CD8D' : isDayCompleted ? '1.5px solid #20CD8D' : '1px solid var(--color-gray)',
                         borderRadius: 8,
-                        background: isFuture ? '#F9FAFB' : isDayCompleted ? '#20CD8D' : isToday ? '#ECFCCB' : '#fff',
+                        background: isFuture ? '#F9FAFB' : isDayCompleted ? '#20CD8D' : '#fff',
                         cursor: isFuture ? 'not-allowed' : 'pointer',
                         opacity: isFuture ? 0.4 : (v ? 1 : 0.7),
                         textAlign: 'center',
@@ -299,8 +321,6 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                       </div>
                       {isDayCompleted ? (
                         <span style={{ fontSize: isMobile ? '0.55rem' : '0.6rem', fontWeight: 800, color: '#20CD8D', background: '#fff', padding: '0.05rem 0.35rem', borderRadius: 999, letterSpacing: '0.02em', justifySelf: 'center' }}>✓ 완료</span>
-                      ) : isToday ? (
-                        <span style={{ fontSize: isMobile ? '0.55rem' : '0.6rem', fontWeight: 800, color: '#fff', background: '#20CD8D', padding: '0.05rem 0.35rem', borderRadius: 999, letterSpacing: '0.02em', justifySelf: 'center' }}>오늘</span>
                       ) : v ? (
                         <svg viewBox="0 0 24 24" width={isMobile ? 12 : 14} height={isMobile ? 9 : 10} aria-label="YouTube" style={{ justifySelf: 'center' }}>
                           <path fill="#FF0000" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31.3 31.3 0 0 0 0 12a31.3 31.3 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31.3 31.3 0 0 0 24 12a31.3 31.3 0 0 0-.5-5.8z"/>
@@ -325,7 +345,7 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
               </div>
 
               {selectedVideoId ? (
-                <div style={{ position: 'relative', width: isMobile ? '100%' : '75%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', background: '#000', margin: '0 auto' }}>
+                <div style={{ position: 'relative', width: '75%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', background: '#000', margin: '0 auto' }}>
                   <iframe
                     src={`https://www.youtube.com/embed/${selectedVideoId}`}
                     title={selectedVideo?.title || '새벽기도 영상'}
@@ -336,13 +356,29 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                 </div>
               ) : (
                 <div style={{
-                  position: 'relative', width: isMobile ? '100%' : '75%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12,
+                  position: 'relative', width: '75%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12,
                   background: '#F3F4F6', border: '1px dashed var(--color-gray)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
                   color: 'var(--color-ink-2)', fontSize: '1rem', fontWeight: 700,
-                  margin: '0 auto',
+                  margin: '0 auto', padding: '1rem',
                 }}>
-                  영상 없음
+                  {(() => {
+                    // videoFetchStatus 에 따라 안내 문구 분기 — 단순 '영상 없음' 대신 원인 노출.
+                    if (videos.length === 0 && videoFetchStatus !== 'ok' && videoFetchStatus !== 'empty') {
+                      const msg =
+                        videoFetchStatus === 'quota' ? 'YouTube API 일일 한도 초과 — 잠시 후 다시 시도해주세요' :
+                        videoFetchStatus === 'unauthorized' ? 'YouTube API 인증 오류 — 관리자에 문의' :
+                        videoFetchStatus === 'network' ? '일시 네트워크 오류 — 잠시 후 새로고침' :
+                        '영상 서비스 일시 오류';
+                      return (
+                        <>
+                          <span>영상 없음</span>
+                          <span style={{ fontSize: '0.78rem', fontWeight: 500, color: '#B91C1C' }}>⚠ {msg}</span>
+                        </>
+                      );
+                    }
+                    return <span>영상 없음</span>;
+                  })()}
                 </div>
               )}
 
@@ -354,82 +390,125 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                 border: '1px solid #D9F09E',
                 fontFamily: '"Noto Sans KR", "Nanum Gothic", "Malgun Gothic", system-ui, sans-serif',
               }}>
-                <div style={{
-                  display: 'flex',
-                  flexDirection: isMobile ? 'column' : 'row',
-                  alignItems: isMobile ? 'stretch' : 'center',
-                  gap: isMobile ? '0.4rem' : '0.5rem',
-                  flexWrap: isMobile ? 'nowrap' : 'wrap',
-                }}>
+                {/* 라벨 + 인용문 + 목사 한 줄 배치 */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '0.35rem' }}>
                   <span style={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.02em', color: '#65A30D', textTransform: 'uppercase', flexShrink: 0 }}>
                     {isTodaySelected ? '오늘의 QT말씀' : `${selectedDateKey.slice(5).replace('-', '/')} QT말씀`}
                   </span>
-                  {videoMeta && (videoMeta.quote || videoMeta.pastor) && (
-                    <div
-                      style={{
-                        fontSize: isMobile ? '0.82rem' : '0.9rem',
-                        fontWeight: 800,
-                        color: 'var(--color-ink)',
-                        lineHeight: 1.5,
-                        display: 'flex',
-                        alignItems: isMobile ? 'flex-start' : 'center',
-                        flexDirection: isMobile ? 'column' : 'row',
-                        gap: isMobile ? '0.15rem' : '0.3rem',
-                        flex: isMobile ? undefined : 1,
-                        minWidth: 0,
-                      }}
-                    >
-                      {videoMeta.quote && (
-                        <span style={{ wordBreak: 'keep-all', overflowWrap: 'break-word' }}>&ldquo;{videoMeta.quote}&rdquo;</span>
-                      )}
-                      {videoMeta.pastor && (
-                        <span style={{ color: 'var(--color-ink-2)', fontWeight: 700, fontSize: isMobile ? '0.76rem' : undefined }}>— {videoMeta.pastor}</span>
-                      )}
-                    </div>
+                  {videoMeta?.quote && (
+                    <span style={{ fontSize: isMobile ? '0.85rem' : '0.92rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1.4, wordBreak: 'keep-all', overflowWrap: 'break-word', minWidth: 0 }}>
+                      &ldquo;{videoMeta.quote}&rdquo;
+                    </span>
                   )}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', flex: isMobile ? undefined : 1, marginLeft: 'auto' }}>
-                    {qtLoading && (
-                      <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>불러오는 중…</span>
-                    )}
-                    {!qtLoading && !qtRef && (
-                      <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>{qtError || '오늘의 QT말씀 정보가 없습니다.'}</span>
-                    )}
-                    {qtRef && (() => {
-                      const hasNote = qtCompletedSet.has(selectedDateKey);
-                      return (
-                        <div style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <button
-                            type="button"
-                            onClick={openNoteModal}
-                            title={hasNote ? '묵상 입력됨 — 클릭하여 수정' : '나의 묵상노트 작성'}
-                            aria-label={hasNote ? '묵상 입력됨' : '묵상 미입력'}
-                            style={{
-                              padding: '0.38rem 0.85rem',
-                              borderRadius: 999,
-                              border: `1px solid ${hasNote ? '#20CD8D' : 'var(--color-gray)'}`,
-                              background: hasNote ? '#20CD8D' : '#fff',
-                              color: hasNote ? '#fff' : 'var(--color-ink-2)',
-                              fontSize: '0.8rem',
-                              fontWeight: 800,
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.3rem',
-                              letterSpacing: '0.02em',
-                              transition: 'background 0.15s ease, border-color 0.15s ease, color 0.15s ease',
-                            }}
-                          >
-                            <span aria-hidden>{hasNote ? '✓' : '✍️'}</span>
-                            <span>{hasNote ? '묵상 입력됨' : '묵상 미입력'}</span>
-                          </button>
-                        </div>
-                      );
-                    })()}
-                  </div>
+                  {videoMeta?.pastor && (
+                    <span style={{ color: 'var(--color-ink-2)', fontWeight: 700, fontSize: '0.8rem' }}>— {videoMeta.pastor}</span>
+                  )}
                 </div>
 
+                {/* 큐티 완료 토글 — 통독 토글과 동일 패턴(큰 버튼 + 스위치) */}
+                {qtLoading && (
+                  <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>불러오는 중…</span>
+                )}
+                {!qtLoading && !qtRef && (
+                  <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>{qtError || '오늘의 QT말씀 정보가 없습니다.'}</span>
+                )}
+                {qtRef && (() => {
+                  const hasNote = qtCompletedSet.has(selectedDateKey);
+                  // 도메인 규칙(service-plan §7): 큐티 완료는 오늘(SG)만 가능. 과거/미래는 읽기 모드.
+                  const isToday = selectedDateKey === todayKey;
+                  if (!isToday) {
+                    // 비활성 상태 배지 — 토글 대신 상태만 표시
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '0.3rem' }}>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.45rem',
+                          padding: isMobile ? '0.75rem 1rem' : '0.65rem 1rem',
+                          borderRadius: 999,
+                          border: `1px solid ${hasNote ? '#20CD8D' : 'var(--color-gray)'}`,
+                          background: hasNote ? '#20CD8D' : '#F9FAFB',
+                          color: hasNote ? '#fff' : 'var(--color-ink-2)',
+                          fontSize: '0.95rem',
+                          fontWeight: 800,
+                          letterSpacing: '0.02em',
+                          minHeight: 52,
+                          width: '100%',
+                        }}>
+                          <span aria-hidden>{hasNote ? '✓' : '✎'}</span>
+                          <span>{hasNote ? '묵상 완료' : '묵상 미입력'}</span>
+                        </div>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--color-ink-2)', fontWeight: 600, textAlign: 'center' }}>📖 보기만 가능 — 큐티는 오늘만 작성 가능합니다</span>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '0.3rem' }}>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={hasNote}
+                        aria-label={hasNote ? '묵상 완료됨 — 수정' : '묵상 미입력 — 묵상 작성'}
+                        title={hasNote ? '묵상 입력됨 — 클릭하여 수정' : '나의 묵상노트 작성'}
+                        onClick={openNoteModal}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.55rem',
+                          padding: isMobile ? '0.75rem 1rem' : '0.65rem 1rem',
+                          borderRadius: 999,
+                          border: `1px solid ${hasNote ? '#20CD8D' : 'var(--color-gray)'}`,
+                          background: hasNote ? '#20CD8D' : '#fff',
+                          color: hasNote ? '#fff' : 'var(--color-ink-2)',
+                          cursor: 'pointer',
+                          fontSize: '0.95rem',
+                          fontWeight: 800,
+                          letterSpacing: '0.02em',
+                          transition: 'background 0.15s ease, border-color 0.15s ease, color 0.15s ease',
+                          minHeight: 52,
+                          width: '100%',
+                        }}
+                      >
+                        <span
+                          aria-hidden
+                          style={{
+                            position: 'relative',
+                            display: 'inline-block',
+                            width: 32,
+                            height: 18,
+                            borderRadius: 999,
+                            background: hasNote ? 'rgba(255,255,255,0.28)' : '#E5E7EB',
+                            flexShrink: 0,
+                            transition: 'background 0.15s ease',
+                          }}
+                        >
+                          <span
+                            style={{
+                              position: 'absolute',
+                              top: 2,
+                              left: hasNote ? 16 : 2,
+                              width: 14,
+                              height: 14,
+                              borderRadius: 999,
+                              background: '#fff',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.25)',
+                              transition: 'left 0.18s ease',
+                            }}
+                          />
+                        </span>
+                        <span>{hasNote ? '✓ 묵상 완료' : '묵상 미입력'}</span>
+                      </button>
+                      {!hasNote && (
+                        <span style={{ fontSize: '0.7rem', color: 'var(--color-ink-2)', fontWeight: 600, textAlign: 'center' }}>묵상 기록 후 자동 완료 처리됩니다</span>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {(qtPassageText || qtPassageTextEn) && qtRef && (
-                  <BiblePassageCard reference={qtRef} koText={qtPassageText} enText={qtPassageTextEn} />
+                  <BiblePassageCard reference={qtRef} koText={qtPassageText} enText={qtPassageTextEn} source="매일성경 (sumanbible.com) · 본문: 개역한글/KJV 공공영역" />
                 )}
                 {!qtPassageText && !qtPassageTextEn && qtPassage && (
                   <div style={{ padding: '0.9rem 1.1rem', borderRadius: 10, background: '#fff', border: '1px solid #D9F09E', fontSize: '0.9rem', color: 'var(--color-ink)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
@@ -470,8 +549,18 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
               maxHeight: isMobile ? '92dvh' : '92vh', overflowY: 'auto',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#1F2937' }}>✍️ 나의 묵상노트</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#1F2937', display: 'inline-flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span>✍️ 나의 묵상노트</span>
+                <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#65A30D', letterSpacing: '0.01em' }}>
+                  {(() => {
+                    const [y, m, d] = todayKey.split('-').map(Number);
+                    if (!y || !m || !d) return todayKey;
+                    const dow = new Date(y, m - 1, d).getDay();
+                    return `${todayKey}(${DAY_LABELS[dow]})`;
+                  })()}
+                </span>
+              </h3>
               <button
                 type="button"
                 onClick={() => setNoteOpen(false)}
@@ -479,25 +568,18 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
                 aria-label="닫기"
               >✕</button>
             </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--color-ink-2)' }}>
-              <span style={{ fontWeight: 700, color: '#3F6212' }}>{(() => {
-                const [y, m, d] = todayKey.split('-').map(Number);
-                if (!y || !m || !d) return todayKey;
-                const dow = new Date(y, m - 1, d).getDay();
-                return `${todayKey}(${DAY_LABELS[dow]})`;
-              })()}</span>
-              {qtRef && <span> · 📖 {qtRef}</span>}
-            </div>
+            {qtRef && (
+              <div style={{ fontSize: '0.82rem', color: 'var(--color-ink-2)' }}>📖 {qtRef}</div>
+            )}
             {noteLoading ? (
               <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--color-ink-2)' }}>불러오는 중…</div>
             ) : (
               <div style={{ display: 'grid', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#65A30D' }}>✍️ 나의 묵상노트</label>
-                <p style={{ margin: 0, fontSize: '0.76rem', color: 'var(--color-ink-2)', lineHeight: 1.5 }}>느낀 점 · 결단 · 기도제목을 자유롭게 한 곳에 기록하세요.</p>
+                <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-ink-2)', lineHeight: 1.5 }}>느낀 점 · 결단 · 기도제목을 자유롭게 한 곳에 기록하세요.</p>
                 <textarea
                   value={noteFeelings}
                   onChange={(e) => { setNoteFeelings(e.target.value); setNoteMsg(null); }}
-                  placeholder={'오늘 말씀을 통해 받은 은혜·결단·기도제목을 자유롭게 기록해 보세요.\n\n예)\n💭 느낀점 — …\n🌱 결단 — …\n🙏 기도제목 — …'}
+                  placeholder="오늘 말씀을 통해 받은 은혜·결단·기도제목을 자유롭게 기록해 보세요."
                   rows={isMobile ? 9 : 12}
                   style={{
                     width: '100%', padding: '0.75rem 0.9rem', borderRadius: 10,
@@ -540,17 +622,27 @@ const QtPage = ({ videos, todayDow, weekStartISO, profileId, displayName, nickna
   );
 };
 
-const CHANNEL_HANDLE = 'KoreanChurchInSingapore';
+const DEFAULT_CHANNEL_HANDLE = 'KoreanChurchInSingapore';
 
 export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
   // 모든 날짜 계산은 싱가폴(UTC+8) 기준 — Vercel 서버 UTC 때문에 KST 새벽에 전날로 밀리는 버그 방지
   const todayDow = getSGDow();
   const weekStartKey = getSGSundayKey();
 
+  // 시스템 관리자가 기타설정에서 등록한 핸들 사용, 없으면 기본값.
+  let channelHandle = DEFAULT_CHANNEL_HANDLE;
+  try {
+    const settings = (await getSettings()) || {};
+    const h = typeof settings.qtYoutubeHandle === 'string' ? settings.qtYoutubeHandle.trim().replace(/^@/, '') : '';
+    if (h) channelHandle = h;
+  } catch { /* fallback to default */ }
+
   let videos: Video[] = [];
+  let videoFetchStatus: YTFetchStatus = 'ok';
   {
-    const all = await fetchChannelUploadsByHandle(CHANNEL_HANDLE, 50);
-    const allVids = all
+    const fetched = await fetchChannelUploadsByHandle(channelHandle, 50);
+    videoFetchStatus = fetched.status;
+    const allVids = fetched.items
       .filter((v) => /새벽/.test(v.title))
       .map((v) => {
         const dateKey = getSGDateKey(v.publishedAt) || '';
@@ -596,6 +688,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
   return {
     props: {
       videos,
+      videoFetchStatus,
       weekStartISO: weekStartKey,
       todayDow,
       profileId,

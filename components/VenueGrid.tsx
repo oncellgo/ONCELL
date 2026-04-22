@@ -359,11 +359,15 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                   const isAlternate = !isSelected && !blocked && inAvailable && !!alternateSlots?.get(v.id)?.has(m);
                   // 사용자 선택이 기존 예약/블럭과 겹치면 "예약불가" 경고 상태
                   const isConflict = isSelected && blocked;
-                  // 색상: 충돌=주황경고, 선택=민트, 대체=반투명민트+점선, 불가시간=연회색, 교회일정=진빨강,
-                  //       내 예약=딥민트(노랑 테두리 강조), 타인 예약=중간회색, 예약불가=보라(교회일정/예약과 분리), 예약가능=연녹
-                  // 교회일정도 예약불가와 같은 진회색으로 통일 (빨강 강조 제거)
-                  const kindBg = kind === 'event' ? '#4B5563' : kind === 'reservation' ? (mine ? '#F97316' : '#9CA3AF') : '#4B5563';
-                  const kindFg = '#FFFFFF';
+                  // 색상: 충돌=주황경고, 선택=민트, 대체=반투명민트+점선, 불가시간=연회색,
+                  //       교회일정/예약됨/예약불가 = 올리브-그레이 3단계 (배경 #F7FEE7·라임 팔레트와 조화).
+                  //       내 예약 = 연민트(#A7F3D0) + 진녹 글씨(#064E3B) — 오렌지 대신 부드러운 강조.
+                  const kindBg = kind === 'event'
+                    ? '#4A4E3A'
+                    : kind === 'reservation'
+                      ? (mine ? '#A7F3D0' : '#9CA089')
+                      : '#6B6F5C';
+                  const kindFg = kind === 'reservation' && mine ? '#064E3B' : '#FFFFFF';
                   const bg = isConflict ? '#F59E0B' : isSelected ? '#20CD8D' : isAlternate ? 'rgba(32, 205, 141, 0.18)' : (!inAvailable ? '#E5E7EB' : blocked ? kindBg : '#F7FEE7');
                   const color = isConflict ? '#FFFFFF' : isSelected ? '#fff' : isAlternate ? '#3F6212' : (!inAvailable ? '#9CA3AF' : blocked ? kindFg : '#4D7C0F');
                   const clickable = !!onSlotClick && inAvailable;
@@ -377,8 +381,12 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                   } else if (isSelected) titleParts.push('예약 시간 선택됨');
                   else if (isAlternate) titleParts.push('후보 (클릭하여 이 장소로 전환)');
                   else titleParts.push('예약 가능 — 클릭하거나, 시작 셀에서 끝 셀까지 드래그하면 한 번에 선택됩니다');
-                  // 셀 내부: reservation kind이고 rowSpan≥2면 3줄 표시, 그 외엔 reason만
-                  const showStacked = blocked && kind === 'reservation' && span >= 2 && (reserverName || reserverContact);
+                  // 셀 내부: reservation kind이면 가능한 한 항상 예약자 실명까지 표시.
+                  // span ≥ 2 → 스택 (reason + reserverName + contact 각 줄)
+                  // span = 1 → 한 줄 압축 (`reason · reserverName`)
+                  const hasReserverInfo = !!(reserverName || reserverContact);
+                  const showStacked = blocked && kind === 'reservation' && span >= 2 && hasReserverInfo;
+                  const compactReserver = blocked && kind === 'reservation' && span === 1 && !!reserverName;
                   return (
                     <td key={v.id} rowSpan={blocked ? span : 1} style={{ padding: 0, borderRight: '1px solid #F4F4F0', minWidth: VENUE_MIN_W, height: blocked ? span * SLOT_ROW_H : SLOT_ROW_H, verticalAlign: 'top' }}>
                       <button
@@ -396,15 +404,26 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                           onSlotPointerEnter(v, m, blocked);
                         } : undefined}
                         title={titleParts.join(' | ')}
-                        style={{ width: '100%', height: '100%', minHeight: blocked ? span * SLOT_ROW_H : SLOT_ROW_H, display: 'block', border: isAlternate ? '1.5px dashed #20CD8D' : mine ? '2px solid #FBBF24' : 'none', outline: mine ? '2px solid #FBBF24' : undefined, outlineOffset: mine ? '-2px' : undefined, background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: isMobile ? '0.62rem' : '0.6rem', fontWeight: mine ? 800 : 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box', touchAction: 'manipulation', userSelect: 'none', boxShadow: mine ? 'inset 0 0 0 1px rgba(255,255,255,0.6)' : undefined }}
+                        style={{ width: '100%', height: '100%', minHeight: blocked ? span * SLOT_ROW_H : SLOT_ROW_H, display: 'block', border: isAlternate ? '1.5px dashed #20CD8D' : mine ? '2px solid #20CD8D' : 'none', outline: mine ? '2px solid #20CD8D' : undefined, outlineOffset: mine ? '-2px' : undefined, background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: isMobile ? '0.62rem' : '0.6rem', fontWeight: mine ? 800 : 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box', touchAction: 'manipulation', userSelect: 'none', boxShadow: mine ? 'inset 0 0 0 1px rgba(255,255,255,0.7)' : undefined }}
                       >
                         {isConflict ? '예약불가' : isSelected ? '예약가능' : isAlternate ? '○' : (blocked ? (
                           showStacked ? (
                             <span style={{ display: 'grid', gap: 1, lineHeight: 1.1 }}>
-                              {mine && <span style={{ fontWeight: 800, fontSize: '0.56rem', color: '#FEF3C7' }}>⭐ 내 예약</span>}
+                              {mine && (
+                                <span style={{ fontWeight: 800, fontSize: '0.56rem', color: '#064E3B', display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                                  <span style={{ color: '#EAB308', fontSize: '0.7rem', lineHeight: 1, textShadow: '0 0 2px rgba(234,179,8,0.5)' }}>★</span>
+                                  내 예약
+                                </span>
+                              )}
                               <span style={{ fontWeight: 800 }}>{reason || kindLabel}</span>
-                              {reserverName && <span style={{ fontWeight: 600, opacity: 0.95 }}>{reserverName}</span>}
-                              {reserverContact && <span style={{ fontWeight: 500, opacity: 0.9, fontSize: '0.55rem' }}>{reserverContact}</span>}
+                              {reserverName && <span style={{ fontWeight: 700, opacity: mine ? 1 : 0.95 }}>{reserverName}</span>}
+                              {reserverContact && <span style={{ fontWeight: 600, opacity: mine ? 1 : 0.9, fontSize: '0.55rem' }}>{reserverContact}</span>}
+                            </span>
+                          ) : compactReserver ? (
+                            <span style={{ display: 'inline-flex', gap: 3, alignItems: 'baseline', maxWidth: '100%' }}>
+                              {mine && <span style={{ fontWeight: 800, fontSize: '0.56rem' }}>⭐</span>}
+                              <span style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{reason || kindLabel}</span>
+                              <span style={{ fontWeight: 600, opacity: 0.92, fontSize: '0.56rem', whiteSpace: 'nowrap' }}>· {reserverName}</span>
                             </span>
                           ) : (mine ? `⭐ ${reason || kindLabel}` : (reason || kindLabel))
                         ) : '')}

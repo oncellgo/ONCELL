@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getQtNotes, setQtNotes } from '../../lib/dataStore';
 import { db } from '../../lib/db';
+import { getSGTodayKey } from '../../lib/events';
 
 type QtNote = {
   profileId: string;
@@ -43,6 +44,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       const { profileId, date, reference, feelings, decision, prayer } = (req.body || {}) as Partial<QtNote>;
       if (!profileId || !date) {
         return res.status(400).json({ error: 'profileId, date가 필요합니다.' });
+      }
+      // 도메인 규칙(service-plan §7): 큐티 완료는 SG 기준 오늘만 가능.
+      // 과거 소급 / 미래 선지급 금지. 클라이언트 UI 우회 시도도 서버에서 차단.
+      const todayKeySG = getSGTodayKey();
+      if (date !== todayKeySG) {
+        return res.status(400).json({ error: `큐티 묵상은 오늘(${todayKeySG}) 날짜에만 저장할 수 있습니다.` });
       }
       const next: QtNote = {
         profileId,
