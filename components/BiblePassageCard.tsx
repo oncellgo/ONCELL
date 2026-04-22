@@ -216,14 +216,12 @@ const BiblePassageCard = ({ reference, koText, enText, passageText, source, coll
     </div>
   );
 
+  const titleText = `말씀구절 - ${reference}`;
+  const titleColor = '#3F6212';
+  const titleFontSize = '0.98rem';
+
   return (
     <div style={{ padding: isMobile ? '0.85rem' : '1.1rem 1.2rem', borderRadius: 10, background: '#fff', border: '1px solid #D9F09E' }}>
-      {source && (
-        <div style={{ fontSize: '0.68rem', color: 'var(--color-ink-2)', marginBottom: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-          <span aria-hidden>🔗</span>
-          <span>데이터 출처: {source}</span>
-        </div>
-      )}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: open ? '0.75rem' : 0, paddingBottom: open ? '0.6rem' : 0, borderBottom: open ? '1px solid #ECFCCB' : 'none', flexWrap: 'wrap' }}>
         {collapsible ? (
           <button
@@ -232,39 +230,20 @@ const BiblePassageCard = ({ reference, koText, enText, passageText, source, coll
             aria-expanded={open}
             aria-label={open ? '말씀 본문 접기' : '말씀 본문 펼치기'}
             style={{
-              padding: '0.38rem 0.85rem',
-              borderRadius: 999,
-              border: '1px solid #65A30D',
-              background: '#fff',
-              color: '#3F6212',
-              fontSize: '0.86rem',
-              fontWeight: 700,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              cursor: 'pointer',
+              margin: 0, padding: 0, border: 'none', background: 'transparent',
+              cursor: 'pointer', fontSize: titleFontSize, fontWeight: 800, color: titleColor,
+              display: 'inline-flex', alignItems: 'center', gap: '0.35rem', textAlign: 'left',
             }}
           >
             <span aria-hidden>📖</span>
-            <span>{reference}</span>
-            <span aria-hidden style={{ fontSize: '0.75rem', transition: 'transform 0.15s', transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▾</span>
+            <span>{titleText}</span>
+            <span aria-hidden style={{ fontSize: '0.8rem', transition: 'transform 0.15s', transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▾</span>
           </button>
         ) : (
-          <span style={{
-            padding: '0.38rem 0.85rem',
-            borderRadius: 999,
-            border: '1px solid #65A30D',
-            background: '#fff',
-            color: '#3F6212',
-            fontSize: '0.86rem',
-            fontWeight: 700,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.35rem',
-          }}>
+          <h3 style={{ margin: 0, fontSize: titleFontSize, fontWeight: 800, color: titleColor, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
             <span aria-hidden>📖</span>
-            <span>{reference}</span>
-          </span>
+            <span>{titleText}</span>
+          </h3>
         )}
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {(hasKo || hasEn) && (
@@ -309,6 +288,13 @@ const BiblePassageCard = ({ reference, koText, enText, passageText, source, coll
       ) : (
         renderBlocks(koBlocks)
       ))}
+
+      {open && source && (
+        <div style={{ fontSize: '0.68rem', color: 'var(--color-ink-2)', marginTop: '0.85rem', paddingTop: '0.6rem', borderTop: '1px solid #ECFCCB', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+          <span aria-hidden>🔗</span>
+          <span>데이터 출처: {source}</span>
+        </div>
+      )}
     </div>
   );
 };
