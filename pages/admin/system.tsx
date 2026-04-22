@@ -433,7 +433,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
                         {u.nickname || u.email?.split('@')[0] || u.profileId}
                       </td>
                       <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)', whiteSpace: 'nowrap' }}>
-                        {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString('ko-KR') : '-'}
+                        {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString('ko-KR') : '-'}
                       </td>
                     </tr>
                   ))}
@@ -497,7 +497,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
                         </td>
                         <td style={{ padding: '0.55rem 0.6rem', color: '#2D4048' }} title={u?.email || '(이메일 없음)'}>{idDisplay}</td>
                         <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono, monospace)' }}>{u?.contact || '-'}</td>
-                        <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)', whiteSpace: 'nowrap' }}>{u?.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString('ko-KR') : '-'}</td>
+                        <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)', whiteSpace: 'nowrap' }}>{u?.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString('ko-KR') : '-'}</td>
                         <td style={{ padding: '0.55rem 0.6rem', textAlign: 'right' }}>
                           <button disabled={busy || isMe} onClick={() => removeAdmin(id, 'profileId')} style={{ ...btn, minHeight: 36, padding: '0.4rem 0.7rem', fontSize: '0.78rem', background: isMe ? '#e5e7eb' : '#b91c1c', color: isMe ? '#6b7280' : '#fff', cursor: isMe ? 'not-allowed' : 'pointer' }}>{t('admin.remove')}</button>
                         </td>
