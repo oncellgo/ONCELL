@@ -37,13 +37,8 @@ const LoginPage = () => {
   }, []);
 
   const startLogin = (provider: 'kakao' | 'google') => {
-    // 이미 동의한 재방문자는 모달 스킵 → 바로 OAuth
-    try {
-      if (window.localStorage.getItem('kcisPrivacyConsented') === '1') {
-        window.location.href = `/api/auth/${provider}`;
-        return;
-      }
-    } catch {}
+    // 동의는 계정 단위이므로 매 로그인마다 모달. sessionStorage 플래그도 즉시 제거.
+    try { window.sessionStorage.removeItem('kcisPrivacyConsented'); } catch {}
     setConsentChecked(false);
     setPendingProvider(provider);
   };
@@ -51,8 +46,9 @@ const LoginPage = () => {
   const confirmConsent = () => {
     if (!consentChecked || !pendingProvider) return;
     try {
-      window.localStorage.setItem('kcisPrivacyConsented', '1');
-      window.localStorage.setItem('kcisPrivacyConsentedAt', new Date().toISOString());
+      // OAuth 왕복 동안 callback 에서 한 번 읽고 바로 제거 — 탭 범위(세션)만 유지.
+      window.sessionStorage.setItem('kcisPrivacyConsented', '1');
+      window.sessionStorage.setItem('kcisPrivacyConsentedAt', new Date().toISOString());
     } catch {}
     window.location.href = `/api/auth/${pendingProvider}`;
   };

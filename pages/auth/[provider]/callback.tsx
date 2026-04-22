@@ -55,9 +55,14 @@ const CallbackPage = () => {
           window.localStorage.setItem('kcisProfileId', profileId);
         } catch {}
 
-        // 로그인 페이지 사전 동의 플래그(있으면 신규 가입 시 approval 에 바로 반영)
+        // 로그인 페이지 사전 동의 플래그(있으면 신규 가입 시 approval 에 바로 반영).
+        // 한 번 읽고 바로 제거 — 다음 로그인 시에도 모달을 강제하려고.
         let pendingPrivacyConsent = false;
-        try { pendingPrivacyConsent = window.localStorage.getItem('kcisPrivacyConsented') === '1'; } catch {}
+        try {
+          pendingPrivacyConsent = window.sessionStorage.getItem('kcisPrivacyConsented') === '1';
+          window.sessionStorage.removeItem('kcisPrivacyConsented');
+          window.sessionStorage.removeItem('kcisPrivacyConsentedAt');
+        } catch {}
 
         let approvalStatus: 'approved' | 'pending' | 'rejected' | 'blocked' = 'approved';
         let missingFields: string[] = [];
