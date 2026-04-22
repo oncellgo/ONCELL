@@ -46,7 +46,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     list[idx].privacyConsentAt = new Date().toISOString();
   }
 
-  await setSignupApprovals(list);
+  try {
+    await setSignupApprovals(list);
+  } catch (err: any) {
+    console.error('[complete-signup] setSignupApprovals failed:', err);
+    return res.status(500).json({ error: `approvals write failed: ${err?.message || String(err)}` });
+  }
 
   // kcis_profiles 에도 동일 정보를 upsert — signup_approvals / profiles 가 분리되어
   // 어느 한쪽만 읽는 화면(예: 장소예약 그리드, /api/profile)에서 "(미등록)" 으로 나오는 문제를 근본 차단.
