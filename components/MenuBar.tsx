@@ -139,15 +139,15 @@ const MenuBar = ({ profileId, nickname, email }: Props) => {
               // 메뉴 라벨 길이에 따라 모양이 달라 보이지 않도록 고정 padding + 고정 borderRadius
               padding: isMobile ? '0 0.85rem' : '0 1.1rem',
               borderRadius: 10,
-              background: active ? '#ECFCCB' : 'var(--color-primary-tint)',
-              color: active ? '#3F6212' : 'var(--color-primary-deep)',
+              background: active ? 'var(--color-primary)' : 'var(--color-primary-tint)',
+              color: active ? '#fff' : 'var(--color-primary-deep)',
               border: `2px solid ${active ? '#65A30D' : 'transparent'}`,
               fontSize: isMobile ? '0.84rem' : '0.9rem',
               fontWeight: active ? 800 : 700,
               textDecoration: 'none',
               whiteSpace: 'nowrap',
               flexShrink: 0,
-              boxShadow: active ? '0 2px 8px rgba(101, 163, 13, 0.25)' : 'none',
+              boxShadow: active ? '0 2px 8px rgba(32, 205, 141, 0.22)' : 'none',
               transition: 'background 0.15s ease, color 0.15s ease',
               letterSpacing: '-0.01em',
             }}
