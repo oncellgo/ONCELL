@@ -22,10 +22,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   let settings: { signupRequiredFields?: SignupField[] } = {};
   try { settings = (await getSettings()) || {}; } catch {}
 
-  // 개인정보 수집·이용 동의(privacyConsent) 는 법적 의무라 설정과 무관하게 항상 required.
+  // 실명·연락처는 가입 시점이 아닌 예약 시점(RequiredInfoModal)에 수집 — 가입 동의 화면에서 제외.
+  // 관리자가 settings.signupRequiredFields 에 명시한 경우에만 가입 시 필수로 본다.
   const configured: SignupField[] = Array.isArray(settings.signupRequiredFields)
     ? settings.signupRequiredFields.filter((f): f is SignupField => f === 'realName' || f === 'contact')
-    : ['realName', 'contact'];
+    : [];
+  // 개인정보 수집·이용 동의(privacyConsent) 는 법적 의무라 항상 required.
   const required: SignupField[] = Array.from(new Set<SignupField>([...configured, 'privacyConsent']));
 
   const a = approvals.find((x) => x.profileId === profileId);

@@ -46,10 +46,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const settings = await readSettings();
   const approvalMode: 'auto' | 'admin' = settings.signupApproval === 'admin' ? 'admin' : 'auto';
+  // 실명·연락처는 예약 시점(RequiredInfoModal) 에 수집하므로 기본 required 에서 제외.
+  // 관리자가 settings.signupRequiredFields 에 명시한 경우에만 가입 시 필수.
   const configured: SignupField[] = Array.isArray(settings.signupRequiredFields)
     ? settings.signupRequiredFields.filter((f): f is 'realName' | 'contact' => f === 'realName' || f === 'contact')
-    : ['realName', 'contact'];
-  // 개인정보 수집·이용 동의(privacyConsent) 는 법적 의무라 설정과 무관하게 항상 required.
+    : [];
+  // 개인정보 수집·이용 동의(privacyConsent) 는 법적 의무라 항상 required.
   const required: SignupField[] = Array.from(new Set<SignupField>([...configured, 'privacyConsent']));
 
   const list = await readApprovals();

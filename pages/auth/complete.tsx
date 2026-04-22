@@ -1,13 +1,6 @@
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useEffect, useMemo, useState } from 'react';
-
-const splitContact = (full: string): { cc: string; rest: string } => {
-  const s = (full || '').trim();
-  const m = s.match(/^(\+\d{1,3})[\s-]*(.+)$/);
-  if (m) return { cc: m[1], rest: m[2].trim() };
-  return { cc: '+65', rest: s };
-};
+import { useMemo, useState } from 'react';
 
 const CompleteSignupPage = () => {
   const router = useRouter();
@@ -26,50 +19,15 @@ const CompleteSignupPage = () => {
 
   const fields = useMemo(() => fieldsParam.split(',').filter(Boolean), [fieldsParam]);
   const needPrivacy = fields.includes('privacyConsent');
-  // 실명·연락처는 missingFields 포함 여부와 무관하게 항상 입력/확인받고 서버에 저장한다.
-  // 기존 값이 있으면 prefill.
+  // 실명·연락처는 이 화면에서 받지 않음(예약 시점에 RequiredInfoModal 로 수집).
 
-  const [realName, setRealName] = useState('');
-  const [countryCode, setCountryCode] = useState('+65');
-  const [contactLocal, setContactLocal] = useState('');
   const [privacyChecked, setPrivacyChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 기존 프로필 값 prefill
-  useEffect(() => {
-    if (!profileId) return;
-    let cancelled = false;
-    fetch(`/api/profile?profileId=${encodeURIComponent(profileId)}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (cancelled) return;
-        const p = d?.profile;
-        if (!p) return;
-        if (p.realName) setRealName(p.realName);
-        if (p.contact) {
-          const { cc, rest } = splitContact(p.contact);
-          setCountryCode(cc);
-          setContactLocal(rest);
-        }
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [profileId]);
-
-  const formatContact = (raw: string) => {
-    const digits = raw.replace(/\D/g, '').slice(0, 8);
-    if (digits.length <= 4) return digits;
-    return `${digits.slice(0, 4)}-${digits.slice(4)}`;
-  };
-
   const submit = async () => {
     setError(null);
-    if (!realName.trim()) { setError('실명을 입력해주세요.'); return; }
-    if (!contactLocal.trim()) { setError('연락처를 입력해주세요.'); return; }
     if (needPrivacy && !privacyChecked) { setError('개인정보 수집 및 이용에 동의해주세요.'); return; }
-
-    const fullContact = `${countryCode} ${contactLocal.trim()}`;
 
     setSubmitting(true);
     try {
@@ -78,8 +36,6 @@ const CompleteSignupPage = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           profileId,
-          realName: realName.trim(),
-          contact: fullContact,
           ...(needPrivacy ? { privacyConsent: true } : {}),
         }),
       });
@@ -127,48 +83,11 @@ const CompleteSignupPage = () => {
               <span>✓ {providerLabel} 계정 연결이 확인되었습니다</span>
             </h1>
             <p style={{ margin: '0.4rem 0 0', color: headerTheme.subColor, fontSize: '0.85rem', fontWeight: 600, lineHeight: 1.55, wordBreak: 'keep-all' }}>
-              서비스 이용을 위해 아래 정보를 입력해 주세요.
+              서비스 이용을 위해 아래 동의가 필요합니다.
             </p>
           </div>
 
           <div style={{ padding: '1.25rem 1.5rem 1.5rem', display: 'grid', gap: '1rem' }}>
-
-          <label style={{ display: 'grid', gap: '0.35rem' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-ink)' }}>실명 <span style={{ color: '#DC2626' }}>*</span></span>
-            <input
-              type="text"
-              value={realName}
-              onChange={(e) => setRealName(e.target.value)}
-              placeholder="홍길동"
-              style={{ padding: '0.75rem 0.9rem', minHeight: 44, borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.95rem', width: '100%' }}
-            />
-          </label>
-
-          <label style={{ display: 'grid', gap: '0.35rem' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-ink)' }}>연락처 <span style={{ color: '#DC2626' }}>*</span></span>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <select
-                value={countryCode}
-                onChange={(e) => setCountryCode(e.target.value)}
-                style={{ padding: '0.75rem 0.5rem', minHeight: 44, borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.95rem', background: '#fff', color: 'var(--color-ink)', fontWeight: 700, flex: '0 0 auto' }}
-              >
-                <option value="+65">+65 (SG)</option>
-                <option value="+82">+82 (KR)</option>
-                <option value="+1">+1 (US)</option>
-                <option value="+86">+86 (CN)</option>
-                <option value="+60">+60 (MY)</option>
-                <option value="+81">+81 (JP)</option>
-              </select>
-              <input
-                type="tel"
-                value={contactLocal}
-                onChange={(e) => setContactLocal(formatContact(e.target.value))}
-                placeholder="0000-0000"
-                inputMode="numeric"
-                style={{ flex: 1, padding: '0.75rem 0.9rem', minHeight: 44, borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.95rem' }}
-              />
-            </div>
-          </label>
 
           {needPrivacy && (
             <section style={{ padding: '0.9rem 1rem', borderRadius: 10, background: '#F7FEE7', border: '1px solid #D9F09E', display: 'grid', gap: '0.65rem' }}>
