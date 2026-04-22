@@ -121,7 +121,14 @@ const ReservationSlotPicker = ({
   const [description, setDescription] = useState(editReservation?.description || '');
   const [cMember, setCMember] = useState(mode === 'edit');
   const [cCancel, setCCancel] = useState(mode === 'edit');
-  const allConfirmed = cMember && cCancel;
+  // 최초 예약(이름/연락처 비어있음) 시에만 받는 추가 수집 동의
+  const [cInfoCollect, setCInfoCollect] = useState(false);
+  // 모달 안에서 편집 가능한 예약자 이름·연락처. 확인 모달 열릴 때 prefill.
+  const [stagedName, setStagedName] = useState('');
+  const [stagedContact, setStagedContact] = useState('');
+  // "최초 수집" 여부는 모달 열릴 시점의 값으로 고정 (입력하면 바뀌어도 동의는 유지 필요)
+  const [initialMissing, setInitialMissing] = useState(false);
+  const allConfirmed = cMember && cCancel && (!initialMissing || cInfoCollect);
   const [shakeDesc, setShakeDesc] = useState(false);
   const [shakeConfirm, setShakeConfirm] = useState(false);
   const shake = (setter: (v: boolean) => void) => { setter(true); setTimeout(() => setter(false), 650); };
@@ -377,6 +384,13 @@ const ReservationSlotPicker = ({
         }
       } catch { /* 네트워크 실패 시 모달 열고 서버 재검증 */ }
     }
+    // 모달 열릴 때 예약자 정보 prefill + 최초 수집 여부 스냅샷
+    const initName = liveName || displayName || nickname || '';
+    const initContact = liveContact || contact || '';
+    setStagedName(String(initName));
+    setStagedContact(String(initContact));
+    setInitialMissing(!String(initName).trim() || !String(initContact).trim());
+    setCInfoCollect(false);
     setConfirmOpen(true);
   };
 
@@ -394,11 +408,36 @@ const ReservationSlotPicker = ({
     if (!description.trim()) { shake(setShakeDesc); ok = false; }
     if (!allConfirmed) { shake(setShakeConfirm); ok = false; }
     if (!ok) return;
-    const effName = liveName || displayName || nickname || '';
-    const effContact = liveContact || contact || '';
-    if (!effName.trim() || !effContact.trim()) {
-      setSubmitError('예약자 이름과 연락처를 먼저 등록해주세요. 대시보드에서 내 정보를 확인하세요.');
+    const effName = String(stagedName || '').trim();
+    const effContact = String(stagedContact || '').trim();
+    if (!effName || !effContact) {
+      setSubmitError('예약자 이름과 연락처를 입력해주세요.');
       return;
+    }
+
+    // 예약자 정보 수정·최초 입력 → /api/profile 에 upsert. 실패해도 예약 자체는 계속 진행.
+    const origName = String(liveName || displayName || nickname || '').trim();
+    const origContact = String(liveContact || contact || '').trim();
+    if (effName !== origName || effContact !== origContact) {
+      try {
+        await fetch('/api/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            profileId: effPid,
+            provider: effPid.startsWith('kakao-') ? 'kakao' : effPid.startsWith('google-') ? 'google' : 'unknown',
+            nickname: nickname || '',
+            email: email || '',
+            realName: effName,
+            contact: effContact,
+          }),
+        });
+        setLiveName(effName);
+        setLiveContact(effContact);
+        try { window.dispatchEvent(new CustomEvent('kcis-profile-updated', { detail: { realName: effName, contact: effContact } })); } catch {}
+      } catch (e) {
+        console.error('[reservation] profile upsert failed', e);
+      }
     }
     // 과거 시간 + 예약 가능 기간 초과 체크 (서버에서도 방어되지만 클라 경고를 먼저)
     {
@@ -896,13 +935,26 @@ const ReservationSlotPicker = ({
             </div>
 
             <div style={{ padding: '1rem', overflowY: 'auto', display: 'grid', gap: '0.85rem' }}>
-              <div style={{ padding: '0.75rem 0.9rem', borderRadius: 12, background: '#FFF7ED', border: '1px solid #FED7AA', display: 'grid', gap: '0.4rem' }}>
-                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#9A3412', letterSpacing: '0.02em' }}>👤 예약자 정보</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr', gap: '0.4rem', fontSize: '0.92rem' }}>
+              <div style={{ padding: '0.75rem 0.9rem', borderRadius: 12, background: '#FFF7ED', border: '1px solid #FED7AA', display: 'grid', gap: '0.55rem' }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#9A3412', letterSpacing: '0.02em' }}>👤 예약자 정보 (수정 가능)</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr', gap: '0.4rem 0.5rem', fontSize: '0.92rem', alignItems: 'center' }}>
                   <span style={{ color: '#9A3412', fontWeight: 800 }}>이름</span>
-                  <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>{liveName || displayName || nickname || '(미등록)'}</span>
+                  <input
+                    type="text"
+                    value={stagedName}
+                    onChange={(e) => setStagedName(e.target.value)}
+                    placeholder="실명"
+                    style={{ padding: '0.5rem 0.7rem', minHeight: 38, borderRadius: 8, border: '1px solid #FED7AA', background: '#fff', fontSize: '0.9rem', color: 'var(--color-ink)', fontWeight: 700 }}
+                  />
                   <span style={{ color: '#9A3412', fontWeight: 800 }}>연락처</span>
-                  <span style={{ color: 'var(--color-ink)', fontWeight: 700, fontFamily: 'monospace' }}>{liveContact || contact || '(미등록)'}</span>
+                  <input
+                    type="tel"
+                    value={stagedContact}
+                    onChange={(e) => setStagedContact(e.target.value)}
+                    placeholder="+65 1234-5678"
+                    inputMode="tel"
+                    style={{ padding: '0.5rem 0.7rem', minHeight: 38, borderRadius: 8, border: '1px solid #FED7AA', background: '#fff', fontSize: '0.9rem', color: 'var(--color-ink)', fontWeight: 700, fontFamily: 'monospace' }}
+                  />
                 </div>
               </div>
 
@@ -969,6 +1021,36 @@ const ReservationSlotPicker = ({
                       <span>{item.label}</span>
                     </label>
                   ))}
+                </div>
+              )}
+
+              {initialMissing && (
+                <div style={{
+                  padding: '0.85rem 0.95rem', borderRadius: 12,
+                  background: '#EFF6FF',
+                  border: shakeConfirm && !cInfoCollect ? '2px solid #DC2626' : '1px solid #BFDBFE',
+                  display: 'grid', gap: '0.55rem',
+                  animation: shakeConfirm && !cInfoCollect ? 'kcisShake 0.55s cubic-bezier(0.36,0.07,0.19,0.97) both' : undefined,
+                  transition: 'border-color 0.2s ease',
+                }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#1E3A8A', letterSpacing: '0.02em' }}>
+                    🔒 [필수] 장소 예약 및 이용을 위한 추가 정보 수집 동의
+                  </div>
+                  <div style={{ display: 'grid', gap: '0.3rem', fontSize: '0.82rem', color: '#1E40AF', lineHeight: 1.6 }}>
+                    <div><strong style={{ color: '#1E3A8A' }}>수집 항목:</strong> 성명, 연락처(휴대전화 번호)</div>
+                    <div><strong style={{ color: '#1E3A8A' }}>수집 목적:</strong> 장소 예약 확인, 이용 안내 및 긴급 공지, 허위 예약 방지</div>
+                    <div><strong style={{ color: '#1E3A8A' }}>보유 및 이용 기간:</strong> 회원 탈퇴 시까지 (단, 관련 법령에 의거 보존 필요 시 해당 기간까지)</div>
+                    <div><strong style={{ color: '#B91C1C' }}>주의 사항:</strong> 입력하신 정보가 허위일 경우, 예약이 사전 고지 없이 임의 취소될 수 있습니다.</div>
+                  </div>
+                  <label style={{
+                    display: 'flex', alignItems: 'flex-start', gap: '0.7rem',
+                    padding: '0.55rem 0.7rem', marginTop: '0.15rem',
+                    background: '#fff', borderRadius: 8, border: '1px solid #BFDBFE',
+                    fontSize: '0.9rem', color: '#1E3A8A', fontWeight: 700, lineHeight: 1.5, cursor: 'pointer',
+                  }}>
+                    <input type="checkbox" checked={cInfoCollect} onChange={(e) => setCInfoCollect(e.target.checked)} style={{ marginTop: '0.1rem', accentColor: '#1D4ED8', flexShrink: 0, width: 22, height: 22 }} />
+                    <span>위 내용을 확인하였으며 동의합니다.</span>
+                  </label>
                 </div>
               )}
 
