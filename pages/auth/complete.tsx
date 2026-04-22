@@ -19,6 +19,10 @@ const CompleteSignupPage = () => {
   const next = typeof router.query.next === 'string' ? router.query.next : 'approved';
   const provider = typeof router.query.provider === 'string' ? router.query.provider : '';
   const providerLabel = provider === 'kakao' ? '카카오' : provider === 'google' ? '구글' : '소셜';
+  // 헤더 색상을 provider 브랜드 톤에 맞춰 조정.
+  const headerTheme = provider === 'google'
+    ? { bg: '#F8FAFF', badgeBg: 'rgba(26, 115, 232, 0.12)', badgeColor: '#1A73E8', titleColor: '#202124', subColor: '#5F6368', border: '1px solid #DADCE0' }
+    : { bg: '#FEE500', badgeBg: 'rgba(24, 22, 0, 0.1)', badgeColor: '#181600', titleColor: '#181600', subColor: '#3D3A00', border: 'none' };
 
   const fields = useMemo(() => fieldsParam.split(',').filter(Boolean), [fieldsParam]);
   const needPrivacy = fields.includes('privacyConsent');
@@ -106,15 +110,23 @@ const CompleteSignupPage = () => {
       <Head><title>KCIS | 가입 마무리</title></Head>
       <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: '#FAFAFA', fontFamily: 'var(--font-sans)' }}>
         <div style={{ width: '100%', maxWidth: 480, background: '#fff', borderRadius: 20, boxShadow: '0 8px 32px rgba(0,0,0,0.08)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          {/* 카카오 스타일 헤더 — 단계 배지 + 연결 확인 */}
-          <div style={{ padding: '1.5rem 1.5rem 1.1rem', background: '#FEE500', textAlign: 'center', position: 'relative' }}>
-            <span style={{ display: 'inline-block', padding: '0.2rem 0.7rem', borderRadius: 999, background: 'rgba(24, 22, 0, 0.1)', color: '#181600', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.02em', marginBottom: '0.5rem' }}>
+          {/* provider 브랜드 톤 헤더 — 단계 배지 + 연결 확인 */}
+          <div style={{ padding: '1.5rem 1.5rem 1.1rem', background: headerTheme.bg, borderBottom: headerTheme.border, textAlign: 'center', position: 'relative' }}>
+            <span style={{ display: 'inline-block', padding: '0.2rem 0.7rem', borderRadius: 999, background: headerTheme.badgeBg, color: headerTheme.badgeColor, fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.02em', marginBottom: '0.5rem' }}>
               KCIS 가입 마무리 단계
             </span>
-            <h1 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#181600', lineHeight: 1.45, wordBreak: 'keep-all' }}>
-              ✓ {providerLabel} 계정 연결이 확인되었습니다
+            <h1 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: headerTheme.titleColor, lineHeight: 1.45, wordBreak: 'keep-all', display: 'inline-flex', alignItems: 'center', gap: '0.45rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              {provider === 'google' && (
+                <svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true">
+                  <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.6-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 3l5.7-5.7C33.9 6.1 29.2 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.3-.4-3.5z"/>
+                  <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.1 18.9 12 24 12c3 0 5.7 1.1 7.8 3l5.7-5.7C33.9 6.1 29.2 4 24 4 16.3 4 9.6 8.3 6.3 14.7z"/>
+                  <path fill="#4CAF50" d="M24 44c5.2 0 9.8-2 13.3-5.2l-6.2-5.2c-2 1.4-4.5 2.3-7.2 2.3-5.3 0-9.7-3.4-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+                  <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.5l6.2 5.2C41.3 35 44 29.9 44 24c0-1.2-.1-2.3-.4-3.5z"/>
+                </svg>
+              )}
+              <span>✓ {providerLabel} 계정 연결이 확인되었습니다</span>
             </h1>
-            <p style={{ margin: '0.4rem 0 0', color: '#3D3A00', fontSize: '0.85rem', fontWeight: 600, lineHeight: 1.55, wordBreak: 'keep-all' }}>
+            <p style={{ margin: '0.4rem 0 0', color: headerTheme.subColor, fontSize: '0.85rem', fontWeight: 600, lineHeight: 1.55, wordBreak: 'keep-all' }}>
               서비스 이용을 위해 아래 정보를 입력해 주세요.
             </p>
           </div>
