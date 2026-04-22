@@ -103,7 +103,7 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
   useEffect(() => {
     let cancelled = false;
     setBulletinLookupLoading(true); setBulletinLookupError(null); setBulletin(null);
-    setBulletinFiles([]); setBulletinFilesError(null);
+    setBulletinFiles([]); setBulletinFilesError(null); setMisbaUrl(null);
     fetch(`/api/sunday-bulletin?date=${selectedKey}`)
       .then((r) => r.json())
       .then((d) => { if (!cancelled) setBulletin(d); })
