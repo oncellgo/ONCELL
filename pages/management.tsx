@@ -1202,9 +1202,9 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                           <button
                             type="button"
                             onClick={() => {
+                              setRecurType('none');  // 새 일정 등록 시 '반복 안함' 기본
                               if (isAdmin) {
                                 setEventScope('worship');
-                                setRecurType('none');
                                 if (!worshipTemplateId) {
                                   const def = worshipServices.find((s) => (s as any).isDefault || s.name === '주일예배') || worshipServices.find((s) => !!s.bulletin);
                                   if (def) setWorshipTemplateId(def.id);
@@ -1362,10 +1362,10 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                               <span
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  setRecurType('none');  // 새 일정 등록 시 '반복 안함' 기본
                                   const isAdminUser = Boolean(community?.adminProfileId === profileId);
                                   if (isAdminUser) {
                                     setEventScope('worship');
-                                    setRecurType('none');
                                     if (!worshipTemplateId) {
                                       const def = worshipServices.find((s) => (s as any).isDefault || s.name === '주일예배') || worshipServices.find((s) => !!s.bulletin);
                                       if (def) setWorshipTemplateId(def.id);
@@ -1636,6 +1636,12 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                             <DateTimePicker value={calForm.endAt} onChange={(v) => setCalForm({ ...calForm, endAt: v })} placeholder="종료" style={isMobile ? { flex: 1, minWidth: 0 } : undefined} />
                           </div>
                         </div>
+                        {(() => {
+                          // 시작일과 종료일이 다른(멀티데이) 일정은 장소 선택도 숨김
+                          const sDate = (calForm.startAt || '').slice(0, 10);
+                          const eDate = (calForm.endAt || '').slice(0, 10);
+                          if (sDate && eDate && sDate !== eDate) return null;
+                          return (
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                           {locationMode === 'custom' ? (
                             <input
@@ -1668,8 +1674,17 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                             <button type="button" onClick={() => { setLocationMode('select'); setCalForm({ ...calForm, location: '' }); }} style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>목록에서 선택</button>
                           )}
                         </div>
+                          );
+                        })()}
                       </>
                     )}
+                    {(() => {
+                      // 시작일과 종료일이 다른(멀티데이) 일정은 반복 옵션을 숨긴다 (종일/멀티데이 일정은 반복 불가 정책)
+                      const sDate = (calForm.startAt || '').slice(0, 10);
+                      const eDate = (calForm.endAt || '').slice(0, 10);
+                      const isMultiDay = sDate && eDate && sDate !== eDate;
+                      if (isMultiDay) return null;
+                      return (
                     <div style={{ display: 'grid', gap: '0.4rem', padding: '0.6rem 0.75rem', borderRadius: 10, background: '#F8FAFC', border: '1px solid var(--color-surface-border)' }}>
                       <div style={{ display: 'grid', gap: '0.15rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.5rem' : '1rem', flexWrap: 'wrap' }}>
@@ -1862,6 +1877,8 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                         </>
                       )}
                     </div>
+                      );
+                    })()}
                     {calMsg && <p style={{ margin: 0, fontSize: '0.82rem', color: calMsg.includes('등록') ? 'var(--color-primary-deep)' : 'var(--color-danger)' }}>{calMsg}</p>}
                     <div style={{ display: 'flex', flexDirection: isMobile ? 'column-reverse' : 'row', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.25rem' }}>
                       <button type="button" onClick={() => { setEventModalOpen(false); setEditingEventId(null); }} style={{ minHeight: 48, padding: '0 1.1rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink)', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '0.95rem' : '0.88rem' }}>취소</button>

@@ -43,6 +43,38 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
   const router = useRouter();
   useRequireLogin(profileId);
 
+  // SSR 에서 profileId 가 URL 쿼리로 오지 않은 경우 displayName/contact 가 null → 'X (미등록)' 혼동 유발.
+  // localStorage 에 profileId 만 있는 경우라도 클라이언트에서 /api/profile 로 이름/연락처를 재조회.
+  const [liveName, setLiveName] = useState<string | null>(displayName);
+  const [liveContact, setLiveContact] = useState<string | null>(contact);
+  useEffect(() => {
+    const needName = !liveName || !String(liveName).trim();
+    const needContact = !liveContact || !String(liveContact).trim();
+    if (!needName && !needContact) return;
+    let pid = profileId;
+    if (!pid) {
+      try { pid = window.localStorage.getItem('kcisProfileId'); } catch {}
+    }
+    if (!pid) return;
+    fetch(`/api/profile?profileId=${encodeURIComponent(pid)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        const p = d?.profile;
+        if (!p) return;
+        if (needName && (p.realName || p.nickname)) setLiveName(p.realName || p.nickname);
+        if (needContact && p.contact) setLiveContact(p.contact);
+      })
+      .catch(() => {});
+    // 다른 페이지에서 프로필이 수정되면 동기화
+    const onUpdated = (e: Event) => {
+      const detail = (e as CustomEvent<{ realName?: string; contact?: string }>).detail;
+      if (detail?.realName) setLiveName(detail.realName);
+      if (detail?.contact) setLiveContact(detail.contact);
+    };
+    window.addEventListener('kcis-profile-updated', onUpdated);
+    return () => window.removeEventListener('kcis-profile-updated', onUpdated);
+  }, [profileId, liveName, liveContact]);
+
   // 예약 확인 모달 + 제출 상태
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [description, setDescription] = useState('');
@@ -267,7 +299,9 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
     if (!allConfirmed) { shake(setShakeConfirm); ok = false; }
     if (!ok) return;
     // 이름/연락처 누락 방지
-    if (!displayName?.trim() || !contact?.trim()) {
+    const effName = liveName || displayName || nickname || '';
+    const effContact = liveContact || contact || '';
+    if (!effName.trim() || !effContact.trim()) {
       setSubmitError('예약자 이름과 연락처를 먼저 등록해주세요. 대시보드에서 내 정보를 확인하세요.');
       return;
     }
@@ -291,7 +325,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
           location: `${v.floor} ${v.name}(${v.code})`,
           scope: 'personal',
           type: 'reservation',
-          createdByName: displayName || nickname || undefined,
+          createdByName: effName || undefined,
         }),
       });
       if (!res.ok) {
@@ -665,9 +699,9 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                 <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#9A3412', letterSpacing: '0.02em' }}>👤 예약자 정보</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr', gap: '0.4rem', fontSize: '0.92rem' }}>
                   <span style={{ color: '#9A3412', fontWeight: 800 }}>이름</span>
-                  <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>{displayName || '(미등록)'}</span>
+                  <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>{liveName || displayName || nickname || '(미등록)'}</span>
                   <span style={{ color: '#9A3412', fontWeight: 800 }}>연락처</span>
-                  <span style={{ color: 'var(--color-ink)', fontWeight: 700, fontFamily: 'monospace' }}>{contact || '(미등록)'}</span>
+                  <span style={{ color: 'var(--color-ink)', fontWeight: 700, fontFamily: 'monospace' }}>{liveContact || contact || '(미등록)'}</span>
                 </div>
               </div>
 
@@ -694,7 +728,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                   type="text"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="예: 청년부 주중모임, 3구역 구역예배"
+                  placeholder="예) 청년부 임원모임"
                   maxLength={80}
                   style={{
                     width: '100%',
