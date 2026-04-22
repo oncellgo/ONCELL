@@ -406,20 +406,39 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
               </select>
             </div>
           </div>
-          {loading ? <p style={subtle}>불러오는 중...</p> : (
-            <div style={{ display: 'grid', gap: '0.35rem' }}>
-              {filteredUsers.map((u) => (
-                <div key={u.profileId} style={{ padding: '0.55rem 0.75rem', border: '1px solid #E7F3EE', borderRadius: 10, background: '#F9FCFB' }}>
-                  <p style={{ margin: 0, fontWeight: 700, color: '#182527', fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                    {u.realName || u.nickname || '(이름없음)'}
-                    {u.isCommunityAdmin && (
-                      <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#182527', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>{t('admin.communityAdmin')}</span>
-                    )}
-                    <span style={{ color: '#2D4048', fontWeight: 500 }}>{u.email || u.profileId}</span>
-                  </p>
-                </div>
-              ))}
-              {filteredUsers.length === 0 && <p style={subtle}>사용자가 없습니다.</p>}
+          {loading ? <p style={subtle}>불러오는 중...</p> : filteredUsers.length === 0 ? (
+            <p style={subtle}>사용자가 없습니다.</p>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: isMobile ? '0.78rem' : '0.86rem', minWidth: isMobile ? 420 : 'auto' }}>
+                <thead>
+                  <tr style={{ background: '#F1F5F9', color: 'var(--color-ink-2)', textAlign: 'left' }}>
+                    <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap', width: 40 }}>#</th>
+                    <th style={{ padding: '0.5rem 0.6rem' }}>실명</th>
+                    <th style={{ padding: '0.5rem 0.6rem' }}>아이디</th>
+                    <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>최근접속일</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.map((u, i) => (
+                    <tr key={u.profileId} style={{ borderTop: '1px solid var(--color-surface-border)' }}>
+                      <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)' }}>{i + 1}</td>
+                      <td style={{ padding: '0.55rem 0.6rem', fontWeight: 700, color: '#182527', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                        {u.realName || u.nickname || '(이름없음)'}
+                        {u.isCommunityAdmin && (
+                          <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#182527', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>{t('admin.communityAdmin')}</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '0.55rem 0.6rem', color: '#2D4048' }} title={u.email || '(이메일 없음)'}>
+                        {u.nickname || u.email?.split('@')[0] || u.profileId}
+                      </td>
+                      <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)', whiteSpace: 'nowrap' }}>
+                        {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString('ko-KR') : '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </section>
@@ -448,33 +467,47 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
             </select>
             <button disabled={busy || !newAdmin.trim()} onClick={addAdmin} style={{ ...btn, background: '#20CD8D', color: '#fff', minHeight: 44 }}>{t('admin.add')}</button>
           </div>
-          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: '0.4rem' }}>
-            {admins.map((id) => {
-              const u = users.find((x) => x.profileId === id);
-              const name = u?.realName || u?.nickname || '(이름 미입력)';
-              const contactLabel = u?.contact || '-';
-              const lastLoginLabel = u?.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString('ko-KR') : '-';
-              return (
-                <li key={`pid-${id}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', padding: '0.65rem 0.85rem', border: '1px solid #E7F3EE', borderRadius: 10, background: '#F9FCFB' }}>
-                  <div style={{ display: 'grid', gap: '0.25rem', minWidth: 0, flex: 1, fontSize: '0.85rem' }}>
-                    <p style={{ margin: 0, fontWeight: 700, color: '#182527', fontSize: '0.92rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                      <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#20CD8D', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>ID</span>
-                      <span>{name}</span>
-                      <span style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: '#6B7280', fontWeight: 500 }}>{id}</span>
-                      {id === profileId && <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#F59E0B', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>나</span>}
-                    </p>
-                    <p style={{ margin: 0, color: '#2D4048', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'auto 1fr', gap: isMobile ? '0.1rem' : '0.4rem', rowGap: '0.15rem' }}>
-                      <span style={{ color: '#65A30D', fontWeight: 700 }}>이메일</span><span style={{ wordBreak: 'break-all' }}>{u?.email || '-'}</span>
-                      <span style={{ color: '#65A30D', fontWeight: 700 }}>연락처</span><span>{contactLabel}</span>
-                      <span style={{ color: '#65A30D', fontWeight: 700 }}>최근접속</span><span>{lastLoginLabel}</span>
-                    </p>
-                  </div>
-                  <button disabled={busy || id === profileId} onClick={() => removeAdmin(id, 'profileId')} style={{ ...btn, minHeight: 40, background: id === profileId ? '#e5e7eb' : '#b91c1c', color: id === profileId ? '#6b7280' : '#fff', cursor: id === profileId ? 'not-allowed' : 'pointer', flexShrink: 0 }}>{t('admin.remove')}</button>
-                </li>
-              );
-            })}
-            {admins.length === 0 && <li><p style={subtle}>관리자가 없습니다.</p></li>}
-          </ul>
+          {admins.length === 0 ? (
+            <p style={subtle}>관리자가 없습니다.</p>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: isMobile ? '0.78rem' : '0.86rem', minWidth: isMobile ? 480 : 'auto' }}>
+                <thead>
+                  <tr style={{ background: '#F1F5F9', color: 'var(--color-ink-2)', textAlign: 'left' }}>
+                    <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap', width: 40 }}>#</th>
+                    <th style={{ padding: '0.5rem 0.6rem' }}>실명</th>
+                    <th style={{ padding: '0.5rem 0.6rem' }}>아이디</th>
+                    <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>연락처</th>
+                    <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>최근접속일</th>
+                    <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap', width: 60 }} aria-label="제거"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {admins.map((id, i) => {
+                    const u = users.find((x) => x.profileId === id);
+                    const name = u?.realName || u?.nickname || '(이름 미입력)';
+                    const idDisplay = u?.nickname || u?.email?.split('@')[0] || id;
+                    const isMe = id === profileId;
+                    return (
+                      <tr key={`pid-${id}`} style={{ borderTop: '1px solid var(--color-surface-border)' }}>
+                        <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)' }}>{i + 1}</td>
+                        <td style={{ padding: '0.55rem 0.6rem', fontWeight: 700, color: '#182527', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                          {name}
+                          {isMe && <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#F59E0B', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>나</span>}
+                        </td>
+                        <td style={{ padding: '0.55rem 0.6rem', color: '#2D4048' }} title={u?.email || '(이메일 없음)'}>{idDisplay}</td>
+                        <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono, monospace)' }}>{u?.contact || '-'}</td>
+                        <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)', whiteSpace: 'nowrap' }}>{u?.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString('ko-KR') : '-'}</td>
+                        <td style={{ padding: '0.55rem 0.6rem', textAlign: 'right' }}>
+                          <button disabled={busy || isMe} onClick={() => removeAdmin(id, 'profileId')} style={{ ...btn, minHeight: 36, padding: '0.4rem 0.7rem', fontSize: '0.78rem', background: isMe ? '#e5e7eb' : '#b91c1c', color: isMe ? '#6b7280' : '#fff', cursor: isMe ? 'not-allowed' : 'pointer' }}>{t('admin.remove')}</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
         )}
 

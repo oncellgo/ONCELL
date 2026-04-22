@@ -69,16 +69,14 @@ const MembersCard = ({ profileId, k }: Props) => {
         <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.9rem' }}>승인된 교인이 없습니다.</p>
       ) : (
         <div className="responsive-x-scroll" style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: isMobile ? '0.78rem' : '0.86rem', minWidth: isMobile ? 560 : 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: isMobile ? '0.78rem' : '0.86rem', minWidth: isMobile ? 480 : 'auto' }}>
             <thead>
               <tr style={{ background: '#F1F5F9', color: 'var(--color-ink-2)', textAlign: 'left' }}>
                 <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap', width: 40 }}>#</th>
                 <th style={{ padding: '0.5rem 0.6rem' }}>실명</th>
                 <th style={{ padding: '0.5rem 0.6rem' }}>아이디</th>
-                <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>이메일</th>
                 <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>연락처</th>
                 <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>가입일</th>
-                <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>최근접속</th>
               </tr>
             </thead>
             <tbody>
@@ -86,11 +84,11 @@ const MembersCard = ({ profileId, k }: Props) => {
                 <tr key={m.profileId} style={{ borderTop: '1px solid var(--color-surface-border)' }}>
                   <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)' }}>{i + 1}</td>
                   <td style={{ padding: '0.55rem 0.6rem', fontWeight: 700, color: 'var(--color-ink)' }}>{m.realName || '-'}</td>
-                  <td style={{ padding: '0.55rem 0.6rem' }}>{providerIdPill(m.provider, m.nickname || m.email?.split('@')[0] || m.profileId)}</td>
-                  <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)', whiteSpace: 'nowrap' }}>{m.email || '-'}</td>
+                  <td style={{ padding: '0.55rem 0.6rem' }} title={m.email || '(이메일 없음)'}>
+                    {providerIdPill(m.provider, m.nickname || m.email?.split('@')[0] || m.profileId)}
+                  </td>
                   <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono, monospace)' }}>{m.contact || '-'}</td>
                   <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)', whiteSpace: 'nowrap' }}>{formatDate(m.firstLoginAt)}</td>
-                  <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)', whiteSpace: 'nowrap' }}>{formatDate(m.lastLoginAt)}</td>
                 </tr>
               ))}
             </tbody>
