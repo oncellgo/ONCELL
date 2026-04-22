@@ -427,16 +427,24 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
         {!sectionFilter && (
         <section style={{ ...cardStyle, padding: isMobile ? '0.85rem' : cardStyle.padding }}>
           <h2 style={titleStyle}>{t('admin.sectionSysAdmins')} ({admins.length + adminEmails.length})</h2>
-          <p style={subtle}>profileId 또는 email로 등록 가능합니다. email을 포함한 입력은 email로 저장됩니다.</p>
+          <p style={subtle}>가입자 목록에서 시스템 관리자로 추가할 사람을 선택하세요.</p>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr auto', gap: '0.5rem' }}>
-            <input
-              type="text"
+            <select
               value={newAdmin}
               onChange={(e) => setNewAdmin(e.target.value)}
-              placeholder="profileId(예: google-12345) 또는 email"
-              aria-label="시스템 관리자 profileId 또는 email"
-              style={{ padding: '0.65rem 0.8rem', borderRadius: 10, border: '1px solid #cbd5d0', fontSize: '0.9rem', minHeight: 44 }}
-            />
+              aria-label="시스템 관리자 가입자 선택"
+              style={{ padding: '0.65rem 0.8rem', borderRadius: 10, border: '1px solid #cbd5d0', fontSize: '0.9rem', minHeight: 44, background: '#fff' }}
+            >
+              <option value="">— 가입자를 선택하세요 —</option>
+              {users
+                .filter((u) => !admins.includes(u.profileId))
+                .slice()
+                .sort((a, b) => (a.realName || a.nickname || a.profileId).localeCompare(b.realName || b.nickname || b.profileId, 'ko'))
+                .map((u) => {
+                  const label = `${u.realName || u.nickname || '(이름 미입력)'}${u.email ? ` · ${u.email}` : ''}${u.provider ? ` · ${u.provider}` : ''}`;
+                  return <option key={u.profileId} value={u.profileId}>{label}</option>;
+                })}
+            </select>
             <button disabled={busy || !newAdmin.trim()} onClick={addAdmin} style={{ ...btn, background: '#20CD8D', color: '#fff', minHeight: 44 }}>{t('admin.add')}</button>
           </div>
           <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: '0.35rem' }}>
