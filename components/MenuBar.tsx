@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '../lib/useIsMobile';
 
 /**
@@ -19,18 +20,17 @@ type Props = {
   email?: string | null;
 };
 
-const ITEMS: Array<{ label: string; href: string }> = [
-  // 일정은 현재 숨김 (필요 시 아래 주석 해제)
-  // { label: '일정', href: '/schedule' },
-  { label: '장소예약', href: '/reservations/grid' },
-  // 예약현황보기(/reservation)은 메뉴에서 숨김 — 직접 URL 접속은 가능
-  { label: '큐티', href: '/qt' },
-  { label: '성경통독', href: '/reading' },
-  { label: '주보', href: '/sunday-worship' },
-  { label: '구역모임교안', href: '/cell-teaching' },
+// 메뉴 라벨은 t('menu.xxx') 로 i18n. ko/en/zh 전환에 자동 반응.
+const ITEMS: Array<{ labelKey: string; href: string }> = [
+  { labelKey: 'menu.reservation', href: '/reservations/grid' },
+  { labelKey: 'menu.qt', href: '/qt' },
+  { labelKey: 'menu.reading', href: '/reading' },
+  { labelKey: 'menu.bulletin', href: '/sunday-worship' },
+  { labelKey: 'menu.cellTeaching', href: '/cell-teaching' },
 ];
 
 const MenuBar = ({ profileId, nickname, email }: Props) => {
+  const { t } = useTranslation();
   const router = useRouter();
   const currentPath = router?.pathname || '';
   const isMobile = useIsMobile();
@@ -152,7 +152,7 @@ const MenuBar = ({ profileId, nickname, email }: Props) => {
               letterSpacing: '-0.01em',
             }}
           >
-            {item.label}
+            {t(item.labelKey)}
           </Link>
         );
       })}

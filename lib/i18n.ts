@@ -6,6 +6,7 @@ const resources = {
     common: {
       brand: { logoAlt: '홈으로' },
       nav: { login: '로그인', logout: '로그아웃', admin: '관리자', sysSettings: '시스템 설정' },
+      menu: { reservation: '장소예약', qt: '큐티', reading: '성경통독', bulletin: '주보', cellTeaching: '구역모임교안' },
       bottom: { main: '내 대시보드', communityMain: '공동체 메인', qt: 'QT노트', myCommunity: '내 대시보드', schedule: '일정', worship: '예배', bible: '성경통독', settings: '공동체관리' },
       dashboard: {
         title: 'KCIS | 나의 공동체',
@@ -119,6 +120,7 @@ const resources = {
     common: {
       brand: { logoAlt: 'Home' },
       nav: { login: 'Log in', logout: 'Log out', admin: 'Admin', sysSettings: 'System settings' },
+      menu: { reservation: 'Reservation', qt: 'QT', reading: 'Bible Reading', bulletin: 'Bulletin', cellTeaching: 'Cell Guide' },
       bottom: { main: 'My dashboard', communityMain: 'Community home', qt: 'QT notes', myCommunity: 'My dashboard', schedule: 'Schedule', worship: 'Worship', bible: 'Bible', settings: 'Community admin' },
       dashboard: {
         title: 'KCIS | My community',
@@ -232,6 +234,7 @@ const resources = {
     common: {
       brand: { logoAlt: '首页' },
       nav: { login: '登录', logout: '登出', admin: '管理员', sysSettings: '系统设置' },
+      menu: { reservation: '场地预约', qt: '灵修', reading: '读经', bulletin: '周报', cellTeaching: '小组教材' },
       bottom: { main: '我的仪表盘', communityMain: '社群首页', qt: 'QT笔记', myCommunity: '我的仪表盘', schedule: '日程', worship: '礼拜', bible: '圣经通读', settings: '社群管理' },
       dashboard: {
         title: 'KCIS | 我的社群',
