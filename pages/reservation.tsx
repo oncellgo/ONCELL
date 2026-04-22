@@ -456,7 +456,28 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
       <main style={{ maxWidth: 1040, margin: '0 auto', padding: isMobile ? '1rem 0.6rem 4rem' : '1.5rem 1rem 5rem', display: 'grid', gap: '1rem' }}>
         <section style={{ padding: isMobile ? '0.85rem' : '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>📖 예약현황보기</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'wrap' }}>
+              <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>📖 예약현황보기</h2>
+              {(() => {
+                const [y, mo, d] = selectedDate.split('-').map(Number);
+                if (!y || !mo || !d) return null;
+                const dowI = new Date(y, mo - 1, d).getDay();
+                const labels = ['일', '월', '화', '수', '목', '금', '토'];
+                const todayK = dateKey(new Date());
+                const isToday = selectedDate === todayK;
+                const dowBg = dowI === 0 ? '#FEE2E2' : dowI === 6 ? '#DBEAFE' : '#F3F4F6';
+                const dowFg = dowI === 0 ? '#DC2626' : dowI === 6 ? '#2563EB' : '#374151';
+                return (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span style={{ fontSize: isMobile ? '0.92rem' : '0.98rem', fontWeight: 800, color: 'var(--color-ink)', fontVariantNumeric: 'tabular-nums' }}>{selectedDate}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 999, background: dowBg, color: dowFg, fontSize: '0.76rem', fontWeight: 800 }}>{labels[dowI]}</span>
+                    {isToday && (
+                      <span style={{ padding: '0.15rem 0.55rem', borderRadius: 999, background: '#ECFDF5', border: '1px solid #20CD8D', color: 'var(--color-primary-deep)', fontSize: '0.72rem', fontWeight: 800 }}>오늘</span>
+                    )}
+                  </span>
+                );
+              })()}
+            </div>
             <button
               type="button"
               onClick={() => {
@@ -467,11 +488,12 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
               style={{ padding: '0.5rem 0.95rem', minHeight: 40, borderRadius: 999, border: '1px solid #65A30D', background: '#fff', color: '#3F6212', fontSize: '0.86rem', fontWeight: 800, cursor: 'pointer' }}
             >날짜·장소 변경</button>
           </div>
-          <div style={{ display: 'flex', gap: '1rem', fontSize: '0.78rem', color: 'var(--color-ink-2)', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '0.85rem', fontSize: '0.78rem', color: 'var(--color-ink-2)', flexWrap: 'wrap', alignItems: 'center' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#F7FEE7', border: '1px solid #D9F09E' }} /> 예약 가능</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#DC2626' }} /> 교회일정</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#9CA3AF' }} /> 예약됨</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#4B5563' }} /> 관리자 블럭</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#0F7A52', outline: '2px solid #FBBF24', outlineOffset: -1 }} /> ⭐ 내 예약</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#9CA3AF' }} /> 타인 예약</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#7C3AED' }} /> 관리자 블럭</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#E5E7EB' }} /> 예약 불가 시간</span>
           </div>
           <VenueGrid
@@ -723,6 +745,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
       reason: occ.title,
       kind,
     };
+    if (kind === 'reservation' && isOwner) block.mine = true;
     if (reserverName) block.reserverName = reserverName;
     if (reserverContact) block.reserverContact = reserverContact;
     eventBlocks.push(block);

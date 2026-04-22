@@ -457,10 +457,13 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                   <span style={{ width: 14, height: 14, borderRadius: 3, background: '#DC2626' }} /> 교회일정
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <span style={{ width: 14, height: 14, borderRadius: 3, background: '#9CA3AF' }} /> 예약됨
+                  <span style={{ width: 14, height: 14, borderRadius: 3, background: '#0F7A52', outline: '2px solid #FBBF24', outlineOffset: -1 }} /> ⭐ 내 예약
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <span style={{ width: 14, height: 14, borderRadius: 3, background: '#4B5563' }} /> 관리자 블럭
+                  <span style={{ width: 14, height: 14, borderRadius: 3, background: '#9CA3AF' }} /> 타인 예약
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <span style={{ width: 14, height: 14, borderRadius: 3, background: '#7C3AED' }} /> 관리자 블럭
                 </span>
               </div>
 
@@ -805,6 +808,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
       reason: occ.title,
       kind,
     };
+    if (kind === 'reservation' && isOwner) block.mine = true;
     if (reserverName) block.reserverName = reserverName;
     if (reserverContact) block.reserverContact = reserverContact;
     eventBlocks.push(block);

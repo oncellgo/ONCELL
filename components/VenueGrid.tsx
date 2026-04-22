@@ -12,6 +12,9 @@ export type Venue = {
 };
 
 export type Block = {
+  /** 현재 로그인한 사용자 본인의 예약 여부 — reservation kind 전용. VenueGrid 에서 강조 표시. */
+  mine?: boolean;
+  // (아래 속성들 — 기존)
   id: string;
   venueId: string;
   startAt: string;
@@ -170,26 +173,27 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
 
   const TIME_HOUR_W = isMobile ? 28 : 34;
   const TIME_MIN_W = isMobile ? 26 : 32;
-  const VENUE_MIN_W = isMobile ? 44 : 52;
-  // 모바일에서 장소가 많아 가로폭 부족 → 가로 스크롤이 자연스럽게 작동하도록 minWidth 적용
-  const tableMinWidth = isMobile ? TIME_HOUR_W + TIME_MIN_W + venues.length * VENUE_MIN_W : undefined;
+  // 장소 헤더(층+이름+코드)가 겹치지 않는 최소 폭 — 너무 작으면 텍스트가 이웃 칸과 겹쳐 보임
+  const VENUE_MIN_W = isMobile ? 72 : 96;
+  // 장소 수가 많으면 화면을 넘어서도 테이블을 넓혀 outer div 의 overflowX 로 좌우 스크롤되게 한다
+  const tableMinWidth = TIME_HOUR_W + TIME_MIN_W + venues.length * VENUE_MIN_W;
   return (
-    <div className="responsive-x-scroll" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', border: '1px solid var(--color-surface-border)', borderRadius: 10, background: '#fff' }}>
+    <div className="responsive-x-scroll" style={{ overflowX: 'auto', overflowY: 'visible', WebkitOverflowScrolling: 'touch', border: '1px solid var(--color-surface-border)', borderRadius: 10, background: '#fff', maxHeight: '75vh' }}>
       <table style={{ width: '100%', minWidth: tableMinWidth, borderCollapse: 'collapse', fontSize: isMobile ? '0.68rem' : '0.72rem', tableLayout: 'fixed' }}>
         <colgroup>
           <col style={{ width: TIME_HOUR_W }} />
           <col style={{ width: TIME_MIN_W }} />
           {venues.map((v) => <col key={v.id} style={{ minWidth: VENUE_MIN_W }} />)}
         </colgroup>
-        <thead>
+        <thead style={{ position: 'sticky', top: 0, zIndex: 3, background: '#ECFCCB' }}>
           <tr style={{ background: '#ECFCCB' }}>
-            <th colSpan={2} style={{ padding: '0.25rem 0.4rem', position: 'sticky', left: 0, background: '#ECFCCB', textAlign: 'center', borderRight: '1px solid #D9F09E', zIndex: 2, fontSize: '0.72rem', fontWeight: 800 }}>시간</th>
+            <th colSpan={2} style={{ padding: '0.25rem 0.4rem', position: 'sticky', left: 0, background: '#ECFCCB', textAlign: 'center', borderRight: '1px solid #D9F09E', zIndex: 4, fontSize: '0.72rem', fontWeight: 800 }}>시간</th>
             {venues.map((v) => (
-              <th key={v.id} style={{ padding: '0.25rem 0.15rem', borderRight: '1px solid #F1F5F9', color: '#4D7C0F', fontWeight: 700, minWidth: VENUE_MIN_W, verticalAlign: 'middle', lineHeight: 1.1 }}>
-                <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: '0.3rem', whiteSpace: 'nowrap' }}>
-                  <span style={{ fontSize: '0.62rem', color: '#334155', fontWeight: 700 }}>{v.floor}</span>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-ink)' }}>{v.name}</span>
-                  <span style={{ fontSize: '0.6rem', color: 'var(--color-ink-2)', fontFamily: 'monospace' }}>{v.code}</span>
+              <th key={v.id} style={{ padding: '0.35rem 0.25rem', borderRight: '1px solid #F1F5F9', color: '#4D7C0F', fontWeight: 700, minWidth: VENUE_MIN_W, verticalAlign: 'middle', lineHeight: 1.15, background: '#ECFCCB' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.1rem', padding: '0 0.1rem', overflow: 'hidden' }}>
+                  <span style={{ fontSize: '0.6rem', color: '#334155', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{v.floor}</span>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{v.name}</span>
+                  <span style={{ fontSize: '0.56rem', color: 'var(--color-ink-2)', fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{v.code}</span>
                 </div>
               </th>
             ))}
@@ -198,7 +202,7 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
         <tbody>
           {(() => {
             // 각 venue별 슬롯 정보 사전계산: 연속된 같은 (reason, kind, 예약자)의 블럭을 rowSpan으로 묶음
-            type SlotInfo = { blocked: boolean; reason: string; kind: 'event' | 'reservation' | 'block'; reserverName?: string; reserverContact?: string; isStart: boolean; span: number };
+            type SlotInfo = { blocked: boolean; reason: string; kind: 'event' | 'reservation' | 'block'; reserverName?: string; reserverContact?: string; mine?: boolean; isStart: boolean; span: number };
             const venueSlotInfos = new Map<string, SlotInfo[]>();
             for (const v of venues) {
               const infos: SlotInfo[] = slotMins.map((mm) => {
@@ -211,6 +215,7 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                 let kind: 'event' | 'reservation' | 'block' = 'block';
                 let reserverName: string | undefined;
                 let reserverContact: string | undefined;
+                let mine: boolean | undefined;
                 for (const b of blocks) {
                   if (b.venueId !== v.id) continue;
                   const bs = new Date(b.startAt).getTime();
@@ -221,19 +226,20 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                     if (b.kind) kind = b.kind;
                     reserverName = b.reserverName;
                     reserverContact = b.reserverContact;
+                    mine = b.mine;
                     break;
                   }
                 }
-                return { blocked, reason, kind, reserverName, reserverContact, isStart: false, span: 1 };
+                return { blocked, reason, kind, reserverName, reserverContact, mine, isStart: false, span: 1 };
               });
               for (let i = 0; i < infos.length; i++) {
                 if (!infos[i].blocked) continue;
                 const prev = infos[i - 1];
-                const samePrev = i > 0 && prev.blocked && prev.reason === infos[i].reason && prev.kind === infos[i].kind && prev.reserverName === infos[i].reserverName;
+                const samePrev = i > 0 && prev.blocked && prev.reason === infos[i].reason && prev.kind === infos[i].kind && prev.reserverName === infos[i].reserverName && prev.mine === infos[i].mine;
                 if (!samePrev) {
                   infos[i].isStart = true;
                   let span = 1;
-                  while (i + span < infos.length && infos[i + span].blocked && infos[i + span].reason === infos[i].reason && infos[i + span].kind === infos[i].kind && infos[i + span].reserverName === infos[i].reserverName) span++;
+                  while (i + span < infos.length && infos[i + span].blocked && infos[i + span].reason === infos[i].reason && infos[i + span].kind === infos[i].kind && infos[i + span].reserverName === infos[i].reserverName && infos[i + span].mine === infos[i].mine) span++;
                   infos[i].span = span;
                 }
               }
@@ -283,21 +289,23 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                   const kind = info?.kind || 'block';
                   const reserverName = info?.reserverName;
                   const reserverContact = info?.reserverContact;
+                  const mine = info?.mine;
                   const isSelected = !!selectedSlots?.get(v.id)?.has(m);
                   const isAlternate = !isSelected && !blocked && inAvailable && !!alternateSlots?.get(v.id)?.has(m);
                   // 사용자 선택이 기존 예약/블럭과 겹치면 "예약불가" 경고 상태
                   const isConflict = isSelected && blocked;
-                  // 색상: 충돌=주황경고, 선택=민트, 대체=반투명민트+점선, 불가시간=연회색, 교회일정=진빨강, 사용자예약=중간회색, 관리자블럭=어두운회색, 예약가능=연녹
-                  const kindBg = kind === 'event' ? '#DC2626' : kind === 'reservation' ? '#9CA3AF' : '#4B5563';
+                  // 색상: 충돌=주황경고, 선택=민트, 대체=반투명민트+점선, 불가시간=연회색, 교회일정=진빨강,
+                  //       내 예약=딥민트(노랑 테두리 강조), 타인 예약=중간회색, 관리자 블럭=보라(교회일정/예약과 분리), 예약가능=연녹
+                  const kindBg = kind === 'event' ? '#DC2626' : kind === 'reservation' ? (mine ? '#0F7A52' : '#9CA3AF') : '#7C3AED';
                   const kindFg = '#FFFFFF';
                   const bg = isConflict ? '#F59E0B' : isSelected ? '#20CD8D' : isAlternate ? 'rgba(32, 205, 141, 0.18)' : (!inAvailable ? '#E5E7EB' : blocked ? kindBg : '#F7FEE7');
                   const color = isConflict ? '#FFFFFF' : isSelected ? '#fff' : isAlternate ? '#3F6212' : (!inAvailable ? '#9CA3AF' : blocked ? kindFg : '#4D7C0F');
                   const clickable = !!onSlotClick && inAvailable;
-                  const kindLabel = kind === 'event' ? '교회일정' : kind === 'reservation' ? '예약됨' : '블럭';
+                  const kindLabel = kind === 'event' ? '교회일정' : kind === 'reservation' ? '예약됨' : '관리자 블럭';
                   const titleParts = [`${v.floor} ${v.name} ${toHHMM(m)}`];
                   if (!inAvailable) titleParts.push('예약 불가 시간대');
                   else if (blocked) {
-                    titleParts.push(`${kindLabel}: ${reason}`);
+                    titleParts.push(`${kindLabel}${mine ? ' (내 예약)' : ''}: ${reason}`);
                     if (kind === 'reservation' && reserverName) titleParts.push(`예약자: ${reserverName}`);
                     if (kind === 'reservation' && reserverContact) titleParts.push(`연락처: ${reserverContact}`);
                   } else if (isSelected) titleParts.push('선택됨 (클릭하여 해제)');
@@ -322,16 +330,17 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                           onSlotPointerEnter(v, m, blocked);
                         } : undefined}
                         title={titleParts.join(' | ')}
-                        style={{ width: '100%', height: blocked ? span * 20 : 20, border: isAlternate ? '1.5px dashed #20CD8D' : 'none', background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: '0.6rem', fontWeight: 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box', touchAction: 'manipulation', userSelect: 'none' }}
+                        style={{ width: '100%', height: blocked ? span * 20 : 20, border: isAlternate ? '1.5px dashed #20CD8D' : mine ? '2px solid #FBBF24' : 'none', outline: mine ? '2px solid #FBBF24' : undefined, outlineOffset: mine ? '-2px' : undefined, background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: '0.6rem', fontWeight: mine ? 800 : 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box', touchAction: 'manipulation', userSelect: 'none', boxShadow: mine ? 'inset 0 0 0 1px rgba(255,255,255,0.6)' : undefined }}
                       >
                         {isConflict ? '예약불가' : isSelected ? '예약가능' : isAlternate ? '○' : (blocked ? (
                           showStacked ? (
                             <span style={{ display: 'grid', gap: 1, lineHeight: 1.1 }}>
+                              {mine && <span style={{ fontWeight: 800, fontSize: '0.56rem', color: '#FEF3C7' }}>⭐ 내 예약</span>}
                               <span style={{ fontWeight: 800 }}>{reason || kindLabel}</span>
                               {reserverName && <span style={{ fontWeight: 600, opacity: 0.95 }}>{reserverName}</span>}
                               {reserverContact && <span style={{ fontWeight: 500, opacity: 0.9, fontSize: '0.55rem' }}>{reserverContact}</span>}
                             </span>
-                          ) : (reason || kindLabel)
+                          ) : (mine ? `⭐ ${reason || kindLabel}` : (reason || kindLabel))
                         ) : '')}
                       </button>
                     </td>
