@@ -952,7 +952,7 @@ const ReservationSlotPicker = ({
                     style={{ padding: '0.5rem 0.7rem', minHeight: 38, borderRadius: 8, border: '1px solid #FED7AA', background: '#fff', fontSize: '0.9rem', color: 'var(--color-ink)', fontWeight: 700 }}
                   />
                   <span style={{ color: '#9A3412', fontWeight: 800 }}>연락처</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.7rem', minHeight: 38, borderRadius: 8, border: '1px solid #FED7AA', background: '#fff' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span style={{ fontSize: '0.9rem', color: 'var(--color-ink-2)', fontWeight: 700, fontFamily: 'monospace', flexShrink: 0 }}>+65</span>
                     <input
                       type="tel"
@@ -965,7 +965,7 @@ const ReservationSlotPicker = ({
                       placeholder="1234-5678"
                       inputMode="numeric"
                       maxLength={9}
-                      style={{ flex: 1, minWidth: 0, padding: 0, border: 'none', outline: 'none', background: 'transparent', fontSize: '0.9rem', color: 'var(--color-ink)', fontWeight: 700, fontFamily: 'monospace' }}
+                      style={{ flex: 1, minWidth: 0, padding: '0.5rem 0.7rem', minHeight: 38, borderRadius: 8, border: '1px solid #FED7AA', background: '#fff', fontSize: '0.9rem', color: 'var(--color-ink)', fontWeight: 700, fontFamily: 'monospace' }}
                     />
                   </div>
                 </div>
