@@ -306,7 +306,7 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
             const timeColBg = '#FFFFFF';
             const timeColSelectedBg = '#20CD8D';
             return (
-              <tr key={m} style={{ borderTop: isHourStart ? '1.5px solid #D9F09E' : '1px solid #F4F4F0' }}>
+              <tr key={m} style={{ borderTop: isHourStart ? '1.5px solid #D9F09E' : '1px solid #F4F4F0', height: SLOT_ROW_H }}>
                 {showHourCell && (
                   <td
                     rowSpan={hourRowSpan}
@@ -379,7 +379,7 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                   // 셀 내부: reservation kind이고 rowSpan≥2면 3줄 표시, 그 외엔 reason만
                   const showStacked = blocked && kind === 'reservation' && span >= 2 && (reserverName || reserverContact);
                   return (
-                    <td key={v.id} rowSpan={blocked ? span : 1} style={{ padding: 0, borderRight: '1px solid #F4F4F0', minWidth: VENUE_MIN_W }}>
+                    <td key={v.id} rowSpan={blocked ? span : 1} style={{ padding: 0, borderRight: '1px solid #F4F4F0', minWidth: VENUE_MIN_W, height: blocked ? span * SLOT_ROW_H : SLOT_ROW_H, verticalAlign: 'top' }}>
                       <button
                         type="button"
                         disabled={!clickable}
@@ -395,7 +395,7 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                           onSlotPointerEnter(v, m, blocked);
                         } : undefined}
                         title={titleParts.join(' | ')}
-                        style={{ width: '100%', height: blocked ? span * SLOT_ROW_H : SLOT_ROW_H, border: isAlternate ? '1.5px dashed #20CD8D' : mine ? '2px solid #FBBF24' : 'none', outline: mine ? '2px solid #FBBF24' : undefined, outlineOffset: mine ? '-2px' : undefined, background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: isMobile ? '0.62rem' : '0.6rem', fontWeight: mine ? 800 : 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box', touchAction: 'manipulation', userSelect: 'none', boxShadow: mine ? 'inset 0 0 0 1px rgba(255,255,255,0.6)' : undefined }}
+                        style={{ width: '100%', height: '100%', minHeight: blocked ? span * SLOT_ROW_H : SLOT_ROW_H, display: 'block', border: isAlternate ? '1.5px dashed #20CD8D' : mine ? '2px solid #FBBF24' : 'none', outline: mine ? '2px solid #FBBF24' : undefined, outlineOffset: mine ? '-2px' : undefined, background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: isMobile ? '0.62rem' : '0.6rem', fontWeight: mine ? 800 : 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box', touchAction: 'manipulation', userSelect: 'none', boxShadow: mine ? 'inset 0 0 0 1px rgba(255,255,255,0.6)' : undefined }}
                       >
                         {isConflict ? '예약불가' : isSelected ? '예약가능' : isAlternate ? '○' : (blocked ? (
                           showStacked ? (
