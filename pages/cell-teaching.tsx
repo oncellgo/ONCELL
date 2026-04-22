@@ -88,16 +88,14 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
     hymn?: { number: string; title: string | null } | null;
     questions?: string[];
     prayer?: Array<{ label: string; text: string }>;
-    witness?: string;
   };
   const [guide, setGuide] = useState<CellGuide | null>(null);
   const [guideLoading, setGuideLoading] = useState(false);
   const [guideError, setGuideError] = useState<string | null>(null);
   const guideCacheRef = useRef(new Map<string, CellGuide>());
   const [showNaeyong, setShowNaeyong] = useState(false);
-  const [showWitness, setShowWitness] = useState(false);
   const [showPrayer, setShowPrayer] = useState(false);
-  useEffect(() => { setShowNaeyong(false); setShowWitness(false); setShowPrayer(false); }, [selectedKey]);
+  useEffect(() => { setShowNaeyong(false); setShowPrayer(false); }, [selectedKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -308,28 +306,6 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
                     </li>
                   ))}
                 </ol>
-              )}
-            </section>
-          )}
-
-          {/* 카드 2b: 내용 나눔 (PDF 원문 witness 섹션 전체 텍스트) — 제목 클릭으로 토글, 기본 접힘 */}
-          {guide?.found && guide.witness && (
-            <section style={{ padding: isMobile ? '0.9rem' : '1.1rem', borderRadius: 16, background: '#fff', border: '1px solid #C7D2FE', boxShadow: 'var(--shadow-card)', display: 'grid', gap: showWitness ? '0.6rem' : 0 }}>
-              <button
-                type="button"
-                onClick={() => setShowWitness((v) => !v)}
-                aria-expanded={showWitness}
-                aria-label={showWitness ? '내용 나눔 접기' : '내용 나눔 펼치기'}
-                style={{ margin: 0, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.98rem', fontWeight: 800, color: '#4338CA', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', textAlign: 'left' }}
-              >
-                <span aria-hidden>📝</span>
-                <span>내용 나눔</span>
-                <span aria-hidden style={{ fontSize: '0.8rem', transition: 'transform 0.15s', transform: showWitness ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▾</span>
-              </button>
-              {showWitness && (
-                <div style={{ fontSize: '0.92rem', lineHeight: 1.8, color: 'var(--color-ink)', whiteSpace: 'pre-wrap', wordBreak: 'keep-all', overflowWrap: 'break-word' }}>
-                  {guide.witness}
-                </div>
               )}
             </section>
           )}

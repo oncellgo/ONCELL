@@ -62,9 +62,9 @@ const extractSermonTitleFromPdf = (text: string): string | null => {
   return null;
 };
 
-// PDF 텍스트를 내용나눔(Q)·기도 섹션으로 분리. witness 섹션의 raw text 도 함께 반환.
-const parsePdfSections = (text: string): { questions: string[]; prayer: Array<{ label: string; text: string }>; witness: string } => {
-  const out = { questions: [] as string[], prayer: [] as Array<{ label: string; text: string }>, witness: '' };
+// PDF 텍스트를 내용나눔(Q)·기도 섹션으로 분리.
+const parsePdfSections = (text: string): { questions: string[]; prayer: Array<{ label: string; text: string }> } => {
+  const out = { questions: [] as string[], prayer: [] as Array<{ label: string; text: string }> };
   if (!text) return out;
 
   // 페이지 푸터(`-- N of N --`) 제거
@@ -74,7 +74,6 @@ const parsePdfSections = (text: string): { questions: string[]; prayer: Array<{ 
   const startIdx = clean.search(/말씀으로\s*삽시다|Witness/);
   const endIdx = clean.search(/나\s*눔\s*기\s*도|삶\s*[_＿]/);
   const witness = startIdx >= 0 ? clean.slice(startIdx, endIdx > startIdx ? endIdx : undefined) : '';
-  out.witness = witness.trim();
 
   // 질문: "N. ..." 으로 시작하고 "?" 또는 "습니까" / "입니까"로 끝나는 문장만
   if (witness) {
@@ -304,13 +303,13 @@ const fetchDetail = async (idx: string): Promise<{ body: string; attachmentName:
   }
 
   // PDF 섹션 파싱 (내용 나눔 · 기도 · 찬송가)
-  const sections = pdfText ? parsePdfSections(pdfText) : { questions: [] as string[], prayer: [] as Array<{ label: string; text: string }>, witness: '' };
+  const sections = pdfText ? parsePdfSections(pdfText) : { questions: [] as string[], prayer: [] as Array<{ label: string; text: string }> };
   const hymn = pdfText ? parseHymn(pdfText) : null;
   // 설교 제목 — PDF 본문 상단에서 우선 추출, 없으면 filename 기반 폴백
   const pdfSermonTitle = pdfText ? extractSermonTitleFromPdf(pdfText) : null;
   const finalSermonTitle = pdfSermonTitle || sermonTitle || null;
 
-  const data = { body, attachmentName, biblePassage, normalizedRef, sermonTitle: finalSermonTitle, pdfText, pdfError, bibleText, bibleTextEn, hymn, questions: sections.questions, prayer: sections.prayer, witness: sections.witness };
+  const data = { body, attachmentName, biblePassage, normalizedRef, sermonTitle: finalSermonTitle, pdfText, pdfError, bibleText, bibleTextEn, hymn, questions: sections.questions, prayer: sections.prayer };
   await detailCache.set(idx, data);
   return data;
 };
