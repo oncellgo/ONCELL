@@ -52,10 +52,6 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
   const [selectedSlots, setSelectedSlots] = useState<Map<string, Set<number>>>(new Map());
   // 대체 장소(picker에서 함께 선택됐지만 active가 아닌 후보): 클릭 시 active와 교체됨
   const [alternateSlots, setAlternateSlots] = useState<Map<string, Set<number>>>(new Map());
-  // 모임구분 (부서/구역/기타) + 상세 이름
-  type MeetingKind = '부서' | '구역' | '기타';
-  const [meetingKind, setMeetingKind] = useState<MeetingKind>('부서');
-  const [meetingDetail, setMeetingDetail] = useState('');
   // 예약자 정보 수정 모달
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [currentDisplayName, setCurrentDisplayName] = useState<string | null>(displayName);
@@ -316,8 +312,7 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
       for (const t of tasks) {
         const startAt = new Date(y, mo - 1, d, Math.floor(t.startMin / 60), t.startMin % 60).toISOString();
         const endAt = new Date(y, mo - 1, d, Math.floor(t.endMin / 60), t.endMin % 60).toISOString();
-        const detail = meetingDetail.trim();
-        const description = `[${meetingKind}]${detail ? ' ' + detail : ''}`;
+        const description = resvTitle.trim();
         const res = await fetch('/api/events', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -414,86 +409,21 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
   const selectAll = () => setPickerSelected(new Set(venues.filter((v) => !conflictedPickerVenueIds.has(v.id)).map((v) => v.id)));
   const clearAll = () => setPickerSelected(new Set());
 
-  // 시간 선택 (모달): 시작 시각(관리자 설정 범위 내, slotMin 단위) + 지속시간(0.5~12시간)
-  const [pickerStartHour, setPickerStartHour] = useState<number>(() => Math.floor(toMinLocal(availableStart) / 60));
-  const [pickerStartMin, setPickerStartMin] = useState<number>(() => toMinLocal(availableStart) % 60);
-  const [pickerDurationHours, setPickerDurationHours] = useState<number>(1);
+  // (시간·지속시간 선택 제거 — 사용자는 날짜·장소만 고르고 시간은 VenueGrid에서 셀 클릭으로 선택)
 
-  const DURATION_OPTIONS = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12];
-
-  // picker 시간과 겹치는 기존 예약/블럭이 있는 장소 집합 (inactive 처리 대상)
-  const conflictedPickerVenueIds = useMemo(() => {
-    const out = new Set<string>();
-    const [py, pm, pd] = pickerDate.split('-').map(Number);
-    if (!py || !pm || !pd) return out;
-    const pickerStartTs = new Date(py, pm - 1, pd, pickerStartHour, pickerStartMin).getTime();
-    const pickerEndTs = pickerStartTs + Math.round(pickerDurationHours * 60) * 60 * 1000;
-    // 1) adhoc blocks + 펼친 event occurrences
-    for (const b of blocks) {
-      const bs = new Date(b.startAt).getTime();
-      const be = b.endAt ? new Date(b.endAt).getTime() : Number.POSITIVE_INFINITY;
-      if (bs < pickerEndTs && be > pickerStartTs) out.add(b.venueId);
-    }
-    // 2) 반복 block groups (당일 기준 on-demand 계산)
-    const groupBlocked = computeBlockedSlotsForDate(groups, pickerDate);
-    const startAbs = pickerStartHour * 60 + pickerStartMin;
-    const endAbs = startAbs + Math.round(pickerDurationHours * 60);
-    for (const [vid, slotSet] of groupBlocked.entries()) {
-      for (let mm = startAbs; mm < endAbs; mm += slotMin) {
-        if (slotSet.has(mm)) { out.add(vid); break; }
-      }
-    }
-    return out;
-  }, [blocks, groups, pickerDate, pickerStartHour, pickerStartMin, pickerDurationHours, slotMin]);
-
-  // picker 시간이 바뀌면 충돌되는 장소는 자동 해제
-  useEffect(() => {
-    setPickerSelected((prev) => {
-      let changed = false;
-      const next = new Set<string>();
-      prev.forEach((id) => {
-        if (conflictedPickerVenueIds.has(id)) changed = true;
-        else next.add(id);
-      });
-      return changed ? next : prev;
-    });
-  }, [conflictedPickerVenueIds]);
-
-  // 시작시각이 바뀌어 현재 지속시간이 예약가능 종료시각을 넘으면, 허용되는 최대값으로 자동 축소
-  useEffect(() => {
-    const endM = toMinLocal(availableEnd);
-    const currentStart = pickerStartHour * 60 + pickerStartMin;
-    const remain = (endM - currentStart) / 60;
-    if (pickerDurationHours > remain) {
-      const valid = DURATION_OPTIONS.filter((h) => h <= remain);
-      if (valid.length > 0) setPickerDurationHours(valid[valid.length - 1]);
-    }
-  }, [pickerStartHour, pickerStartMin, availableEnd, pickerDurationHours]);
+  // 현재 날짜에 종일 블럭/이벤트가 있어 전혀 사용 불가한 장소는 없으므로 conflict 판정 생략
+  const conflictedPickerVenueIds = useMemo(() => new Set<string>(), []);
 
   const confirmPicker = () => {
     if (pickerSelected.size === 0) { alert('한 개 이상의 장소를 선택하세요.'); return; }
-    // 선택된 시간 범위를 slotMin 단위 슬롯 Set으로 환산
-    const startM = pickerStartHour * 60 + pickerStartMin;
-    const endM = startM + Math.round(pickerDurationHours * 60);
-    const baseSet = new Set<number>();
-    for (let mm = startM; mm < endM; mm += slotMin) baseSet.add(mm);
-
-    // 장소 리스트 — 첫 번째는 active, 나머지는 alternate
-    const venueList = venues.filter((v) => pickerSelected.has(v.id)).map((v) => v.id); // venues 순서 유지
-    const firstVid = venueList[0];
-    const nextSelected = new Map<string, Set<number>>();
-    if (firstVid && baseSet.size > 0) nextSelected.set(firstVid, new Set(baseSet));
-    const nextAlternate = new Map<string, Set<number>>();
-    for (const vid of venueList.slice(1)) nextAlternate.set(vid, new Set(baseSet));
-
     const sameDate = pickerDate === selectedDate;
     if (!sameDate) {
-      pendingSlotsRef.current = nextSelected;
-      pendingAlternateRef.current = nextAlternate;
+      pendingSlotsRef.current = new Map();
+      pendingAlternateRef.current = new Map();
       setSelectedDate(pickerDate);
     } else {
-      setSelectedSlots(nextSelected);
-      setAlternateSlots(nextAlternate);
+      setSelectedSlots(new Map());
+      setAlternateSlots(new Map());
       setResvError(null);
     }
     setConfirmedVenueIds(new Set(pickerSelected));
@@ -702,20 +632,7 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
               type="button"
               onClick={() => {
                 setPickerDate(selectedDate);
-                // 기존 선택된 장소 복원 (active + alternate)
                 setPickerSelected(new Set(confirmedVenueIds));
-                // 기존 선택된 시간 범위(min~max) 복원 — active·alternate 통합
-                let minStart = Infinity;
-                let maxEnd = -Infinity;
-                for (const set of selectedSlots.values()) for (const m of set) { if (m < minStart) minStart = m; if (m + slotMin > maxEnd) maxEnd = m + slotMin; }
-                for (const set of alternateSlots.values()) for (const m of set) { if (m < minStart) minStart = m; if (m + slotMin > maxEnd) maxEnd = m + slotMin; }
-                if (isFinite(minStart) && isFinite(maxEnd) && maxEnd > minStart) {
-                  setPickerStartHour(Math.floor(minStart / 60));
-                  setPickerStartMin(minStart % 60);
-                  const durHours = (maxEnd - minStart) / 60;
-                  const closest = DURATION_OPTIONS.reduce((best, h) => Math.abs(h - durHours) < Math.abs(best - durHours) ? h : best, DURATION_OPTIONS[0]);
-                  setPickerDurationHours(closest);
-                }
                 setPickerOpen(true);
               }}
               style={{ padding: '0.4rem 0.8rem', borderRadius: 8, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink)', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
@@ -741,8 +658,9 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
                   type="text"
                   value={resvTitle}
                   onChange={(e) => setResvTitle(e.target.value)}
-                  placeholder="예약 제목 (필수)"
-                  style={{ flex: '1 1 220px', padding: '0.55rem 0.75rem', borderRadius: 10, border: '1px solid var(--color-gray)', fontSize: '0.92rem' }}
+                  placeholder="예약 설명 (예: 청년부 주중모임, 3구역 구역예배)"
+                  maxLength={80}
+                  style={{ flex: '1 1 220px', padding: '0.7rem 0.85rem', minHeight: 44, borderRadius: 10, border: '1px solid var(--color-gray)', fontSize: '0.95rem' }}
                 />
                 <button
                   type="button"
@@ -776,7 +694,7 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
         >
           <div role="dialog" className="modal-card" style={{ width: '100%', maxWidth: 560, maxHeight: '90vh', background: '#fff', borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--color-surface-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-ink)' }}>예약시간/장소 선택</h3>
+              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-ink)' }}>예약시간/장소조회</h3>
               <button type="button" onClick={() => setPickerOpen(false)} aria-label="닫기" style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-ink-2)' }}>✕</button>
             </div>
 
@@ -816,36 +734,6 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
                     <span style={{ color: '#9A3412', fontWeight: 800, fontSize: '0.76rem' }}>연락처</span>
                     <span style={{ color: 'var(--color-ink)', fontWeight: 700, fontFamily: 'monospace' }}>{currentContact || contact || '(미등록)'}</span>
                   </button>
-                </div>
-              </div>
-
-              {/* === 섹션 0: 모임구분 — 연라임 === */}
-              <div style={{ display: 'grid', gap: '0.55rem', padding: '0.85rem 1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <span style={{ fontSize: '1rem' }}>👥</span>
-                  <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#3F6212' }}>모임구분</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  {(['부서', '구역', '기타'] as const).map((kind) => (
-                    <label key={kind} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.35rem 0.7rem', borderRadius: 999, border: meetingKind === kind ? '1.5px solid #65A30D' : '1px solid var(--color-gray)', background: meetingKind === kind ? '#ECFCCB' : '#fff', cursor: 'pointer', fontSize: '0.88rem', fontWeight: meetingKind === kind ? 800 : 600, color: meetingKind === kind ? '#3F6212' : 'var(--color-ink-2)' }}>
-                      <input
-                        type="radio"
-                        name="meetingKind"
-                        value={kind}
-                        checked={meetingKind === kind}
-                        onChange={() => setMeetingKind(kind)}
-                        style={{ margin: 0 }}
-                      />
-                      {kind}
-                    </label>
-                  ))}
-                  <input
-                    type="text"
-                    value={meetingDetail}
-                    onChange={(e) => setMeetingDetail(e.target.value)}
-                    placeholder={meetingKind === '부서' ? '부서명 (예: 청년부)' : meetingKind === '구역' ? '구역명 (예: 3구역)' : '모임 상세'}
-                    style={{ flex: '1 1 180px', padding: '0.45rem 0.7rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.9rem', minHeight: 38 }}
-                  />
                 </div>
               </div>
 
@@ -892,48 +780,11 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
                       </span>
                     );
                   })()}
-                  <select
-                    aria-label="시작 시각"
-                    value={pickerStartHour * 60 + pickerStartMin}
-                    onChange={(e) => {
-                      const v = Number(e.target.value);
-                      setPickerStartHour(Math.floor(v / 60));
-                      setPickerStartMin(v % 60);
-                    }}
-                    style={{ padding: '0.55rem 0.5rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.95rem', fontWeight: 700, background: '#fff', flex: '0 1 110px' }}
-                  >
-                    {(() => {
-                      const startM = toMinLocal(availableStart);
-                      const endM = toMinLocal(availableEnd);
-                      const times: number[] = [];
-                      for (let mm = startM; mm + slotMin <= endM; mm += slotMin) times.push(mm);
-                      return times.map((mm) => (
-                        <option key={mm} value={mm}>
-                          {String(Math.floor(mm / 60)).padStart(2, '0')}:{String(mm % 60).padStart(2, '0')}
-                        </option>
-                      ));
-                    })()}
-                  </select>
-                  <select
-                    aria-label="지속 시간"
-                    value={pickerDurationHours}
-                    onChange={(e) => setPickerDurationHours(Number(e.target.value))}
-                    style={{ padding: '0.55rem 0.5rem', borderRadius: 8, border: '1px solid var(--color-gray)', fontSize: '0.95rem', fontWeight: 700, background: '#fff', flex: '0 1 100px' }}
-                  >
-                    {(() => {
-                      const endM = toMinLocal(availableEnd);
-                      const currentStart = pickerStartHour * 60 + pickerStartMin;
-                      const remain = (endM - currentStart) / 60;
-                      return DURATION_OPTIONS.filter((h) => h <= remain).map((h) => {
-                        const totalMin = Math.round(h * 60);
-                        const hh = Math.floor(totalMin / 60);
-                        const mm = totalMin % 60;
-                        const label = hh === 0 ? `${mm}분` : mm === 0 ? `${hh}시간` : `${hh}시간${mm}분`;
-                        return <option key={h} value={h}>{label}</option>;
-                      });
-                    })()}
-                  </select>
                 </div>
+
+                <p style={{ margin: '0.35rem 0 0', fontSize: '0.78rem', color: 'var(--color-ink-2)', lineHeight: 1.55 }}>
+                  ⏰ 시간은 완료 후 나오는 그리드에서 빈 셀을 <strong>클릭</strong>{!isMobile && ' 또는 드래그'}해서 선택하세요.
+                </p>
 
                 <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.75rem', color: 'var(--color-ink-2)', lineHeight: 1.6, listStyleType: 'disc' }}>
                   <li>
@@ -1019,12 +870,12 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
                   { checked: confirmMember, setter: setConfirmMember, label: '싱가폴한인교회 등록교인이며, 실명과 연락가능한 번호를 올바르게 입력했습니다.' },
                   { checked: confirmCancel, setter: setConfirmCancel, label: '잘못된 정보를 입력할 경우, 사전통보없이 예약이 취소될 수 있음을 인지했습니다.' },
                 ].map((item, i) => (
-                  <label key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: isMobile ? '0.82rem' : '0.86rem', color: '#78350F', fontWeight: 700, lineHeight: 1.5, cursor: 'pointer' }}>
+                  <label key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.7rem', fontSize: isMobile ? '0.9rem' : '0.92rem', color: '#78350F', fontWeight: 700, lineHeight: 1.5, cursor: 'pointer', padding: '0.35rem 0' }}>
                     <input
                       type="checkbox"
                       checked={item.checked}
                       onChange={(e) => item.setter(e.target.checked)}
-                      style={{ marginTop: '0.2rem', accentColor: '#D97706', flexShrink: 0 }}
+                      style={{ marginTop: '0.1rem', accentColor: '#D97706', flexShrink: 0, width: 24, height: 24 }}
                     />
                     <span>{item.label}</span>
                   </label>

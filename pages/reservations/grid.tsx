@@ -707,12 +707,12 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                   { checked: cCancel, setter: setCCancel, label: '잘못된 정보를 입력할 경우, 사전통보 없이 예약이 취소될 수 있음을 인지했습니다.' },
                 ].map((item, i) => (
                   <label key={i} style={{
-                    display: 'flex', alignItems: 'flex-start', gap: '0.55rem',
-                    padding: '0.3rem 0',
-                    fontSize: '0.85rem',
+                    display: 'flex', alignItems: 'flex-start', gap: '0.7rem',
+                    padding: '0.4rem 0',
+                    fontSize: '0.92rem',
                     color: '#78350F', fontWeight: 700, lineHeight: 1.5, cursor: 'pointer',
                   }}>
-                    <input type="checkbox" checked={item.checked} onChange={(e) => item.setter(e.target.checked)} style={{ marginTop: '0.2rem', accentColor: '#D97706', flexShrink: 0, width: 18, height: 18 }} />
+                    <input type="checkbox" checked={item.checked} onChange={(e) => item.setter(e.target.checked)} style={{ marginTop: '0.1rem', accentColor: '#D97706', flexShrink: 0, width: 24, height: 24 }} />
                     <span>{item.label}</span>
                   </label>
                 ))}

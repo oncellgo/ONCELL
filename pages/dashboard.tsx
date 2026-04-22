@@ -223,6 +223,8 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
   // 이번주(월~일) 큐티·통독 완료 dateKey 집합
   const [weekQtDates, setWeekQtDates] = useState<Set<string>>(new Set());
   const [weekReadingDates, setWeekReadingDates] = useState<Set<string>>(new Set());
+  // 큐티 장기 기록 — 연속 일수(streak) + 총 일수 (최근 180일)
+  const [qtHistoryDates, setQtHistoryDates] = useState<Set<string>>(new Set());
   const [weekExpanded, setWeekExpanded] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);  // 0=이번주, -1=지난주, +1=다음주
 
@@ -280,16 +282,19 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
       .catch(() => {});
   }, []);
 
-  // 오늘 포함 최근 7일 큐티·통독 완료 fetch
+  // 오늘 포함 최근 7일 큐티·통독 완료 + 큐티는 180일 히스토리도 같이 fetch (streak 계산용)
   useEffect(() => {
-    if (!profileId) { setWeekQtDates(new Set()); setWeekReadingDates(new Set()); return; }
+    if (!profileId) { setWeekQtDates(new Set()); setWeekReadingDates(new Set()); setQtHistoryDates(new Set()); return; }
     const now = new Date();
     const end = new Date(now); end.setHours(0, 0, 0, 0);
-    const start = new Date(end); start.setDate(end.getDate() - 6);
+    const start7 = new Date(end); start7.setDate(end.getDate() - 6);
+    const start180 = new Date(end); start180.setDate(end.getDate() - 179);
     const pad = (n: number) => String(n).padStart(2, '0');
-    const from = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`;
-    const to = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}`;
-    const load = async (type: 'qt' | 'reading', setter: (s: Set<string>) => void) => {
+    const keyOf = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const to = keyOf(end);
+    const from7 = keyOf(start7);
+    const from180 = keyOf(start180);
+    const load = async (type: 'qt' | 'reading', from: string, setter: (s: Set<string>) => void) => {
       try {
         const r = await fetch(`/api/completions?profileId=${encodeURIComponent(profileId)}&type=${type}&from=${from}&to=${to}`);
         if (!r.ok) return;
@@ -297,9 +302,49 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
         setter(new Set(Array.isArray(d?.dates) ? d.dates : []));
       } catch {}
     };
-    load('qt', setWeekQtDates);
-    load('reading', setWeekReadingDates);
+    load('qt', from7, setWeekQtDates);
+    load('reading', from7, setWeekReadingDates);
+    load('qt', from180, setQtHistoryDates);
   }, [profileId]);
+
+  // 큐티 연속 기록(streak) — 오늘(또는 어제, 오늘 아직 안 했을 때)부터 과거로 연속된 일수
+  const qtStreak = useMemo(() => {
+    if (qtHistoryDates.size === 0) return { current: 0, longest: 0 };
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const keyOf = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const todayKey = keyOf(today);
+    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+    const yesterdayKey = keyOf(yesterday);
+
+    // 현재 streak: 오늘부터 거슬러 올라가며 연속 합산 (오늘 안 했으면 어제부터 시작)
+    let current = 0;
+    const cursor = new Date(today);
+    if (!qtHistoryDates.has(todayKey) && qtHistoryDates.has(yesterdayKey)) {
+      cursor.setDate(cursor.getDate() - 1);  // 오늘 안 했지만 어제 했으면 어제부터 세기
+    }
+    while (qtHistoryDates.has(keyOf(cursor))) {
+      current += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    // 최고 streak: 180일 내에서 연속된 구간 중 최장
+    const sortedDates = Array.from(qtHistoryDates).sort();
+    let longest = 0;
+    let run = 0;
+    let prev: string | null = null;
+    for (const dk of sortedDates) {
+      if (prev === null) { run = 1; }
+      else {
+        const pd = new Date(prev); pd.setDate(pd.getDate() + 1);
+        const expected = keyOf(pd);
+        run = expected === dk ? run + 1 : 1;
+      }
+      if (run > longest) longest = run;
+      prev = dk;
+    }
+    return { current, longest };
+  }, [qtHistoryDates]);
 
   useEffect(() => {
     if (!activeCommunityId) { setPublishedServices([]); return; }
@@ -738,6 +783,74 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
               </ul>
             )}
           </section>
+
+          {/* 큐티 연속 기록 — 매일 묵상 꾸준함을 격려하는 streak 트로피 */}
+          {profileId && (() => {
+            const cur = qtStreak.current;
+            const best = qtStreak.longest;
+            // 레벨: 0일 / 1일 / 3일 / 7일 / 14일 / 30일 / 50일 / 100일
+            const lv = cur >= 100 ? 7 : cur >= 50 ? 6 : cur >= 30 ? 5 : cur >= 14 ? 4 : cur >= 7 ? 3 : cur >= 3 ? 2 : cur >= 1 ? 1 : 0;
+            const tiers = [
+              { emoji: '🌱', title: '오늘 묵상을 시작해볼까요?', sub: '하루 한 구절, 짧아도 괜찮아요.', ring: '#E5E7EB', bg: '#F9FAFB', fg: '#6B7280' },
+              { emoji: '🌿', title: `${cur}일 연속 묵상 중`, sub: '첫걸음을 내딛었어요. 내일도 이어가볼까요?', ring: '#BBF7D0', bg: '#F0FDF4', fg: '#15803D' },
+              { emoji: '✨', title: `${cur}일 연속 — 습관이 시작됐어요`, sub: '작은 반복이 큰 변화를 만듭니다.', ring: '#D9F09E', bg: '#F7FEE7', fg: '#3F6212' },
+              { emoji: '🔥', title: `${cur}일 연속 — 일주일 달성!`, sub: '영적 리듬이 자리잡고 있어요.', ring: '#FCD34D', bg: '#FEF3C7', fg: '#92400E' },
+              { emoji: '🏆', title: `${cur}일 연속 — 2주 돌파!`, sub: '꾸준함이 빛납니다. 계속 나아가요.', ring: '#FBBF24', bg: '#FEF3C7', fg: '#78350F' },
+              { emoji: '👑', title: `${cur}일 연속 — 한 달의 기록`, sub: '놀라운 꾸준함이에요. 축복합니다 🙌', ring: '#F59E0B', bg: '#FEF3C7', fg: '#78350F' },
+              { emoji: '💎', title: `${cur}일 연속 — 반백 일!`, sub: '이 기록이 교회의 자랑입니다.', ring: '#60A5FA', bg: '#DBEAFE', fg: '#1E3A8A' },
+              { emoji: '🕊️', title: `${cur}일 연속 — 100일의 은혜`, sub: '하나님이 주신 귀한 기록입니다.', ring: '#A78BFA', bg: '#EDE9FE', fg: '#5B21B6' },
+            ];
+            const t = tiers[lv];
+            // 오늘 묵상 했는지 여부 (오늘 아직인데 어제 이어짐은 current>0 + today 체크)
+            const padN2 = (n: number) => String(n).padStart(2, '0');
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const tk = `${today.getFullYear()}-${padN2(today.getMonth() + 1)}-${padN2(today.getDate())}`;
+            const doneToday = qtHistoryDates.has(tk);
+            const qtHref = `/qt${profileId ? `?profileId=${encodeURIComponent(profileId)}${nickname ? `&nickname=${encodeURIComponent(nickname)}` : ''}${email ? `&email=${encodeURIComponent(email)}` : ''}` : ''}`;
+            return (
+              <section style={cardBase}>
+                <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: '0.4rem', flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row' }}>
+                  <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>📖 큐티 연속 기록</h2>
+                  <span style={{ fontSize: isMobile ? '0.8rem' : '0.78rem', color: 'var(--color-ink-2)', fontWeight: 700 }}>
+                    현재 <strong style={{ color: 'var(--color-primary-deep)' }}>{cur}일</strong>
+                    {best > cur && <> · 최고 {best}일</>}
+                  </span>
+                </div>
+                <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '0.85rem 1rem', borderRadius: 14, background: t.bg, border: `1px solid ${t.ring}` }}>
+                  <span aria-hidden style={{ fontSize: '2.4rem', lineHeight: 1 }}>{t.emoji}</span>
+                  <div style={{ display: 'grid', gap: '0.2rem', flex: 1, minWidth: 0 }}>
+                    <strong style={{ fontSize: '1rem', color: t.fg, fontWeight: 800, lineHeight: 1.25 }}>{t.title}</strong>
+                    <span style={{ fontSize: '0.82rem', color: t.fg, opacity: 0.9, fontWeight: 600, lineHeight: 1.45 }}>{t.sub}</span>
+                  </div>
+                </div>
+                {!doneToday && (
+                  <a
+                    href={qtHref}
+                    style={{
+                      marginTop: '0.6rem',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      padding: '0.65rem 1rem', minHeight: 44,
+                      borderRadius: 10,
+                      background: cur > 0 ? 'var(--color-primary)' : '#fff',
+                      color: cur > 0 ? '#fff' : 'var(--color-primary-deep)',
+                      border: `1.5px solid var(--color-primary)`,
+                      fontWeight: 800, fontSize: '0.92rem',
+                      textDecoration: 'none',
+                      width: isMobile ? '100%' : 'auto',
+                      letterSpacing: '-0.01em',
+                    }}
+                  >
+                    {cur > 0 ? `✍️ 오늘 묵상 이어가기 (${cur}일 → ${cur + 1}일)` : '✍️ 오늘 묵상 시작하기'}
+                  </a>
+                )}
+                {doneToday && (
+                  <div style={{ marginTop: '0.6rem', fontSize: '0.85rem', color: '#15803D', fontWeight: 700 }}>
+                    ✓ 오늘 묵상 완료 — 내일도 이어가요!
+                  </div>
+                )}
+              </section>
+            );
+          })()}
 
           {/* 이번주 영적 참여 — 큐티·통독 완료 수 기반 뱃지 + 응원 메세지 */}
           {profileId && (() => {
