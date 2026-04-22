@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useIsMobile } from '../lib/useIsMobile';
 
 export type Venue = {
@@ -181,8 +181,43 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
   const tableMinWidth = TIME_HOUR_W + TIME_MIN_W + venues.length * VENUE_MIN_W;
   // 그리드 최대 높이 — iPhone SE(568px) 기준으로 SubHeader(~56px)·섹션 패딩 고려해 모바일은 60vh
   const gridMaxHeight = isMobile ? '60vh' : '75vh';
+  // 상·하 이중 가로 스크롤: 사용자가 그리드를 세로로 스크롤했을 때도 바로 손 닿는 곳에 가로 스크롤바
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const mainScrollRef = useRef<HTMLDivElement>(null);
+  const syncing = useRef(false);
+  const onTopScroll = () => {
+    if (syncing.current) { syncing.current = false; return; }
+    if (mainScrollRef.current && topScrollRef.current) {
+      syncing.current = true;
+      mainScrollRef.current.scrollLeft = topScrollRef.current.scrollLeft;
+    }
+  };
+  const onMainScroll = () => {
+    if (syncing.current) { syncing.current = false; return; }
+    if (topScrollRef.current && mainScrollRef.current) {
+      syncing.current = true;
+      topScrollRef.current.scrollLeft = mainScrollRef.current.scrollLeft;
+    }
+  };
   return (
-    <div className="responsive-x-scroll" style={{ overflowX: 'auto', overflowY: 'auto', WebkitOverflowScrolling: 'touch', border: '1px solid var(--color-surface-border)', borderRadius: 10, background: '#fff', maxHeight: gridMaxHeight }}>
+    <div style={{ display: 'grid', gap: 0 }}>
+      {/* 상단 미러 가로 스크롤바 — 실제 테이블 폭과 동일해 양쪽에서 조작 가능 */}
+      <div
+        ref={topScrollRef}
+        onScroll={onTopScroll}
+        aria-hidden="true"
+        style={{
+          overflowX: 'auto', overflowY: 'hidden',
+          height: 14,
+          border: '1px solid var(--color-surface-border)',
+          borderBottom: 'none',
+          borderTopLeftRadius: 10, borderTopRightRadius: 10,
+          background: '#FAFAF7',
+        }}
+      >
+        <div style={{ width: tableMinWidth, height: 1 }} />
+      </div>
+    <div ref={mainScrollRef} onScroll={onMainScroll} className="responsive-x-scroll" style={{ overflowX: 'auto', overflowY: 'auto', WebkitOverflowScrolling: 'touch', border: '1px solid var(--color-surface-border)', borderTop: '1px solid var(--color-surface-border)', borderBottomLeftRadius: 10, borderBottomRightRadius: 10, background: '#fff', maxHeight: gridMaxHeight }}>
       <table style={{ width: '100%', minWidth: tableMinWidth, borderCollapse: 'collapse', fontSize: isMobile ? '0.68rem' : '0.72rem', tableLayout: 'fixed' }}>
         <colgroup>
           <col style={{ width: TIME_HOUR_W }} />
@@ -359,6 +394,7 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
           )}
         </tbody>
       </table>
+    </div>
     </div>
   );
 };
