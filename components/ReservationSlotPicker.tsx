@@ -420,19 +420,17 @@ const ReservationSlotPicker = ({
     }
     setStagedInfoError(null);
 
-    // 예약자 정보 수정·최초 입력 → /api/profile 에 upsert. 실패해도 예약 자체는 계속 진행.
+    // 예약자 정보 수정·최초 입력 → complete-signup 을 호출해 signup_approvals 와 profiles
+    // 양쪽 모두 upsert (회원 정보 갱신). 실패해도 예약 자체는 계속 진행.
     const origName = String(liveName || displayName || nickname || '').trim();
     const origContact = String(liveContact || contact || '').trim();
     if (effName !== origName || effContact !== origContact) {
       try {
-        await fetch('/api/profile', {
+        await fetch('/api/auth/complete-signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             profileId: effPid,
-            provider: effPid.startsWith('kakao-') ? 'kakao' : effPid.startsWith('google-') ? 'google' : 'unknown',
-            nickname: nickname || '',
-            email: email || '',
             realName: effName,
             contact: effContact,
           }),
@@ -441,7 +439,7 @@ const ReservationSlotPicker = ({
         setLiveContact(effContact);
         try { window.dispatchEvent(new CustomEvent('kcis-profile-updated', { detail: { realName: effName, contact: effContact } })); } catch {}
       } catch (e) {
-        console.error('[reservation] profile upsert failed', e);
+        console.error('[reservation] member info upsert failed', e);
       }
     }
     // 과거 시간 + 예약 가능 기간 초과 체크 (서버에서도 방어되지만 클라 경고를 먼저)
