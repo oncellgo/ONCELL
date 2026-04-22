@@ -86,7 +86,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
   return (
     <>
       <Head>
-        <title>KCIS — 싱가폴한인교회 관리 시스템</title>
+        <title>KCIS|장소관리시스템</title>
         <meta
           name="description"
           content="싱가폴한인교회(KCIS) 관리 시스템 — 장소예약·큐티·성경통독·주일예배·구역모임 교안을 한 곳에서."
@@ -95,7 +95,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
         {/* Open Graph / KakaoTalk·Facebook·Slack 링크 미리보기 */}
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="KCIS" />
-        <meta property="og:title" content="KCIS — 싱가폴한인교회 관리 시스템" />
+        <meta property="og:title" content="KCIS|장소관리시스템" />
         <meta
           property="og:description"
           content="장소예약·큐티·성경통독·주일예배·구역모임 교안을 한 곳에서."
@@ -106,7 +106,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
         <meta property="og:locale" content="ko_KR" />
         {/* Twitter Card (Twitter/X 미리보기) */}
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="KCIS — 싱가폴한인교회 관리 시스템" />
+        <meta name="twitter:title" content="KCIS|장소관리시스템" />
         <meta name="twitter:description" content="장소예약·큐티·성경통독·주일예배·구역모임 교안을 한 곳에서." />
         <meta name="twitter:image" content="https://kcis-ecru.vercel.app/images/kcis%20logo.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
