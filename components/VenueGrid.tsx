@@ -285,6 +285,11 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
               venueSlotInfos.set(v.id, infos);
             }
 
+            // 선택된 슬롯 분(min) 집합 — 좌측 시간 칼럼 강조용
+            const selectedRowMins = new Set<number>();
+            if (selectedSlots) {
+              for (const set of selectedSlots.values()) for (const mm of set) selectedRowMins.add(mm);
+            }
             return slotMins.map((m, rowIdx) => {
             const slotStart = new Date(y, mo - 1, d, Math.floor(m / 60), m % 60);
             const slotEnd = new Date(slotStart.getTime() + slotMin * 60 * 1000);
@@ -294,6 +299,12 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
             // 30분 슬롯이고 :00(isHourStart)일 때만 좌측 hour 셀을 rowSpan=2로 그림
             const showHourCell = slotMin === 60 || isHourStart;
             const hourRowSpan = slotMin === 60 ? 1 : 2;
+            // 이 행(분 셀)이 선택 범위에 포함되는지
+            const rowSelected = selectedRowMins.has(m);
+            // hour 셀은 rowSpan 만큼의 하위 행 중 하나라도 선택되면 강조
+            const hourSelected = slotMin === 60 ? rowSelected : (selectedRowMins.has(m) || selectedRowMins.has(m + 30));
+            const timeColBg = '#FFFFFF';
+            const timeColSelectedBg = '#20CD8D';
             return (
               <tr key={m} style={{ borderTop: isHourStart ? '1.5px solid #D9F09E' : '1px solid #F4F4F0' }}>
                 {showHourCell && (
@@ -303,19 +314,34 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                       padding: '0 0.25rem',
                       position: 'sticky',
                       left: 0,
-                      background: '#FFFFFF',
+                      background: hourSelected ? timeColSelectedBg : timeColBg,
                       borderRight: '1px solid #E5E7EB',
-                      color: '#0F172A',
-                      fontWeight: 400,
+                      color: hourSelected ? '#FFFFFF' : '#0F172A',
+                      fontWeight: hourSelected ? 800 : 400,
                       fontSize: isMobile ? '0.82rem' : '1.05rem',
                       textAlign: 'center',
                       verticalAlign: 'middle',
                       zIndex: 1,
                       lineHeight: 1,
+                      transition: 'background 0.12s ease, color 0.12s ease',
                     }}
                   >{hour}</td>
                 )}{/* hour 셀 끝 */}
-                <td style={{ padding: '0 0.3rem', position: 'sticky', left: TIME_HOUR_W, background: '#FFFFFF', borderRight: '1.5px solid #D9F09E', color: '#4D7C0F', fontWeight: 400, fontSize: '0.68rem', whiteSpace: 'nowrap', textAlign: 'right', zIndex: 1, opacity: 0.85 }}>:{String(minPart).padStart(2, '0')}</td>
+                <td style={{
+                  padding: '0 0.3rem',
+                  position: 'sticky',
+                  left: TIME_HOUR_W,
+                  background: rowSelected ? timeColSelectedBg : timeColBg,
+                  borderRight: '1.5px solid #D9F09E',
+                  color: rowSelected ? '#FFFFFF' : '#4D7C0F',
+                  fontWeight: rowSelected ? 800 : 400,
+                  fontSize: '0.68rem',
+                  whiteSpace: 'nowrap',
+                  textAlign: 'right',
+                  zIndex: 1,
+                  opacity: rowSelected ? 1 : 0.85,
+                  transition: 'background 0.12s ease, color 0.12s ease',
+                }}>:{String(minPart).padStart(2, '0')}</td>
                 {venues.map((v) => {
                   const info = venueSlotInfos.get(v.id)?.[rowIdx];
                   // 블럭 연속 영역의 첫 행 외에는 위 행이 rowSpan으로 덮으므로 td 자체를 생략
@@ -349,7 +375,7 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                     if (kind === 'reservation' && reserverContact) titleParts.push(`연락처: ${reserverContact}`);
                   } else if (isSelected) titleParts.push('선택됨 (클릭하여 해제)');
                   else if (isAlternate) titleParts.push('후보 (클릭하여 이 장소로 전환)');
-                  else titleParts.push('예약 가능 — 클릭하여 선택');
+                  else titleParts.push('예약 가능 — 클릭하거나, 시작 셀에서 끝 셀까지 드래그하면 한 번에 선택됩니다');
                   // 셀 내부: reservation kind이고 rowSpan≥2면 3줄 표시, 그 외엔 reason만
                   const showStacked = blocked && kind === 'reservation' && span >= 2 && (reserverName || reserverContact);
                   return (

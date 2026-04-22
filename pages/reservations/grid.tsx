@@ -472,27 +472,6 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                 </span>
               </div>
 
-              {/* 가이드 — 셀을 처음 만나는 사용자가 드래그 가능을 놓치지 않도록 그리드 바로 위 고정 */}
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '0.55rem',
-                padding: '0.65rem 0.85rem',
-                borderRadius: 10,
-                background: '#ECFDF5',
-                border: '1px solid #20CD8D',
-                fontSize: isMobile ? '0.82rem' : '0.86rem',
-                color: 'var(--color-primary-deep)',
-                fontWeight: 700,
-                lineHeight: 1.5,
-              }}>
-                <span aria-hidden style={{ fontSize: '1.1rem', flexShrink: 0 }}>💡</span>
-                <span>
-                  {isMobile
-                    ? <>빈 시간(<span style={{ color: '#15803D', fontWeight: 800 }}>연라임</span>)을 <strong>순서대로 탭</strong>하면 연속 시간이 한 번에 선택돼요.</>
-                    : <>빈 시간(<span style={{ color: '#15803D', fontWeight: 800 }}>연라임</span>)을 <strong>클릭</strong>하거나, 시작 셀에서 끝 셀까지 <strong>드래그</strong>하면 여러 시간을 한 번에 선택할 수 있어요.</>
-                  }
-                </span>
-              </div>
-
               <VenueGrid
                 venues={selectedVenues}
                 blocks={blocks}
