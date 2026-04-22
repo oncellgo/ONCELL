@@ -32,16 +32,10 @@ const splitContact = (full: string | null | undefined): { cc: string; rest: stri
   return { cc: '+65', rest: s };
 };
 
-const ProfileModal = ({ profileId, provider, nickname, email, initialRealName, initialContact, onClose, onSaved }: Props) => {
+const ProfileModal = ({ profileId, email, onClose }: Props) => {
   const isMobile = useIsMobile();
-  const [realName, setRealName] = useState(initialRealName || '');
-  const { cc: initCC, rest: initRest } = splitContact(initialContact);
-  const [countryCode, setCountryCode] = useState(initCC);
-  const [contactLocal, setContactLocal] = useState(initRest);
   const [firstLoginAt, setFirstLoginAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
   // 회원 탈퇴 섹션
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawReason, setWithdrawReason] = useState('');
@@ -90,53 +84,12 @@ const ProfileModal = ({ profileId, provider, nickname, email, initialRealName, i
       .then((r) => r.json())
       .then((d) => {
         if (cancelled) return;
-        const p = d?.profile;
-        if (p) {
-          if (!initialRealName) setRealName(p.realName || '');
-          if (!initialContact) {
-            const { cc, rest } = splitContact(p.contact || '');
-            setCountryCode(cc);
-            setContactLocal(rest);
-          }
-        }
         setFirstLoginAt(d?.firstLoginAt || null);
       })
       .catch(() => {})
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [profileId]);
-
-  const save = async () => {
-    if (!realName.trim() || !contactLocal.trim()) { setMsg('실명과 연락처를 입력해주세요.'); return; }
-    setSaving(true);
-    setMsg(null);
-    try {
-      const res = await fetch('/api/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          profileId,
-          provider: provider || (profileId.startsWith('kakao-') ? 'kakao' : profileId.startsWith('google-') ? 'google' : 'unknown'),
-          nickname: nickname || '',
-          email: email || '',
-          realName: realName.trim(),
-          contact: `${countryCode} ${contactLocal.trim()}`,
-        }),
-      });
-      const d = await res.json();
-      if (!res.ok) { setMsg(d?.error || '저장 실패'); return; }
-      setMsg('저장되었습니다.');
-      const saved = { realName: realName.trim(), contact: `${countryCode} ${contactLocal.trim()}` };
-      onSaved?.(saved);
-      // 전역 브로드캐스트 — 다른 화면(예약자 정보 pill, SubHeader 배지 등) 동기화
-      try { window.dispatchEvent(new CustomEvent('kcis-profile-updated', { detail: saved })); } catch {}
-      setTimeout(() => onClose(), 400);
-    } catch {
-      setMsg('저장 중 오류가 발생했습니다.');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const joinDateStr = firstLoginAt ? new Date(firstLoginAt).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }) : null;
 
@@ -170,7 +123,7 @@ const ProfileModal = ({ profileId, provider, nickname, email, initialRealName, i
         }}
       >
         <div style={{ padding: isMobile ? '1rem 1rem' : '1rem 1.25rem', borderBottom: '1px solid var(--color-surface-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-ink)' }}>내 정보 수정</h3>
+          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-ink)' }}>내 정보</h3>
           <button
             type="button"
             onClick={onClose}
@@ -191,43 +144,6 @@ const ProfileModal = ({ profileId, provider, nickname, email, initialRealName, i
             <div><span style={{ color: 'var(--color-ink-2)', fontWeight: 700, minWidth: '4rem', display: 'inline-block' }}>가입일자</span> <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>{loading ? '…' : (joinDateStr || '(기록 없음)')}</span></div>
             {email && <div><span style={{ color: 'var(--color-ink-2)', fontWeight: 700, minWidth: '4rem', display: 'inline-block' }}>이메일</span> <span style={{ color: 'var(--color-ink-2)' }}>{email}</span></div>}
           </div>
-
-          <div style={{ display: 'grid', gap: '0.4rem' }}>
-            <label htmlFor="profile-realname" style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-ink)' }}>실명</label>
-            <input
-              id="profile-realname"
-              type="text"
-              value={realName}
-              onChange={(e) => setRealName(e.target.value)}
-              placeholder="실명을 입력하세요"
-              style={{ padding: '0.75rem 0.9rem', borderRadius: 10, border: '1px solid var(--color-gray)', fontSize: '0.95rem', minHeight: 48 }}
-            />
-          </div>
-
-          <div style={{ display: 'grid', gap: '0.4rem' }}>
-            <label htmlFor="profile-contact" style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-ink)' }}>연락처</label>
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '100px 1fr' : '110px 1fr', gap: '0.45rem' }}>
-              <select
-                aria-label="국가코드"
-                value={countryCode}
-                onChange={(e) => setCountryCode(e.target.value)}
-                style={{ padding: '0.75rem 0.5rem', borderRadius: 10, border: '1px solid var(--color-gray)', fontSize: '0.9rem', minHeight: 48, background: '#fff' }}
-              >
-                {COUNTRY_CODES.map((c) => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
-              </select>
-              <input
-                id="profile-contact"
-                type="text"
-                value={contactLocal}
-                onChange={(e) => setContactLocal(e.target.value)}
-                placeholder="1234-5678"
-                inputMode="numeric"
-                style={{ padding: '0.75rem 0.9rem', borderRadius: 10, border: '1px solid var(--color-gray)', fontSize: '0.95rem', minHeight: 48 }}
-              />
-            </div>
-          </div>
-
-          {msg && <p style={{ margin: 0, fontSize: '0.82rem', color: msg.includes('저장되었습니다') ? 'var(--color-primary-deep)' : '#b91c1c', fontWeight: 700 }}>{msg}</p>}
 
           {/* 회원 탈퇴 섹션 — 접힘 기본 */}
           <div style={{ marginTop: '0.5rem', borderTop: '1px dashed var(--color-gray)', paddingTop: '0.85rem' }}>
@@ -302,15 +218,13 @@ const ProfileModal = ({ profileId, provider, nickname, email, initialRealName, i
           padding: isMobile ? '0.85rem 1rem 1.5rem' : '0.85rem 1.25rem',
           borderTop: '1px solid var(--color-surface-border)',
           display: 'flex',
-          flexDirection: isMobile ? 'column-reverse' : 'row',
-          justifyContent: isMobile ? 'stretch' : 'flex-end',
-          gap: '0.5rem',
+          justifyContent: 'flex-end',
         }}>
           <button
             type="button"
             onClick={onClose}
             style={{
-              padding: '0.75rem 1rem',
+              padding: '0.75rem 1.2rem',
               borderRadius: 12,
               border: '1px solid var(--color-gray)',
               background: '#fff',
@@ -321,22 +235,6 @@ const ProfileModal = ({ profileId, provider, nickname, email, initialRealName, i
               cursor: 'pointer',
             }}
           >닫기</button>
-          <button
-            type="button"
-            onClick={save}
-            disabled={saving}
-            style={{
-              padding: '0.75rem 1.4rem',
-              borderRadius: 12,
-              border: 'none',
-              background: saving ? '#9CA3AF' : 'var(--color-primary)',
-              color: '#fff',
-              fontWeight: 800,
-              fontSize: '0.95rem',
-              minHeight: 48,
-              cursor: saving ? 'not-allowed' : 'pointer',
-            }}
-          >{saving ? '저장 중…' : '저장'}</button>
         </div>
       </div>
 
