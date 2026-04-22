@@ -24,14 +24,15 @@ type Props = {
 const pad = (n: number) => String(n).padStart(2, '0');
 const keyFor = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-// 가장 최근의 지난 주일 — 오늘이 일요일이면 오늘, 그 외에는 직전 주일.
-// 자료는 보통 목~토에 업로드되므로 주 초반 접속 시 '다음 주일'을 기본으로 두면
-// 아직 없는 자료를 가리켜 빈 화면이 됨. 확정된 가장 최근 주일을 기본 선택.
+// 구역모임교안: 다가오는 주일 기준 — 오늘이 일요일이면 오늘, 월~토이면 다음 주일.
+// 금요 구역예배 자료는 금요일 이전(혹은 주중)에 업로드되어 pill "다음 주일" 로 매핑되는 주의
+// 자료가 현재 시점에 이미 준비돼 있음. 따라서 이번 주 금요 구역예배지를 보이려면
+// '다음 주일'이 기본 선택이어야 함 (주보 페이지와는 반대).
 const mostRecentSunday = (now: Date): Date => {
   const d = new Date(now);
   d.setHours(0, 0, 0, 0);
   const dow = d.getDay();
-  if (dow !== 0) d.setDate(d.getDate() - dow);
+  if (dow !== 0) d.setDate(d.getDate() + (7 - dow));
   return d;
 };
 

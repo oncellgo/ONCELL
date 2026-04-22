@@ -118,8 +118,8 @@ type BulletinItem = { idx: string; title: string; dateKey: string };
 type ListPayload = { items: ListItem[]; bulletins: BulletinItem[]; year: number };
 
 // Supabase KV 기반 영속 캐시 — 람다 콜드스타트에도 재사용.
-// v3: 상위 3페이지 크롤로 확장 (2페이지 이상에 있는 과거 구역예배지까지 포함)
-const listCache = makeKvCache<ListPayload>('cell_worship_list_cache_v3', LIST_TTL);
+// v4: "N째 주" 매핑을 해당 월의 N번째 금요일 기준으로 변경 (skill rule)
+const listCache = makeKvCache<ListPayload>('cell_worship_list_cache_v4', LIST_TTL);
 const detailCache = makeKvCache<any>('cell_worship_detail_cache_v1', DETAIL_TTL);
 
 const ORDINAL_MAP: Record<string, number> = { '첫': 1, '둘': 2, '셋': 3, '넷': 4, '다섯': 5 };
@@ -127,16 +127,19 @@ const ORDINAL_MAP: Record<string, number> = { '첫': 1, '둘': 2, '셋': 3, '넷
 const pad = (n: number) => String(n).padStart(2, '0');
 const toKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-// "M월 N째 주 구역예배지" 게시글 → 해당 월의 N번째 일요일 (그대로 매칭).
-// 사용자 UI는 선택된 날짜의 `Math.ceil(date/7)` 을 "첫째주/둘째주/..."로 라벨링하므로,
-// 게시글 이름의 N째와 UI의 N째가 동일하게 일치하도록 시프트 없이 매칭한다.
-const nthSundayOf = (year: number, month: number, nth: number): string | null => {
+// 구역모임교안 "N째 주" 매핑 (skill: service-plan §7).
+// 교회 관행: "N월 M째 주 금요 구역예배지" 의 M째 주 = 해당 월의 M번째 금요일이 포함된 주.
+// 그 주의 다음 일요일(pill 기준) = N번째 금요일 + 2일.
+// (기존 "N번째 일요일" 기준과 달리 월초가 토/일인 달에선 1주 밀림.)
+const sundayAfterNthFriday = (year: number, month: number, nth: number): string | null => {
   const first = new Date(year, month - 1, 1);
-  const shift = (7 - first.getDay()) % 7;
-  const day = 1 + shift + (nth - 1) * 7;
-  const sun = new Date(year, month - 1, day);
-  if (sun.getMonth() !== month - 1) return null;
-  return toKey(sun);
+  const shiftToFriday = (5 - first.getDay() + 7) % 7; // Fri=5
+  const firstFridayDay = 1 + shiftToFriday;
+  const nthFridayDay = firstFridayDay + (nth - 1) * 7;
+  const nthFriday = new Date(year, month - 1, nthFridayDay);
+  if (nthFriday.getMonth() !== month - 1) return null; // N번째 금요일이 월을 벗어남
+  const sunday = new Date(year, month - 1, nthFridayDay + 2);
+  return toKey(sunday);
 };
 
 const decodeEntities = (s: string): string =>
@@ -206,7 +209,7 @@ const fetchList = async (year: number): Promise<{ items: ListItem[]; bulletins: 
           const mm = Number(monthMatch[1]);
           const nn = ORDINAL_MAP[nthMatch[1]] || 0;
           if (mm && nn) {
-            const dk = nthSundayOf(year, mm, nn);
+            const dk = sundayAfterNthFriday(year, mm, nn);
             if (dk) { dateKey = dk; month = mm; nth = nn; }
           }
         }
