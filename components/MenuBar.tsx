@@ -141,7 +141,7 @@ const MenuBar = ({ profileId, nickname, email }: Props) => {
               borderRadius: 10,
               background: active ? 'var(--color-primary)' : 'var(--color-primary-tint)',
               color: active ? '#fff' : 'var(--color-primary-deep)',
-              border: `2px solid ${active ? '#65A30D' : 'transparent'}`,
+              border: `2px solid ${active ? '#D9F09E' : 'transparent'}`,
               fontSize: isMobile ? '0.84rem' : '0.9rem',
               fontWeight: active ? 800 : 700,
               textDecoration: 'none',
