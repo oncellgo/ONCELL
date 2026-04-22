@@ -236,11 +236,33 @@ const ProfileModal = ({ profileId, provider, nickname, email, initialRealName, i
               <span aria-hidden style={{ fontSize: '0.75rem', transition: 'transform 0.15s', transform: withdrawOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▾</span>
             </button>
             {withdrawOpen && (
-              <div style={{ marginTop: '0.75rem', padding: '0.85rem', borderRadius: 10, background: '#FEF2F2', border: '1px solid #FCA5A5', display: 'grid', gap: '0.65rem' }}>
-                <p style={{ margin: 0, fontSize: '0.82rem', color: '#7F1D1D', lineHeight: 1.6 }}>
-                  탈퇴 시 로그아웃되며 관리자 승인 설정에 따라 재가입 시 승인 대기 상태가 될 수 있습니다.<br />
-                  기존에 작성한 예약·기록은 이력 보존을 위해 유지됩니다.
-                </p>
+              <div style={{ marginTop: '0.75rem', padding: '1rem', borderRadius: 10, background: '#FEF2F2', border: '1px solid #FCA5A5', display: 'grid', gap: '0.85rem' }}>
+                {/* 경고 헤더 */}
+                <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start' }}>
+                  <span aria-hidden style={{ fontSize: '1.4rem', lineHeight: 1 }}>⚠️</span>
+                  <div style={{ display: 'grid', gap: '0.15rem' }}>
+                    <p style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#7F1D1D', lineHeight: 1.4 }}>정말 탈퇴하시겠습니까?</p>
+                    <p style={{ margin: 0, fontSize: '0.82rem', fontWeight: 600, color: '#991B1B' }}>탈퇴 전 아래 사항을 확인해 주세요.</p>
+                  </div>
+                </div>
+
+                {/* 3가지 확인 항목 */}
+                <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: '0.55rem' }}>
+                  {[
+                    { title: '기존 예약 내역 삭제', body: '현재 신청 중인 장소 예약 및 과거 이용 기록이 모두 삭제되며, 복구가 불가능합니다.' },
+                    { title: '개인정보 파기', body: '수집된 모든 개인정보는 즉시 파기됩니다. (단, 법령에 의해 보존이 필요한 기록은 별도 보관 후 파기됩니다.)' },
+                    { title: '소셜 연동 안내', body: "본 서비스 탈퇴 후에도 카카오/구글 계정 설정 내 '연결된 앱' 목록에 기록이 남아있을 수 있습니다. 완전한 연결 해제를 원하시면 해당 플랫폼 설정에서 연결을 끊어주시기 바랍니다." },
+                  ].map((item, i) => (
+                    <li key={i} style={{ display: 'flex', gap: '0.55rem', alignItems: 'flex-start', padding: '0.55rem 0.7rem', background: '#fff', borderRadius: 8, border: '1px solid #FECACA' }}>
+                      <span aria-hidden style={{ flexShrink: 0, width: 20, height: 20, borderRadius: 999, background: '#B91C1C', color: '#fff', fontSize: '0.72rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>{i + 1}</span>
+                      <div style={{ display: 'grid', gap: '0.2rem', minWidth: 0 }}>
+                        <strong style={{ fontSize: '0.86rem', color: '#7F1D1D', fontWeight: 800 }}>{item.title}</strong>
+                        <span style={{ fontSize: '0.8rem', color: '#4B5563', lineHeight: 1.55, wordBreak: 'keep-all' }}>{item.body}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+
                 <label htmlFor="withdraw-reason" style={{ fontSize: '0.85rem', fontWeight: 700, color: '#7F1D1D' }}>탈퇴 사유</label>
                 <textarea
                   id="withdraw-reason"
