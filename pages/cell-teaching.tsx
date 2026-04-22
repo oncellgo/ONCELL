@@ -171,8 +171,16 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
               const rangeLabel = `${startLabel}-${endLabel}`;
               const isSelected = selectedKey === key;
               const isToday = key === todayKey;
-              const weekOrd = Math.ceil(d.getDate() / 7);
-              const weekLabel = ['첫째주','둘째주','셋째주','넷째주','다섯째주'][weekOrd - 1] || '주일';
+              // 파서와 동일한 기준(금요일 포함 주) 으로 라벨 계산.
+              // 커버 주의 금요일(= 주일 - 2일)이 어느 월의 N번째 금요일인지로 "N월 M째주" 표기.
+              const fridayOfWeek = new Date(d); fridayOfWeek.setDate(d.getDate() - 2);
+              const labelMonth = fridayOfWeek.getMonth() + 1;
+              const firstOfLabelMonth = new Date(fridayOfWeek.getFullYear(), fridayOfWeek.getMonth(), 1);
+              const firstFriShift = (5 - firstOfLabelMonth.getDay() + 7) % 7;
+              const firstFridayDate = 1 + firstFriShift;
+              const nth = Math.floor((fridayOfWeek.getDate() - firstFridayDate) / 7) + 1;
+              const nthLabel = ['첫째주','둘째주','셋째주','넷째주','다섯째주'][nth - 1] || '주일';
+              const weekLabel = `${labelMonth}월${nthLabel}`;
               return (
                 <button
                   key={key} type="button" onClick={() => setSelectedKey(key)}
@@ -195,7 +203,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
                     <span style={{ color: '#DC2626' }}>{startLabel}</span>
                     -{endLabel}
                   </span>
-                  <span style={{ fontSize: isMobile ? '0.68rem' : '0.72rem', fontWeight: 700, color: '#DC2626', lineHeight: 1 }}>{weekLabel}</span>
+                  <span style={{ fontSize: isMobile ? '0.68rem' : '0.72rem', fontWeight: 700, color: 'var(--color-ink)', lineHeight: 1 }}>{weekLabel}</span>
                   {isToday && (
                     <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#fff', background: '#20CD8D', padding: '0.08rem 0.4rem', borderRadius: 999, letterSpacing: '0.02em' }}>오늘</span>
                   )}
