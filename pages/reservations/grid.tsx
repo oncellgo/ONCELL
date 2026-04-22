@@ -100,6 +100,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
             contact={contact}
             nickname={nickname}
             email={email}
+            isAdmin={!!systemAdminHref}
             onSubmitted={handleCreated}
           />
         </section>

@@ -343,6 +343,7 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
                     contact={null}
                     nickname={nickname}
                     email={email}
+                    isAdmin={!!systemAdminHref}
                     editReservation={editPayload}
                     onSubmitted={async () => { closeEditModal(); await reload(); }}
                     onCancel={closeEditModal}

@@ -44,6 +44,8 @@ export type ReservationSlotPickerProps = {
   contact: string | null;
   nickname: string | null;
   email: string | null;
+  /** 시스템관리자 여부 — 범례에 관리자 전용 안내 표시. */
+  isAdmin?: boolean;
   // edit-only:
   editReservation?: EditReservationPayload;
   // 성공 후 호출: create 는 /reservations/my 로 이동 직전, edit 는 모달 닫고 목록 리로드
@@ -77,6 +79,7 @@ const ReservationSlotPicker = ({
   contact,
   nickname,
   email,
+  isAdmin = false,
   editReservation,
   onSubmitted,
   onCancel,
@@ -687,6 +690,9 @@ const ReservationSlotPicker = ({
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
               <span style={{ width: 14, height: 14, borderRadius: 3, background: '#4A4E3A' }} /> 예약불가
+              {isAdmin && (
+                <span style={{ marginLeft: '0.3rem', color: '#DC2626', fontWeight: 700 }}>※ 연락처는 시스템관리자에게만 보입니다</span>
+              )}
             </span>
           </div>
 

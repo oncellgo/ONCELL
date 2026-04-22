@@ -1400,6 +1400,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                     contact={storedProfile?.contact || null}
                     nickname={nickname}
                     email={email}
+                    isAdmin={!!systemAdminHref}
                     editReservation={editPayload}
                     onSubmitted={async () => { closeEditModal(); await reloadMyReservations(); }}
                     onCancel={closeEditModal}
