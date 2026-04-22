@@ -493,7 +493,7 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#DC2626' }} /> 교회일정</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#0F7A52', outline: '2px solid #FBBF24', outlineOffset: -1 }} /> ⭐ 내 예약</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#9CA3AF' }} /> 타인 예약</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#7C3AED' }} /> 관리자 블럭</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#7C3AED' }} /> 교회 사용</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#E5E7EB' }} /> 예약 불가 시간</span>
           </div>
           <VenueGrid
