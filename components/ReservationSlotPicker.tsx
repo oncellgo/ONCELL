@@ -129,6 +129,8 @@ const ReservationSlotPicker = ({
   // "최초 수집" 여부는 모달 열릴 시점의 값으로 고정 (입력하면 바뀌어도 동의는 유지 필요)
   const [initialMissing, setInitialMissing] = useState(false);
   const allConfirmed = cMember && cCancel && (!initialMissing || cInfoCollect);
+  // 예약자 정보 섹션 인라인 에러 (이름·연락처 비었을 때)
+  const [stagedInfoError, setStagedInfoError] = useState<string | null>(null);
   const [shakeDesc, setShakeDesc] = useState(false);
   const [shakeConfirm, setShakeConfirm] = useState(false);
   const shake = (setter: (v: boolean) => void) => { setter(true); setTimeout(() => setter(false), 650); };
@@ -391,6 +393,7 @@ const ReservationSlotPicker = ({
     setStagedContact(String(initContact));
     setInitialMissing(!String(initName).trim() || !String(initContact).trim());
     setCInfoCollect(false);
+    setStagedInfoError(null);
     setConfirmOpen(true);
   };
 
@@ -411,9 +414,11 @@ const ReservationSlotPicker = ({
     const effName = String(stagedName || '').trim();
     const effContact = String(stagedContact || '').trim();
     if (!effName || !effContact) {
-      setSubmitError('예약자 이름과 연락처를 입력해주세요.');
+      setStagedInfoError('예약자 이름과 연락처를 입력해주세요.');
+      setSubmitError(null);
       return;
     }
+    setStagedInfoError(null);
 
     // 예약자 정보 수정·최초 입력 → /api/profile 에 upsert. 실패해도 예약 자체는 계속 진행.
     const origName = String(liveName || displayName || nickname || '').trim();
@@ -956,6 +961,9 @@ const ReservationSlotPicker = ({
                     style={{ padding: '0.5rem 0.7rem', minHeight: 38, borderRadius: 8, border: '1px solid #FED7AA', background: '#fff', fontSize: '0.9rem', color: 'var(--color-ink)', fontWeight: 700, fontFamily: 'monospace' }}
                   />
                 </div>
+                {stagedInfoError && (
+                  <p style={{ margin: 0, padding: '0.5rem 0.7rem', borderRadius: 8, background: '#FEE2E2', color: '#B91C1C', fontSize: '0.84rem', fontWeight: 700 }}>⚠ {stagedInfoError}</p>
+                )}
               </div>
 
               <div style={{ padding: '0.75rem 0.9rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E', display: 'grid', gap: '0.4rem' }}>
