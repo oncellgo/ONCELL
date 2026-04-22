@@ -1,22 +1,24 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { lookupPassage, formatVerses } from '../../lib/bible';
-
 import { PDFParse } from '../../lib/pdf';
+import { makeKvCache } from '../../lib/crawlCache';
 
 /**
- * 주일(YYYY-MM-DD)에 해당하는 주보 게시글을 찾아
- * 성경봉독 구절을 추출해 한글(개역한글) / 영문(KJV) 본문과 함께 반환한다.
+ * 주일(YYYY-MM-DD)에 해당하는 주보 게시글을 찾아 성경봉독 구절 + 첨부 파일 목록 + 미스바 링크를 반환.
+ *
+ * 응답에 `files`·`misbaUrl` 을 포함해 클라이언트가 `/api/bulletin-file` 를 추가 호출하지 않아도 되도록 함.
+ * 목록/상세는 Supabase KV 에 영속 캐시 — 람다 콜드스타트에도 크롤·PDF파싱 재사용.
  *
  * 추출 우선순위:
  *   1) 게시글 본문 텍스트에서 "성경봉독 ..." 매칭
  *   2) 첨부 파일명의 `(책명 N:V-V)` 괄호 패턴
  *   3) 첨부가 PDF이면 PDF 텍스트에서 "성경봉독 ..." 매칭
- *   (이미지 OCR은 현재 미지원 — 필요 시 tesseract.js 등으로 확장)
  */
 
 const LIST_URL = 'https://koreanchurch.sg/noticeandnews';
 const POST_URL = (idx: string) => `https://koreanchurch.sg/noticeandnews/?bmode=view&idx=${idx}&t=board`;
-const CACHE_TTL = 30 * 60 * 1000;
+const LIST_TTL = 30 * 60 * 1000;        // 목록(주보 게시글 인덱스) — 30분
+const DETAIL_TTL = 24 * 60 * 60 * 1000; // 게시글 상세(PDF 파싱 결과 포함) — 24시간
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -46,6 +48,17 @@ const decodeEntities = (s: string): string =>
 const stripTags = (s: string): string =>
   s.replace(/<\/?(?:p|br|div|span)[^>]*>/gi, '\n').replace(/<[^>]+>/g, '').replace(/\n{2,}/g, '\n\n').trim();
 
+const guessMime = (name: string | null): string => {
+  if (!name) return 'application/octet-stream';
+  const lower = name.toLowerCase();
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.gif')) return 'image/gif';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  if (lower.endsWith('.pdf')) return 'application/pdf';
+  return 'application/octet-stream';
+};
+
 // 성경봉독 패턴 — "성경봉독: 요한복음 20:1-14" / "성경봉독 요 20장 1-14절" 등
 const SCRIPTURE_RE = /성경\s*봉독\s*[:：]?\s*([가-힣]{1,5})\s*(\d{1,3})\s*(?:장|[:：])\s*(\d{1,3})(?:\s*[-~]\s*(?:(\d{1,3})\s*(?:장|[:：])\s*)?(\d{1,3}))?/;
 const PAREN_REF_RE = /\(\s*([가-힣]{1,5})\s*(\d{1,3})\s*(?:장|[:：])\s*(\d{1,3})(?:\s*[-~]\s*(?:(\d{1,3})\s*(?:장|[:：])\s*)?(\d{1,3}))?\s*\)/;
@@ -67,11 +80,16 @@ const formatRef = (m: Match): string =>
     : `${m.book} ${m.startCh}:${m.startVerse}-${m.endCh}:${m.endVerse}`;
 
 type BulletinItem = { idx: string; title: string; dateKey: string };
-let listCache: { items: BulletinItem[]; at: number } | null = null;
+type AttachmentEntry = { href: string; name: string | null };
+type PostDetail = { body: string; attachments: AttachmentEntry[]; misbaUrl: string | null };
+
+// Supabase KV 기반 영속 캐시 — 람다 간 공유.
+const listCache = makeKvCache<BulletinItem[]>('bulletin_list_cache_v1', LIST_TTL);
+const detailCache = makeKvCache<PostDetail>('bulletin_detail_cache_v1', DETAIL_TTL);
 
 const fetchBulletinList = async (): Promise<BulletinItem[]> => {
-  const now = Date.now();
-  if (listCache && now - listCache.at < CACHE_TTL) return listCache.items;
+  const cached = await listCache.get('default');
+  if (cached) return cached;
   const res = await fetch(LIST_URL, { headers: { 'User-Agent': 'Mozilla/5.0' } });
   const html = await res.text();
   const items: BulletinItem[] = [];
@@ -89,17 +107,15 @@ const fetchBulletinList = async (): Promise<BulletinItem[]> => {
     const dateKey = `${dm[1]}-${pad(Number(dm[2]))}-${pad(Number(dm[3]))}`;
     items.push({ idx, title, dateKey });
   }
-  listCache = { items, at: now };
+  await listCache.set('default', items);
   return items;
 };
 
-type DetailCache = { at: number; data: any };
-const detailCache = new Map<string, DetailCache>();
-
-const fetchPost = async (idx: string) => {
-  const now = Date.now();
-  const hit = detailCache.get(idx);
-  if (hit && now - hit.at < CACHE_TTL) return hit.data;
+// 게시글 본문 + 첨부파일 + 미스바 링크 파싱. bulletin-file.ts 와 동일한 로직을 수행해
+// 클라이언트가 sunday-bulletin 응답만으로 화면을 구성할 수 있게 한다.
+const fetchPost = async (idx: string): Promise<PostDetail> => {
+  const cached = await detailCache.get(idx);
+  if (cached) return cached;
 
   const res = await fetch(POST_URL(idx), { headers: { 'User-Agent': 'Mozilla/5.0' } });
   const html = await res.text();
@@ -107,16 +123,50 @@ const fetchPost = async (idx: string) => {
   const bodyMatch = html.match(/<div class="margin-top-xxl _comment_body_[^"]*">([\s\S]*?)<\/div>/);
   const body = bodyMatch ? stripTags(decodeEntities(bodyMatch[1])) : '';
 
-  // 첨부 파일들 (PDF 포함 여부 탐색용)
-  const attachments: Array<{ href: string; name: string }> = [];
+  const attachments: AttachmentEntry[] = [];
+  const seen = new Set<string>();
   const attRe = /<a[^>]*href="(\/post_file_download\.cm\?c=[^"]+)"[^>]*>[\s\S]{0,200}?<p[^>]*class="tit"[^>]*>\s*([^<]+?)\s*<\/p>/g;
   let am: RegExpExecArray | null;
   while ((am = attRe.exec(html)) !== null) {
-    attachments.push({ href: decodeEntities(am[1]), name: decodeEntities(am[2]).trim() });
+    const href = decodeEntities(am[1]);
+    if (seen.has(href)) continue;
+    seen.add(href);
+    attachments.push({ href, name: decodeEntities(am[2]).trim() });
   }
 
-  const data = { body, attachments };
-  detailCache.set(idx, { data, at: now });
+  // 첨부 링크가 없으면 본문 내 삽입 <img> 를 대체로 사용 (주보가 이미지로 게시된 경우)
+  if (attachments.length === 0) {
+    const bodyHtmlMatch = html.match(/<div class="margin-top-xxl _comment_body_[^"]*">([\s\S]*?)<\/div>/);
+    const bodyHtml = bodyHtmlMatch ? bodyHtmlMatch[1] : html;
+    const imgRe = /<img[^>]+src="([^"]+)"/g;
+    let im: RegExpExecArray | null;
+    while ((im = imgRe.exec(bodyHtml)) !== null) {
+      const src = decodeEntities(im[1]);
+      if (src.startsWith('data:')) continue;
+      if (seen.has(src)) continue;
+      seen.add(src);
+      const nameMatch = src.match(/[^/]+$/);
+      attachments.push({ href: src, name: nameMatch ? nameMatch[0].split('?')[0] : null });
+    }
+  }
+
+  // 미스바 링크 추출 — 본문 anchor 중 URL/텍스트에 misba/미스바/mizpah 포함
+  let misbaUrl: string | null = null;
+  const bodyForLinksMatch = html.match(/<div class="margin-top-xxl _comment_body_[^"]*">([\s\S]*?)<\/div>\s*<\/div>/);
+  const bodyForLinks = bodyForLinksMatch ? bodyForLinksMatch[1] : html;
+  const anchorRe = /<a\s+[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
+  const candidates: string[] = [];
+  let a: RegExpExecArray | null;
+  while ((a = anchorRe.exec(bodyForLinks)) !== null) {
+    const url = decodeEntities(a[1]);
+    const text = decodeEntities(a[2].replace(/<[^>]+>/g, '')).trim();
+    if (!url || url.startsWith('#') || url.startsWith('javascript:')) continue;
+    if (/misba|미스바|mizpah/i.test(url) || /미스바|misba|mizpah/i.test(text)) candidates.push(url);
+  }
+  if (candidates.length > 0) misbaUrl = candidates[candidates.length - 1];
+
+  const data: PostDetail = { body, attachments, misbaUrl };
+  await detailCache.set(idx, data);
   return data;
 };
 
@@ -156,10 +206,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const bulletins = await fetchBulletinList();
     const match = bulletins.find((b) => b.dateKey === date);
     if (!match) {
+      res.setHeader('Cache-Control', 'public, max-age=1800, s-maxage=1800, stale-while-revalidate=86400');
       return res.status(200).json({ found: false, date });
     }
 
     const post = await fetchPost(match.idx);
+    const files = post.attachments.map((e, i) => ({ n: i, name: e.name, mime: guessMime(e.name) }));
 
     // 1) 본문 텍스트에서 성경봉독 매칭
     let parsed = extractFromText(post.body);
@@ -167,7 +219,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // 2) 첨부 파일명에서 (책 N:V-V) 패턴
     if (!parsed) {
       for (const att of post.attachments) {
-        const m = extractFromFilename(att.name);
+        const m = extractFromFilename(att.name || '');
         if (m) { parsed = m; break; }
       }
     }
@@ -175,11 +227,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // 3) PDF 첨부라면 텍스트 추출해서 매칭
     if (!parsed) {
       for (const att of post.attachments) {
-        if (!/\.pdf$/i.test(att.name)) continue;
+        if (!/\.pdf$/i.test(att.name || '')) continue;
         const m = await extractFromPdf(att.href);
         if (m) { parsed = m; break; }
       }
     }
+
+    // CDN + 브라우저 캐시: 30분 fresh, 24시간 stale-while-revalidate (edge 재사용으로 함수 호출 자체 최소화)
+    res.setHeader('Cache-Control', 'public, max-age=1800, s-maxage=3600, stale-while-revalidate=86400');
 
     if (!parsed) {
       return res.status(200).json({
@@ -189,6 +244,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         reference: null,
         bibleText: null,
         bibleTextEn: null,
+        files,
+        misbaUrl: post.misbaUrl,
         reason: 'scripture-not-found',
       });
     }
@@ -201,7 +258,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const bibleText = koV.length > 0 ? formatVerses(koV, true) : null;
     const bibleTextEn = enV.length > 0 ? formatVerses(enV, true) : null;
 
-    res.setHeader('Cache-Control', 'public, max-age=1800');
     return res.status(200).json({
       found: true,
       bulletinIdx: match.idx,
@@ -209,6 +265,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       reference,
       bibleText,
       bibleTextEn,
+      files,
+      misbaUrl: post.misbaUrl,
     });
   } catch (e: any) {
     console.error('[sunday-bulletin]', e);

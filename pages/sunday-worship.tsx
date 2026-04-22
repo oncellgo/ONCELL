@@ -1,6 +1,6 @@
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import SubHeader from '../components/SubHeader';
 import BulletinLightbox from '../components/BulletinLightbox';
 import { getSystemAdminHref } from '../lib/adminGuard';
@@ -78,6 +78,8 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
   const selectedVideo = useMemo(() => videos.find((v) => v.dateKey === selectedKey) || null, [videos, selectedKey]);
 
   // 주일 주보 (싱가폴한인교회 공지 게시판의 "YYYY년 M월 D일 주보" 게시글)
+  // 서버에서 첨부 파일 목록과 misbaUrl 까지 함께 내려 주므로 추가 fetch 불필요.
+  type BulletinFile = { n: number; name: string | null; mime: string };
   type SundayBulletin = {
     found: boolean;
     bulletinIdx?: string | null;
@@ -85,45 +87,64 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
     reference?: string | null;
     bibleText?: string | null;
     bibleTextEn?: string | null;
+    files?: BulletinFile[];
+    misbaUrl?: string | null;
     reason?: string;
   };
   const [bulletin, setBulletin] = useState<SundayBulletin | null>(null);
   const [bulletinLookupLoading, setBulletinLookupLoading] = useState(false);
   const [bulletinLookupError, setBulletinLookupError] = useState<string | null>(null);
 
-  // 주보 이미지·파일
-  const [bulletinFiles, setBulletinFiles] = useState<Array<{ n: number; name: string | null; mime: string }>>([]);
-  const [bulletinFilesLoading, setBulletinFilesLoading] = useState(false);
-  const [bulletinFilesError, setBulletinFilesError] = useState<string | null>(null);
-  const [misbaUrl, setMisbaUrl] = useState<string | null>(null);
+  const bulletinFiles: BulletinFile[] = bulletin?.files || [];
+  const bulletinFilesError: string | null = null;
+  const bulletinFilesLoading = bulletinLookupLoading;
+  const misbaUrl: string | null = bulletin?.misbaUrl || null;
 
   // 라이트박스 (주보 이미지 확대 뷰어)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
+  // 응답 캐시 (같은 세션 내 같은 주일 재선택 시 즉시 표시)
+  const bulletinCacheRef = useRef(new Map<string, SundayBulletin>());
+
   useEffect(() => {
     let cancelled = false;
+    const cache = bulletinCacheRef.current.get(selectedKey);
+    if (cache) {
+      setBulletin(cache); setBulletinLookupLoading(false); setBulletinLookupError(null);
+      return;
+    }
     setBulletinLookupLoading(true); setBulletinLookupError(null); setBulletin(null);
-    setBulletinFiles([]); setBulletinFilesError(null); setMisbaUrl(null);
     fetch(`/api/sunday-bulletin?date=${selectedKey}`)
       .then((r) => r.json())
-      .then((d) => { if (!cancelled) setBulletin(d); })
+      .then((d: SundayBulletin) => {
+        if (cancelled) return;
+        bulletinCacheRef.current.set(selectedKey, d);
+        setBulletin(d);
+      })
       .catch(() => { if (!cancelled) setBulletinLookupError('주보 정보를 불러오지 못했습니다.'); })
       .finally(() => { if (!cancelled) setBulletinLookupLoading(false); });
     return () => { cancelled = true; };
   }, [selectedKey]);
 
-  // 주보가 확인되면 첨부 파일 목록도 자동으로 가져온다 (토글 없이 곧바로 노출).
+  // 현재 보고 있는 윈도우(최근 4개 주일)를 백그라운드 prefetch — 주일 전환이 즉시 반응.
   useEffect(() => {
-    if (!bulletin?.bulletinIdx) return;
-    let cancelled = false;
-    setBulletinFilesLoading(true); setBulletinFilesError(null);
-    fetch(`/api/bulletin-file?idx=${encodeURIComponent(bulletin.bulletinIdx)}`)
-      .then((r) => r.json())
-      .then((d) => { if (!cancelled) { setBulletinFiles(Array.isArray(d?.files) ? d.files : []); setMisbaUrl(typeof d?.misbaUrl === 'string' ? d.misbaUrl : null); } })
-      .catch(() => { if (!cancelled) setBulletinFilesError('주보 첨부를 불러오지 못했습니다.'); })
-      .finally(() => { if (!cancelled) setBulletinFilesLoading(false); });
-    return () => { cancelled = true; };
-  }, [bulletin?.bulletinIdx]);
+    if (typeof window === 'undefined') return;
+    const schedule: (cb: () => void) => number =
+      (window as any).requestIdleCallback?.bind(window) || ((cb: () => void) => window.setTimeout(cb, 300));
+    const cancel: (id: number) => void =
+      (window as any).cancelIdleCallback?.bind(window) || window.clearTimeout;
+    const id = schedule(() => {
+      recentSundays.forEach((key) => {
+        if (key === selectedKey) return;
+        if (bulletinCacheRef.current.has(key)) return;
+        fetch(`/api/sunday-bulletin?date=${key}`)
+          .then((r) => r.ok ? r.json() : null)
+          .then((d) => { if (d) bulletinCacheRef.current.set(key, d); })
+          .catch(() => {});
+      });
+    });
+    return () => { try { cancel(id); } catch {} };
+  }, [recentSundays, selectedKey]);
 
   const selected = new Date(selectedKey);
   const selectedLabel = `${selected.getFullYear()}.${pad(selected.getMonth() + 1)}.${pad(selected.getDate())} (주일)`;

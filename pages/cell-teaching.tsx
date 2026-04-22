@@ -1,6 +1,6 @@
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import SubHeader from '../components/SubHeader';
 import BiblePassageCard from '../components/BiblePassageCard';
 import { getSystemAdminHref } from '../lib/adminGuard';
@@ -90,17 +90,40 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
   const [guide, setGuide] = useState<CellGuide | null>(null);
   const [guideLoading, setGuideLoading] = useState(false);
   const [guideError, setGuideError] = useState<string | null>(null);
+  const guideCacheRef = useRef(new Map<string, CellGuide>());
 
   useEffect(() => {
     let cancelled = false;
+    const cache = guideCacheRef.current.get(selectedKey);
+    if (cache) { setGuide(cache); setGuideLoading(false); setGuideError(null); return; }
     setGuideLoading(true); setGuideError(null); setGuide(null);
     fetch(`/api/cell-worship?date=${selectedKey}`)
       .then((r) => r.json())
-      .then((d) => { if (!cancelled) setGuide(d); })
+      .then((d: CellGuide) => { if (!cancelled) { guideCacheRef.current.set(selectedKey, d); setGuide(d); } })
       .catch(() => { if (!cancelled) setGuideError('구역예배지를 불러오지 못했습니다.'); })
       .finally(() => { if (!cancelled) setGuideLoading(false); });
     return () => { cancelled = true; };
   }, [selectedKey]);
+
+  // 백그라운드 prefetch — 현재 윈도우의 나머지 주일도 미리 가져와 전환 지연 최소화.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const schedule: (cb: () => void) => number =
+      (window as any).requestIdleCallback?.bind(window) || ((cb: () => void) => window.setTimeout(cb, 300));
+    const cancel: (id: number) => void =
+      (window as any).cancelIdleCallback?.bind(window) || window.clearTimeout;
+    const id = schedule(() => {
+      recentSundays.forEach((key) => {
+        if (key === selectedKey) return;
+        if (guideCacheRef.current.has(key)) return;
+        fetch(`/api/cell-worship?date=${key}`)
+          .then((r) => r.ok ? r.json() : null)
+          .then((d) => { if (d) guideCacheRef.current.set(key, d); })
+          .catch(() => {});
+      });
+    });
+    return () => { try { cancel(id); } catch {} };
+  }, [recentSundays, selectedKey]);
 
   const selected = new Date(selectedKey);
   const selectedLabel = `${selected.getFullYear()}.${pad(selected.getMonth() + 1)}.${pad(selected.getDate())} (주일)`;

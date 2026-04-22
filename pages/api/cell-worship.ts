@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { lookupPassage, formatVerses } from '../../lib/bible';
 import { PDFParse } from '../../lib/pdf';
+import { makeKvCache } from '../../lib/crawlCache';
 
 // 약식 → 정식 책명
 const BOOK_ABBR: Record<string, string> = {
@@ -109,13 +110,16 @@ const parsePdfSections = (text: string): { questions: string[]; prayer: Array<{ 
 
 const LIST_URL = 'https://koreanchurch.sg/noticeandnews';
 const POST_URL = (idx: string) => `https://koreanchurch.sg/noticeandnews/?bmode=view&idx=${idx}&t=board`;
-const CACHE_TTL = 30 * 60 * 1000;
+const LIST_TTL = 30 * 60 * 1000;         // 목록 — 30분
+const DETAIL_TTL = 24 * 60 * 60 * 1000;  // 상세(PDF 파싱 결과) — 24시간
 
 type ListItem = { idx: string; title: string; dateKey: string; month: number; nth: number };
 type BulletinItem = { idx: string; title: string; dateKey: string };
+type ListPayload = { items: ListItem[]; bulletins: BulletinItem[]; year: number };
 
-let listCache: { items: ListItem[]; bulletins: BulletinItem[]; at: number } | null = null;
-const detailCache = new Map<string, { data: any; at: number }>();
+// Supabase KV 기반 영속 캐시 — 람다 콜드스타트에도 재사용.
+const listCache = makeKvCache<ListPayload>('cell_worship_list_cache_v1', LIST_TTL);
+const detailCache = makeKvCache<any>('cell_worship_detail_cache_v1', DETAIL_TTL);
 
 const ORDINAL_MAP: Record<string, number> = { '첫': 1, '둘': 2, '셋': 3, '넷': 4, '다섯': 5 };
 
@@ -142,8 +146,9 @@ const stripTags = (s: string): string =>
 
 // 게시글 목록 파싱: idx + 제목 추출 후 '구역예배지' + '주보' 두 타입 분류
 const fetchList = async (year: number): Promise<{ items: ListItem[]; bulletins: BulletinItem[] }> => {
-  const now = Date.now();
-  if (listCache && now - listCache.at < CACHE_TTL) return { items: listCache.items, bulletins: listCache.bulletins };
+  const cacheKey = `y${year}`;
+  const cached = await listCache.get(cacheKey);
+  if (cached) return { items: cached.items, bulletins: cached.bulletins };
 
   const res = await fetch(LIST_URL, { headers: { 'User-Agent': 'Mozilla/5.0' } });
   const html = await res.text();
@@ -181,15 +186,14 @@ const fetchList = async (year: number): Promise<{ items: ListItem[]; bulletins: 
       bulletins.push({ idx, title: rawTitle, dateKey });
     }
   }
-  listCache = { items, bulletins, at: now };
+  await listCache.set(cacheKey, { items, bulletins, year });
   return { items, bulletins };
 };
 
 // 게시글 본문 파싱 + 첨부 PDF 다운로드 및 텍스트 추출
 const fetchDetail = async (idx: string): Promise<{ body: string; attachmentName: string | null; biblePassage: string | null; sermonTitle: string | null; pdfText: string | null }> => {
-  const now = Date.now();
-  const hit = detailCache.get(idx);
-  if (hit && now - hit.at < CACHE_TTL) return hit.data;
+  const cached = await detailCache.get(idx);
+  if (cached) return cached;
 
   const res = await fetch(POST_URL(idx), { headers: { 'User-Agent': 'Mozilla/5.0' } });
   const html = await res.text();
@@ -262,7 +266,7 @@ const fetchDetail = async (idx: string): Promise<{ body: string; attachmentName:
   const finalSermonTitle = pdfSermonTitle || sermonTitle || null;
 
   const data = { body, attachmentName, biblePassage, normalizedRef, sermonTitle: finalSermonTitle, pdfText, pdfError, bibleText, bibleTextEn, hymn, questions: sections.questions, prayer: sections.prayer };
-  detailCache.set(idx, { data, at: now });
+  await detailCache.set(idx, data);
   return data;
 };
 
@@ -274,6 +278,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { items, bulletins } = await fetchList(year);
     const bulletinMatch = bulletins.find((b) => b.dateKey === date);
     const match = items.find((x) => x.dateKey === date);
+    // CDN + 브라우저: 30분 fresh, 1일 stale-while-revalidate — PDF 파싱 비용 회피.
+    res.setHeader('Cache-Control', 'public, max-age=1800, s-maxage=3600, stale-while-revalidate=86400');
     if (!match) return res.status(200).json({ found: false, bulletinIdx: bulletinMatch?.idx || null, bulletinTitle: bulletinMatch?.title || null });
     const detail = await fetchDetail(match.idx);
     return res.status(200).json({

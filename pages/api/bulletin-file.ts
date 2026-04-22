@@ -1,17 +1,18 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { makeKvCache } from '../../lib/crawlCache';
 
 // 주보 게시글(idx)의 첨부파일을 프록시 스트리밍하거나 목록을 조회한다.
-// - GET /api/bulletin-file?idx=XXX          → { files: [{n, name, mime?}] }
+// - GET /api/bulletin-file?idx=XXX          → { files: [{n, name, mime?}], misbaUrl }
 // - GET /api/bulletin-file?idx=XXX&n=0     → 첨부 바이너리 스트리밍
 
 const POST_URL = (idx: string) => `https://koreanchurch.sg/noticeandnews/?bmode=view&idx=${idx}&t=board`;
 const BASE = 'https://koreanchurch.sg';
-const CACHE_TTL = 30 * 60 * 1000;
+const ATT_TTL = 24 * 60 * 60 * 1000; // 24시간 — 주간 단위 자료
 
 type Entry = { href: string; name: string | null };
 type ParsedPost = { entries: Entry[]; misbaUrl: string | null };
 
-const listCache = new Map<string, { at: number; parsed: ParsedPost }>();
+const attCache = makeKvCache<ParsedPost>('bulletin_attachment_cache_v1', ATT_TTL);
 
 const decodeEntities = (s: string) =>
   s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
@@ -28,9 +29,8 @@ const guessMime = (name: string | null): string => {
 };
 
 const fetchAttachments = async (idx: string): Promise<ParsedPost> => {
-  const hit = listCache.get(idx);
-  const now = Date.now();
-  if (hit && now - hit.at < CACHE_TTL) return hit.parsed;
+  const cached = await attCache.get(idx);
+  if (cached) return cached;
 
   const res = await fetch(POST_URL(idx), { headers: { 'User-Agent': 'Mozilla/5.0' } });
   const html = await res.text();
@@ -63,8 +63,7 @@ const fetchAttachments = async (idx: string): Promise<ParsedPost> => {
     }
   }
 
-  // 3) 게시물 본문에 삽입된 "미스바" 링크 추출 — anchor의 text나 href가 misba/미스바 포함.
-  //    게시글 하단에 미스바 앱/파일 링크가 있는 경우 우선 사용.
+  // 3) 게시물 본문에 삽입된 "미스바" 링크 추출.
   let misbaUrl: string | null = null;
   const bodyMatch = html.match(/<div class="margin-top-xxl _comment_body_[^"]*">([\s\S]*?)<\/div>\s*<\/div>/);
   const body = bodyMatch ? bodyMatch[1] : html;
@@ -79,11 +78,10 @@ const fetchAttachments = async (idx: string): Promise<ParsedPost> => {
       candidates.push({ url, text });
     }
   }
-  // 후보 중 가장 마지막(게시물 하단에 가까운) 링크 사용
   if (candidates.length > 0) misbaUrl = candidates[candidates.length - 1].url;
 
   const parsed: ParsedPost = { entries, misbaUrl };
-  listCache.set(idx, { at: now, parsed });
+  await attCache.set(idx, parsed);
   return parsed;
 };
 
@@ -97,6 +95,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // 목록 조회 모드
     if (req.query.n === undefined) {
+      res.setHeader('Cache-Control', 'public, max-age=1800, s-maxage=3600, stale-while-revalidate=86400');
       return res.status(200).json({
         idx,
         count: entries.length,
@@ -126,7 +125,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const mime = upstreamMime && !/text\/html/i.test(upstreamMime) ? upstreamMime : guessMime(entry.name);
     const buf = Buffer.from(await fileRes.arrayBuffer());
     res.setHeader('Content-Type', mime);
-    res.setHeader('Cache-Control', 'public, max-age=1800');
+    res.setHeader('Cache-Control', 'public, max-age=1800, s-maxage=86400, stale-while-revalidate=604800');
     res.setHeader('Content-Length', String(buf.length));
     return res.status(200).send(buf);
   } catch (e: any) {
