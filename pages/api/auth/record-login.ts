@@ -11,7 +11,7 @@ type Approval = {
   firstLoginAt: string;
   lastLoginAt: string;
   loginCount: number;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'blocked';
 };
 
 type SignupField = 'realName' | 'contact';
@@ -48,6 +48,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const list = await readApprovals();
   const now = new Date().toISOString();
   const idx = list.findIndex((a) => a.profileId === profileId);
+
+  // 차단된 profileId 는 로그인/재가입 불가 — lastLoginAt 갱신도 안 함.
+  if (idx >= 0 && list[idx].status === 'blocked') {
+    return res.status(403).json({ error: 'blocked', approval: list[idx], approvalMode, requiredFields: required, missingFields: [] });
+  }
+
   if (idx === -1) {
     const entry: Approval = {
       profileId,

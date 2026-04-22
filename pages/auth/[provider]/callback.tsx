@@ -55,7 +55,7 @@ const CallbackPage = () => {
           window.localStorage.setItem('kcisProfileId', profileId);
         } catch {}
 
-        let approvalStatus: 'approved' | 'pending' | 'rejected' = 'approved';
+        let approvalStatus: 'approved' | 'pending' | 'rejected' | 'blocked' = 'approved';
         let missingFields: string[] = [];
         try {
           const loginRes = await fetch('/api/auth/record-login', {
@@ -63,12 +63,24 @@ const CallbackPage = () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ profileId, provider: providerName, nickname, email }),
           });
-          if (loginRes.ok) {
-            const loginData = await loginRes.json();
+          const loginData = await loginRes.json().catch(() => ({}));
+          if (!loginRes.ok && loginData?.error === 'blocked') {
+            approvalStatus = 'blocked';
+          } else if (loginRes.ok) {
             approvalStatus = loginData?.approval?.status || 'approved';
             if (Array.isArray(loginData?.missingFields)) missingFields = loginData.missingFields;
           }
         } catch {}
+
+        if (approvalStatus === 'blocked') {
+          try {
+            window.localStorage.removeItem('kcisProfileId');
+            window.localStorage.removeItem('kcisNickname');
+            window.localStorage.removeItem('kcisEmail');
+          } catch {}
+          router.replace('/auth/blocked');
+          return;
+        }
 
         if (missingFields.length > 0) {
           const qs = new URLSearchParams({

@@ -12,7 +12,7 @@ type Approval = {
   firstLoginAt: string;
   lastLoginAt: string;
   loginCount: number;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'blocked';
 };
 
 const readAll = async (): Promise<Approval[]> => {
@@ -37,15 +37,21 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   if (req.method === 'PATCH') {
-    const { profileIds, action } = req.body as { profileIds?: string[]; action?: 'approve' | 'reject' };
-    if (!Array.isArray(profileIds) || profileIds.length === 0 || (action !== 'approve' && action !== 'reject')) {
-      return res.status(400).json({ error: 'profileIds[] and action(approve/reject) required.' });
+    const { profileIds, action } = req.body as { profileIds?: string[]; action?: 'approve' | 'reject' | 'block' | 'unblock' };
+    if (!Array.isArray(profileIds) || profileIds.length === 0 || !action || !['approve', 'reject', 'block', 'unblock'].includes(action)) {
+      return res.status(400).json({ error: 'profileIds[] and action(approve/reject/block/unblock) required.' });
     }
     const list = await readAll();
     let updated = 0;
+    const nextStatus: Record<typeof action, Approval['status']> = {
+      approve: 'approved',
+      reject: 'rejected',
+      block: 'blocked',
+      unblock: 'approved',
+    };
     for (let i = 0; i < list.length; i++) {
       if (profileIds.includes(list[i].profileId)) {
-        list[i].status = action === 'approve' ? 'approved' : 'rejected';
+        list[i].status = nextStatus[action];
         updated++;
       }
     }
