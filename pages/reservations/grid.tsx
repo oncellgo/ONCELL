@@ -56,7 +56,8 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
   // 두 선택 모두 필수 — date 은 기본 오늘로 프리셋, venue 는 미선택 시작
   const todayKey = dateKey(new Date());
   const [selectedDate, setSelectedDate] = useState<string>(todayKey);
-  const [selectedVenueIds, setSelectedVenueIds] = useState<Set<string>>(new Set());
+  // 모든 장소가 기본 선택 — 페이지 진입 즉시 전체 현황이 보이도록
+  const [selectedVenueIds, setSelectedVenueIds] = useState<Set<string>>(() => new Set(venues.map((v) => v.id)));
   const [venueOpen, setVenueOpen] = useState(false);
   // 선택 상태 — 단일 장소 + 연속된 시간 슬롯만 허용 (원본 장소예약과 동일한 정책)
   const [activeVenueId, setActiveVenueId] = useState<string | null>(null);
@@ -422,7 +423,11 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
               <span style={{ fontSize: '0.72rem', fontWeight: 800, color: venueSummary ? 'var(--color-primary-deep)' : '#6B7280', letterSpacing: '0.02em' }}>📍 장소 {venueSummary ? `(${selectedVenueIds.size})` : '(미선택)'}</span>
               <button
                 type="button"
-                onClick={() => setVenueOpen(true)}
+                onClick={() => {
+                  // 아무것도 선택 안 된 상태로 모달을 열면 혼란 → 전체를 기본 선택해서 열기
+                  if (selectedVenueIds.size === 0) setSelectedVenueIds(new Set(venues.map((v) => v.id)));
+                  setVenueOpen(true);
+                }}
                 style={{
                   width: '100%',
                   padding: isMobile ? '0.7rem 0.8rem' : '0.8rem 0.95rem',

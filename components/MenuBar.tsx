@@ -23,7 +23,7 @@ const ITEMS: Array<{ label: string; href: string }> = [
   // 일정은 현재 숨김 (필요 시 아래 주석 해제)
   // { label: '일정', href: '/schedule' },
   { label: '장소예약', href: '/reservations/grid' },
-  { label: '예약현황보기', href: '/reservation' },
+  // 예약현황보기(/reservation)은 메뉴에서 숨김 — 직접 URL 접속은 가능
   { label: '큐티', href: '/qt' },
   { label: '성경통독', href: '/reading' },
   { label: '주보', href: '/sunday-worship' },
