@@ -520,7 +520,7 @@ const ReservationPage = ({ venues, blocks, groups, slotMin, availableStart, avai
           <div style={{ display: 'flex', gap: isMobile ? '0.5rem' : '0.85rem', fontSize: '0.78rem', color: 'var(--color-ink-2)', flexWrap: 'wrap', alignItems: 'center', rowGap: '0.4rem' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#F7FEE7', border: '1px solid #D9F09E' }} /> 예약 가능</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#DC2626' }} /> 교회일정</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#20CD8D', outline: '2px solid #FBBF24', outlineOffset: -1 }} /> ⭐ 내 예약</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#2563EB', outline: '2px solid #FBBF24', outlineOffset: -1 }} /> ⭐ 내 예약</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#9CA3AF' }} /> 타인 예약</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><span style={{ width: 14, height: 14, borderRadius: 3, background: '#4B5563' }} /> 예약불가</span>
           </div>

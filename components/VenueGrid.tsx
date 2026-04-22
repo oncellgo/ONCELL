@@ -361,7 +361,7 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                   const isConflict = isSelected && blocked;
                   // 색상: 충돌=주황경고, 선택=민트, 대체=반투명민트+점선, 불가시간=연회색, 교회일정=진빨강,
                   //       내 예약=딥민트(노랑 테두리 강조), 타인 예약=중간회색, 예약불가=보라(교회일정/예약과 분리), 예약가능=연녹
-                  const kindBg = kind === 'event' ? '#DC2626' : kind === 'reservation' ? (mine ? '#20CD8D' : '#9CA3AF') : '#4B5563';
+                  const kindBg = kind === 'event' ? '#DC2626' : kind === 'reservation' ? (mine ? '#2563EB' : '#9CA3AF') : '#4B5563';
                   const kindFg = '#FFFFFF';
                   const bg = isConflict ? '#F59E0B' : isSelected ? '#20CD8D' : isAlternate ? 'rgba(32, 205, 141, 0.18)' : (!inAvailable ? '#E5E7EB' : blocked ? kindBg : '#F7FEE7');
                   const color = isConflict ? '#FFFFFF' : isSelected ? '#fff' : isAlternate ? '#3F6212' : (!inAvailable ? '#9CA3AF' : blocked ? kindFg : '#4D7C0F');
@@ -373,7 +373,7 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                     titleParts.push(`${kindLabel}${mine ? ' (내 예약)' : ''}: ${reason}`);
                     if (kind === 'reservation' && reserverName) titleParts.push(`예약자: ${reserverName}`);
                     if (kind === 'reservation' && reserverContact) titleParts.push(`연락처: ${reserverContact}`);
-                  } else if (isSelected) titleParts.push('선택됨 — 클릭하여 해제, 또는 드래그로 연속 선택');
+                  } else if (isSelected) titleParts.push('예약 시간 선택됨');
                   else if (isAlternate) titleParts.push('후보 (클릭하여 이 장소로 전환)');
                   else titleParts.push('예약 가능 — 클릭하거나, 시작 셀에서 끝 셀까지 드래그하면 한 번에 선택됩니다');
                   // 셀 내부: reservation kind이고 rowSpan≥2면 3줄 표시, 그 외엔 reason만

@@ -462,7 +462,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                   <span style={{ width: 14, height: 14, borderRadius: 3, background: '#DC2626' }} /> 교회일정
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <span style={{ width: 14, height: 14, borderRadius: 3, background: '#20CD8D', outline: '2px solid #FBBF24', outlineOffset: -1 }} /> ⭐ 내 예약
+                  <span style={{ width: 14, height: 14, borderRadius: 3, background: '#2563EB', outline: '2px solid #FBBF24', outlineOffset: -1 }} /> ⭐ 내 예약
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                   <span style={{ width: 14, height: 14, borderRadius: 3, background: '#9CA3AF' }} /> 타인 예약
@@ -497,11 +497,6 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
                     ✓ {selection.venue.floor} {selection.venue.name} · {selection.startLabel}~{selection.endLabel} ({selection.totalLabel})
                   </span>
                   <div style={{ display: 'flex', gap: '0.35rem', marginLeft: isMobile ? 0 : 'auto' }}>
-                    <button
-                      type="button"
-                      onClick={clearSelectedSlots}
-                      style={{ flex: isMobile ? 1 : undefined, padding: '0.45rem 0.85rem', minHeight: 40, borderRadius: 999, border: '1px solid #6B7280', background: '#fff', color: '#374151', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
-                    >선택 해제</button>
                     <button
                       type="button"
                       onClick={openConfirmModal}
