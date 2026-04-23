@@ -124,10 +124,6 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
 
         <section className={styles.hero}>
           <div>
-            <span className={styles.eyebrow}>
-              <span className={styles.eyebrowDot} />
-              {t('landing.eyebrow')}
-            </span>
             <h1 className={styles.title}>
               {t('landing.tagline1')} {t('landing.tagline2')}<br />
               <span className={styles.titleAccent}>{t('landing.brand')}</span>
@@ -211,8 +207,18 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
           <div>21 Gangsa Road Singapore 678973</div>
           <div>TEL <a href="tel:+6564686694" style={{ color: 'var(--color-ink-2)', display: 'inline-block', minHeight: 28, lineHeight: '28px' }}>+65-6468-6694</a></div>
           <div><a href="mailto:koreanchurch@live.com" style={{ color: 'var(--color-ink-2)', display: 'inline-block', minHeight: 28, lineHeight: '28px' }}>koreanchurch@live.com</a></div>
-          <div style={{ marginTop: '0.9rem', fontSize: '0.62rem', color: 'var(--color-gray)', letterSpacing: '0.02em', opacity: 0.7 }}>
-            © {new Date().getFullYear()} Steward+AI
+          <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center' }}>
+            <span style={{
+              padding: '0.3rem 0.75rem',
+              borderRadius: 999,
+              background: 'rgba(32, 205, 141, 0.08)',
+              color: 'var(--color-primary-deep)',
+              fontSize: '0.68rem',
+              fontWeight: 600,
+              letterSpacing: '0.02em',
+            }}>
+              © {new Date().getFullYear()} Steward+AI. All rights reserved.
+            </span>
           </div>
         </footer>
       </div>
