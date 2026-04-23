@@ -1,8 +1,10 @@
 import { useTranslation } from 'react-i18next';
 import { changeLanguage } from '../lib/i18n';
+import { useIsMobile } from '../lib/useIsMobile';
 
 const LanguageSwitcher = () => {
   const { i18n } = useTranslation();
+  const isMobile = useIsMobile();
   const current = (i18n.language || 'ko').slice(0, 2) as 'ko' | 'en' | 'zh';
   return (
     <select
@@ -11,12 +13,12 @@ const LanguageSwitcher = () => {
       onChange={(e) => changeLanguage(e.target.value as 'ko' | 'en' | 'zh')}
       style={{
         minHeight: 40,
-        padding: '0.45rem 0.5rem',
+        padding: isMobile ? '0.35rem 0.4rem' : '0.45rem 0.5rem',
         borderRadius: 8,
         border: '1px solid var(--color-gray)',
         background: 'var(--color-surface)',
         color: 'var(--color-ink)',
-        fontSize: '0.9rem',
+        fontSize: isMobile ? '0.82rem' : '0.9rem',
         fontWeight: 700,
         cursor: 'pointer',
       }}

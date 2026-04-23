@@ -20,14 +20,21 @@ type Props = {
   email?: string | null;
 };
 
+// '교회일정' 메뉴 표시 여부 — 현재는 의도적으로 숨김 (2026-04-23 보류).
+// true 로 바꾸면 '일정'(`/schedule`)이 첫 항목으로 다시 노출된다. 다른 변경 불필요.
+const SCHEDULE_MENU_VISIBLE = false;
+
 // 메뉴 라벨은 t('menu.xxx') 로 i18n. ko/en/zh 전환에 자동 반응.
-const ITEMS: Array<{ labelKey: string; href: string }> = [
+const ITEMS: Array<{ labelKey: string; href: string; hidden?: boolean }> = [
+  { labelKey: 'menu.schedule', href: '/schedule', hidden: !SCHEDULE_MENU_VISIBLE },
   { labelKey: 'menu.reservation', href: '/reservations/grid' },
   { labelKey: 'menu.qt', href: '/qt' },
   { labelKey: 'menu.reading', href: '/reading' },
   { labelKey: 'menu.bulletin', href: '/sunday-worship' },
   { labelKey: 'menu.cellTeaching', href: '/cell-teaching' },
 ];
+
+const VISIBLE_ITEMS = ITEMS.filter((i) => !i.hidden);
 
 const MenuBar = ({ profileId, nickname, email }: Props) => {
   const { t } = useTranslation();
@@ -122,7 +129,7 @@ const MenuBar = ({ profileId, nickname, email }: Props) => {
         zIndex: 15,
       }}
     >
-      {ITEMS.map((item) => {
+      {VISIBLE_ITEMS.map((item) => {
         const active = isActive(item.href);
         return (
           <Link

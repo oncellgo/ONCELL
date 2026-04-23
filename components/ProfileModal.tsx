@@ -95,9 +95,9 @@ const ProfileModal = ({ profileId, email, onClose }: Props) => {
         background: 'rgba(15, 23, 42, 0.55)',
         zIndex: 100,
         display: 'flex',
-        alignItems: isMobile ? 'flex-end' : 'center',
+        alignItems: 'center',
         justifyContent: 'center',
-        padding: isMobile ? 0 : '1rem',
+        padding: '1rem',
       }}
     >
       <div
@@ -106,10 +106,10 @@ const ProfileModal = ({ profileId, email, onClose }: Props) => {
         className="modal-card"
         style={{
           width: '100%',
-          maxWidth: isMobile ? '100%' : 520,
-          maxHeight: isMobile ? '92vh' : '90vh',
+          maxWidth: 520,
+          maxHeight: '90vh',
           background: '#fff',
-          borderRadius: isMobile ? '18px 18px 0 0' : 16,
+          borderRadius: 16,
           boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
           display: 'flex',
           flexDirection: 'column',
