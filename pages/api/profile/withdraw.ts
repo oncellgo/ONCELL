@@ -5,7 +5,7 @@ import {
   getUsers, setUsers,
   getEvents, setEvents,
 } from '../../../lib/dataStore';
-import { kvGet, kvSet } from '../../../lib/db';
+import { db, kvGet, kvSet } from '../../../lib/db';
 
 /**
  * 회원 탈퇴 — 본인 요청. admin 인증 없이 profileId 본인이 호출.
@@ -13,7 +13,9 @@ import { kvGet, kvSet } from '../../../lib/db';
  * 처리 정책 (사용자 안내 문구와 일치):
  *  1. 개인정보 즉시 파기 — profiles / users / signup_approvals 에서 해당 row 삭제
  *  2. 예약 내역 삭제 — events 중 type='reservation' 이면서 createdBy 가 본인인 row 삭제
- *  3. 법령 보존용 최소 로그 — withdrawn_logs KV 에 { profileId, reason, at } 만 저장
+ *  3. 묵상 기록 삭제 — qt_notes 전체 (profile_id 기준) 삭제
+ *  4. 완료 이력 삭제 — user_completions 전체 (profile_id 기준) 삭제 (QT·통독 일별 기록)
+ *  5. 법령 보존용 최소 로그 — withdrawn_logs KV 에 { profileId, reason, at } 만 저장
  *     (원인 파악·관리자 감사용. 실명/이메일/연락처 등 식별정보는 남기지 않음.)
  *
  * 차단(blocked) 상태는 탈퇴 처리 거부 — 관리자 이력 보존.
@@ -59,6 +61,31 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       setEvents(nextEvents),
     ]);
 
+    // 묵상 기록·완료 이력 삭제 (profile_id 기준 전체)
+    // 실패해도 탈퇴 자체는 성공으로 처리. 다만 반드시 로그에 남겨 관리자가 추적할 수 있게 한다.
+    let qtNotesDeleted = 0;
+    let completionsDeleted = 0;
+    try {
+      const { count: c1, error: e1 } = await db
+        .from('kcis_qt_notes')
+        .delete({ count: 'exact' })
+        .eq('profile_id', profileId);
+      if (e1) console.error('[withdraw] kcis_qt_notes delete failed', e1);
+      qtNotesDeleted = c1 || 0;
+    } catch (e) {
+      console.error('[withdraw] kcis_qt_notes exception', e);
+    }
+    try {
+      const { count: c2, error: e2 } = await db
+        .from('kcis_user_completions')
+        .delete({ count: 'exact' })
+        .eq('profile_id', profileId);
+      if (e2) console.error('[withdraw] kcis_user_completions delete failed', e2);
+      completionsDeleted = c2 || 0;
+    } catch (e) {
+      console.error('[withdraw] kcis_user_completions exception', e);
+    }
+
     // 최소 탈퇴 로그 — 식별정보 없이 profileId 만 (법령·관리자 감사 목적)
     try {
       const logs = ((await kvGet<WithdrawnLog[]>(LOG_KEY)) || []) as WithdrawnLog[];
@@ -83,6 +110,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         users: users.length - nextUsers.length,
         approvals: approvals.length - nextApprovals.length,
         reservations: events.length - nextEvents.length,
+        qtNotes: qtNotesDeleted,
+        completions: completionsDeleted,
       },
     });
   } catch (e: any) {

@@ -6,6 +6,7 @@ import {
   getUsers, setUsers,
   getEvents, setEvents,
 } from '../../../lib/dataStore';
+import { db } from '../../../lib/db';
 
 /**
  * 시스템 관리자용 "가입 정보 삭제" — 특정 profileId 의 모든 개인정보 + 예약 완전 파기.
@@ -44,6 +45,30 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       setEvents(nextEvents),
     ]);
 
+    // 묵상 기록·완료 이력 삭제 (본인 탈퇴 경로와 동일 정책)
+    let qtNotesDeleted = 0;
+    let completionsDeleted = 0;
+    try {
+      const { count: c1, error: e1 } = await db
+        .from('kcis_qt_notes')
+        .delete({ count: 'exact' })
+        .eq('profile_id', profileId);
+      if (e1) console.error('[admin/delete-user] kcis_qt_notes delete failed', e1);
+      qtNotesDeleted = c1 || 0;
+    } catch (e) {
+      console.error('[admin/delete-user] kcis_qt_notes exception', e);
+    }
+    try {
+      const { count: c2, error: e2 } = await db
+        .from('kcis_user_completions')
+        .delete({ count: 'exact' })
+        .eq('profile_id', profileId);
+      if (e2) console.error('[admin/delete-user] kcis_user_completions delete failed', e2);
+      completionsDeleted = c2 || 0;
+    } catch (e) {
+      console.error('[admin/delete-user] kcis_user_completions exception', e);
+    }
+
     return res.status(200).json({
       ok: true,
       deleted: {
@@ -51,6 +76,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         profiles: profiles.length - nextProfiles.length,
         users: users.length - nextUsers.length,
         reservations: events.length - nextEvents.length,
+        qtNotes: qtNotesDeleted,
+        completions: completionsDeleted,
       },
     });
   } catch (e: any) {

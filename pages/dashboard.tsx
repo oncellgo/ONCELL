@@ -855,7 +855,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                       장소 예약을 시작해볼까요?
                     </p>
                     <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.84rem', lineHeight: 1.5, wordBreak: 'keep-all' }}>
-                      예배실·소모임실 등을<br />30분 단위로 예약할 수 있어요.
+                      예배실·소모임실 등을 30분 단위로 예약할 수 있어요.
                     </p>
                   </div>
                 </div>
@@ -1045,9 +1045,27 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                   </a>
                 )}
                 {doneToday && (
-                  <div style={{ marginTop: '0.6rem', fontSize: '0.85rem', color: '#15803D', fontWeight: 700 }}>
+                  <a
+                    href={qtHref}
+                    title="오늘의 큐티 보기"
+                    style={{
+                      marginTop: '0.6rem',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      padding: '0.65rem 1rem', minHeight: 44,
+                      borderRadius: 10,
+                      background: 'var(--color-primary)',
+                      color: '#fff',
+                      border: '1.5px solid var(--color-primary)',
+                      fontWeight: 800, fontSize: '0.92rem',
+                      textDecoration: 'none',
+                      width: isMobile ? '100%' : 'auto',
+                      letterSpacing: '-0.01em',
+                      wordBreak: 'keep-all',
+                      textAlign: 'center',
+                    }}
+                  >
                     ✓ 오늘 묵상 완료 — 내일도 이어가요!
-                  </div>
+                  </a>
                 )}
 
                 {/* 최근 7일 큐티 현황 — 원형 pill. 완료=민트 / 미완료=흰 / 오늘 미완료=펄스 유도 */}

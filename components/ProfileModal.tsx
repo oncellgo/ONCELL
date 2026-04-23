@@ -57,12 +57,20 @@ const ProfileModal = ({ profileId, nickname, email, onClose }: Props) => {
         setWithdrawMsg(d?.error === 'blocked' ? '차단된 계정은 탈퇴 처리할 수 없습니다.' : (d?.error || '탈퇴 실패'));
         return;
       }
-      // 로컬 인증 정보 제거 후 홈으로
+      // 로컬 인증 정보 + 묵상 초안 제거 후 홈으로
       try {
         window.localStorage.removeItem('kcisProfileId');
         window.localStorage.removeItem('kcisNickname');
         window.localStorage.removeItem('kcisEmail');
         window.localStorage.removeItem('kcisSystemAdminHref');
+        // 로컬에 남아있는 QT 묵상 초안(`qt-reflection:{profileId}:{date}`) 도 모두 정리
+        const prefix = `qt-reflection:${profileId}:`;
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < window.localStorage.length; i++) {
+          const k = window.localStorage.key(i);
+          if (k && k.startsWith(prefix)) keysToRemove.push(k);
+        }
+        keysToRemove.forEach((k) => window.localStorage.removeItem(k));
       } catch {}
       window.location.href = '/';
     } catch {
@@ -205,7 +213,7 @@ const ProfileModal = ({ profileId, nickname, email, onClose }: Props) => {
               <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: '0.55rem' }}>
                 {[
                   { title: '장소 예약 정보 삭제', body: '현재 신청 중이거나 이용 완료된 모든 예약 내역이 삭제됩니다.' },
-                  { title: '나의 기록 삭제', body: '그 동안 작성한 나의 큐티 기록 및 성경통독 진행 데이터가 모두 파기됩니다. (탈퇴 후에는 어떤 방법으로도 복구할 수 없습니다.)' },
+                  { title: '나의 기록 전체 삭제', body: '작성한 모든 묵상 노트(느낀점·결단·기도제목)와 QT·성경통독 완료 이력, 브라우저에 저장된 묵상 초안까지 즉시 파기됩니다. 탈퇴 후에는 어떤 방법으로도 복구할 수 없습니다.' },
                   { title: '개인정보 파기', body: '이름, 연락처 등 모든 개인 식별 정보가 즉시 삭제됩니다.' },
                   { title: '소셜 연동 해제', body: "사이트 탈퇴 후에도 카카오/구글 설정 내 '연결된 앱'에 기록이 남아있을 수 있으니, 해당 플랫폼에서 직접 연동 해제를 권장합니다." },
                 ].map((item, i) => (
