@@ -640,7 +640,7 @@ const ReservationSlotPicker = ({
           }}
         >
           <span aria-hidden style={{ fontSize: '0.95rem', lineHeight: 1, flexShrink: 0 }}>ℹ️</span>
-          <span>새로 선택한 시간이 기존 예약을 대체합니다</span>
+          <span>{t('page.reservation.editModeBanner')}</span>
         </div>
       )}
       {/* 상단: 날짜 + 장소 */}
@@ -751,25 +751,25 @@ const ReservationSlotPicker = ({
         <>
           <div style={{ display: 'flex', gap: isMobile ? '0.5rem' : '0.85rem', fontSize: '0.76rem', color: 'var(--color-ink-2)', flexWrap: 'wrap', alignItems: 'center', rowGap: '0.4rem' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-              <span style={{ width: 14, height: 14, borderRadius: 3, background: '#F7FEE7', border: '1px solid #D9F09E' }} /> 예약 가능
+              <span style={{ width: 14, height: 14, borderRadius: 3, background: '#F7FEE7', border: '1px solid #D9F09E' }} /> {t('page.reservation.availableSlot')}
             </span>
             {mode === 'edit' && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                 <span style={{ width: 14, height: 14, borderRadius: 3, background: 'rgba(167, 243, 208, 0.45)', border: '1.5px dashed #20CD8D' }} />
-                <span style={{ color: '#EAB308', fontWeight: 800 }}>★</span> 기존 예약
+                {t('page.reservation.ghostSlot')}
               </span>
             )}
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
               <span style={{ width: 14, height: 14, borderRadius: 3, background: '#A7F3D0', outline: '2px solid #20CD8D', outlineOffset: -1 }} />
-              <span style={{ color: '#EAB308', fontWeight: 800 }}>★</span> 내 예약
+              {t('page.reservation.mySlot')}
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-              <span style={{ width: 14, height: 14, borderRadius: 3, background: '#DBEAFE', border: '1px solid #93C5FD' }} /> 타인 예약
+              <span style={{ width: 14, height: 14, borderRadius: 3, background: '#DBEAFE', border: '1px solid #93C5FD' }} /> {t('page.reservation.othersSlot')}
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-              <span style={{ width: 14, height: 14, borderRadius: 3, background: '#4A4E3A' }} /> 예약불가
+              <span style={{ width: 14, height: 14, borderRadius: 3, background: '#4A4E3A' }} /> {t('page.reservation.blockedSlot')}
               {isAdmin && (
-                <span style={{ marginLeft: '0.3rem', color: '#DC2626', fontWeight: 700 }}>※ 연락처는 시스템관리자에게만 보입니다</span>
+                <span style={{ marginLeft: '0.3rem', color: '#DC2626', fontWeight: 700 }}>{t('page.reservation.adminOnlyContactNote')}</span>
               )}
             </span>
           </div>
@@ -794,7 +794,7 @@ const ReservationSlotPicker = ({
               }}
             >
               <span aria-hidden style={{ flexShrink: 0 }}>💡</span>
-              <span>원하는 시간 블럭을 선택한 뒤, 아래쪽에 나타나는 <strong style={{ color: 'var(--color-primary-deep)', fontWeight: 800 }}>✓ 예약하기</strong> 버튼을 누르면 완료돼요.</span>
+              <span dangerouslySetInnerHTML={{ __html: t('page.reservation.selectionHint') }} />
             </div>
           )}
 

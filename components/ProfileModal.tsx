@@ -65,7 +65,7 @@ const ProfileModal = ({ profileId, nickname, email, onClose }: Props) => {
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setWithdrawMsg(d?.error === 'blocked' ? '차단된 계정은 탈퇴 처리할 수 없습니다.' : (d?.error || '탈퇴 실패'));
+        setWithdrawMsg(d?.error === 'blocked' ? t('page.profile.withdrawBlocked') : (d?.error || t('page.profile.withdrawFail')));
         return;
       }
       // 로컬 인증 정보 + 묵상 초안 제거 후 홈으로
@@ -85,7 +85,7 @@ const ProfileModal = ({ profileId, nickname, email, onClose }: Props) => {
       } catch {}
       window.location.href = '/';
     } catch {
-      setWithdrawMsg('탈퇴 처리 중 오류가 발생했습니다.');
+      setWithdrawMsg(t('page.profile.withdrawError'));
     } finally {
       setWithdrawing(false);
     }
@@ -104,7 +104,7 @@ const ProfileModal = ({ profileId, nickname, email, onClose }: Props) => {
           모달 아님: 어두운 backdrop 없음, 크기 작음, 헤더/푸터 없음. */}
       <div
         role="dialog"
-        aria-label="내 정보"
+        aria-label={t('page.profile.title')}
         className="modal-card"
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -153,7 +153,7 @@ const ProfileModal = ({ profileId, nickname, email, onClose }: Props) => {
             type="button"
             onClick={() => setSettingsOpen((v) => !v)}
             aria-expanded={settingsOpen}
-            aria-label="계정 설정 열기"
+            aria-label={t('page.profile.settingsAria')}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem',
               width: '100%',
@@ -173,7 +173,7 @@ const ProfileModal = ({ profileId, nickname, email, onClose }: Props) => {
           >
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.55rem' }}>
               <span aria-hidden style={{ fontSize: '1rem', lineHeight: 1 }}>⚙️</span>
-              <span>설정</span>
+              <span>{t('page.profile.settings')}</span>
             </span>
             <span
               aria-hidden
@@ -220,7 +220,7 @@ const ProfileModal = ({ profileId, nickname, email, onClose }: Props) => {
       {finalConfirmOpen && (
         <div
           role="dialog"
-          aria-label="회원 탈퇴 최종 확인"
+          aria-label={t('page.profile.confirmLabel')}
           style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', zIndex: 110, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
           onClick={(e) => { if (e.target === e.currentTarget) setFinalConfirmOpen(false); }}
         >
@@ -231,9 +231,9 @@ const ProfileModal = ({ profileId, nickname, email, onClose }: Props) => {
               <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start' }}>
                 <span aria-hidden style={{ fontSize: '1.6rem', lineHeight: 1 }}>🚨</span>
                 <div style={{ display: 'grid', gap: '0.2rem' }}>
-                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#7F1D1D' }}>탈퇴 전 꼭 확인해 주세요</h3>
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#7F1D1D' }}>{t('page.withdraw.finalTitle')}</h3>
                   <p style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#991B1B', lineHeight: 1.5 }}>
-                    탈퇴 시 아래의 모든 정보가 <strong>즉시 삭제</strong>되며 <strong>복구가 불가능</strong>합니다.
+                    {t('page.withdraw.finalSub')}
                   </p>
                 </div>
               </div>
@@ -242,10 +242,10 @@ const ProfileModal = ({ profileId, nickname, email, onClose }: Props) => {
             <div style={{ padding: '1rem 1.25rem', overflowY: 'auto', display: 'grid', gap: '0.65rem' }}>
               <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: '0.55rem' }}>
                 {[
-                  { title: '장소 예약 정보 삭제', body: '현재 신청 중이거나 이용 완료된 모든 예약 내역이 삭제됩니다.' },
-                  { title: '나의 기록 전체 삭제', body: '작성한 모든 묵상 노트(느낀점·결단·기도제목)와 QT·성경통독 완료 이력, 브라우저에 저장된 묵상 초안까지 즉시 파기됩니다. 탈퇴 후에는 어떤 방법으로도 복구할 수 없습니다.' },
-                  { title: '개인정보 파기', body: '이름, 연락처 등 모든 개인 식별 정보가 즉시 삭제됩니다.' },
-                  { title: '소셜 연동 해제', body: "사이트 탈퇴 후에도 카카오/구글 설정 내 '연결된 앱'에 기록이 남아있을 수 있으니, 해당 플랫폼에서 직접 연동 해제를 권장합니다." },
+                  { title: t('page.withdraw.item1Title'), body: t('page.withdraw.item1Body') },
+                  { title: t('page.withdraw.item2Title'), body: t('page.withdraw.item2Body') },
+                  { title: t('page.withdraw.item3Title'), body: t('page.withdraw.item3Body') },
+                  { title: t('page.withdraw.item4Title'), body: t('page.withdraw.item4Body') },
                 ].map((item, i) => (
                   <li key={i} style={{ display: 'flex', gap: '0.55rem', alignItems: 'flex-start', padding: '0.65rem 0.8rem', background: '#FEF2F2', borderRadius: 10, border: '1px solid #FECACA' }}>
                     <span aria-hidden style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 999, background: '#B91C1C', color: '#fff', fontSize: '0.76rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>{i + 1}</span>
@@ -260,10 +260,10 @@ const ProfileModal = ({ profileId, nickname, email, onClose }: Props) => {
               {/* 탈퇴 전 나의 묵상 기록 다운로드 안내 — 기록은 복구 불가이므로 보관 유도 */}
               <div style={{ marginTop: '0.35rem', padding: '0.8rem 0.9rem', borderRadius: 10, background: '#FFFBEB', border: '1px solid #FDE68A', display: 'grid', gap: '0.45rem' }}>
                 <p style={{ margin: 0, fontWeight: 800, color: '#92400E', fontSize: '0.92rem', lineHeight: 1.4, wordBreak: 'keep-all' }}>
-                  💾 탈퇴 전, 나의 묵상 기록을 받아두세요
+                  {t('page.profile.downloadTitle')}
                 </p>
                 <p style={{ margin: 0, fontSize: '0.82rem', color: '#78350F', lineHeight: 1.55, wordBreak: 'keep-all' }}>
-                  그 동안 작성한 묵상 기록은 탈퇴 후 복구되지 않습니다. 지금 받아두면 텍스트 파일(.txt) 로 보관할 수 있어요.
+                  {t('page.profile.downloadBody')}
                 </p>
                 <a
                   href={`/api/qt-notes-export?profileId=${encodeURIComponent(profileId)}${nickname ? `&nickname=${encodeURIComponent(nickname)}` : ''}`}
@@ -284,12 +284,12 @@ const ProfileModal = ({ profileId, nickname, email, onClose }: Props) => {
                     gap: '0.35rem',
                   }}
                 >
-                  📥 내 묵상 기록 다운로드
+                  {t('page.profile.downloadBtn')}
                 </a>
               </div>
 
               <p style={{ margin: '0.2rem 0 0', fontSize: '0.95rem', color: '#7F1D1D', fontWeight: 800, textAlign: 'center', lineHeight: 1.5 }}>
-                삭제되는 데이터에 동의하며 탈퇴하시겠습니까?
+                {t('page.withdraw.agreeQ')}
               </p>
             </div>
 
@@ -298,12 +298,12 @@ const ProfileModal = ({ profileId, nickname, email, onClose }: Props) => {
                 type="button"
                 onClick={() => setFinalConfirmOpen(false)}
                 style={{ padding: '0.75rem 1.2rem', borderRadius: 10, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', fontWeight: 700, fontSize: '0.95rem', minHeight: 48, cursor: 'pointer' }}
-              >취소</button>
+              >{t('page.withdraw.cancelBtn')}</button>
               <button
                 type="button"
                 onClick={doWithdraw}
                 style={{ padding: '0.75rem 1.2rem', borderRadius: 10, border: 'none', background: '#B91C1C', color: '#fff', fontWeight: 800, fontSize: '0.95rem', minHeight: 48, cursor: 'pointer' }}
-              >탈퇴하기</button>
+              >{t('page.withdraw.confirmBtn')}</button>
             </div>
           </div>
         </div>

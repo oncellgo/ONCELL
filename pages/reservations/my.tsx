@@ -9,6 +9,7 @@ import type { Venue, Block, BlockGroup } from '../../components/VenueGrid';
 import { getSystemAdminHref } from '../../lib/adminGuard';
 import { useIsMobile } from '../../lib/useIsMobile';
 import { useRequireLogin } from '../../lib/useRequireLogin';
+import { useTranslation } from 'react-i18next';
 
 type Reservation = {
   id: string;
@@ -42,6 +43,7 @@ const fmtDateTime = (iso: string) => {
 };
 
 const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdminHref }: Props) => {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   useRequireLogin(profileId);
   const [effectiveProfileId, setEffectiveProfileId] = useState<string | null>(profileId);
@@ -100,7 +102,7 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
         bookingWindowMonths: (d.reservationBookingWindowMonths === 2 || d.reservationBookingWindowMonths === 3 || d.reservationBookingWindowMonths === 6) ? d.reservationBookingWindowMonths : 1,
       });
     } catch {
-      setEditCtxError('예약 정보를 불러오지 못했습니다. 다시 시도해 주세요.');
+      setEditCtxError(t('page.myReservations.loadContextError'));
     } finally {
       setEditCtxLoading(false);
     }
@@ -122,7 +124,7 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
       const res = await fetch(`/api/events?${qs.toString()}`, { method: 'DELETE' });
       if (!res.ok) {
         const j = await res.json().catch(() => ({} as any));
-        alert(j?.error || '삭제 실패');
+        alert(j?.error || t('page.myReservations.deleteFailed'));
         return;
       }
       setConfirmTarget(null);
@@ -174,25 +176,25 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
       <main style={{ maxWidth: 840, margin: '0 auto', padding: isMobile ? '1rem 0.6rem 4rem' : '1.5rem 1rem 5rem', display: 'grid', gap: '1.25rem' }}>
         <section style={{ padding: isMobile ? '0.85rem' : '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>나의 장소예약</h2>
+            <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>{t('page.myReservations.title')}</h2>
             <Link
               href={`/reservations/grid${effectiveProfileId ? `?profileId=${encodeURIComponent(effectiveProfileId)}` : ''}`}
               style={{ padding: '0.5rem 1rem', borderRadius: 999, border: '1px solid var(--color-primary)', background: '#fff', color: 'var(--color-primary)', fontWeight: 800, fontSize: '0.86rem', textDecoration: 'none' }}
             >
-              + 새 예약하기
+              {t('page.myReservations.newReservation')}
             </Link>
           </div>
 
           {!effectiveProfileId ? (
-            <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.92rem' }}>로그인 후 이용해 주세요.</p>
+            <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.92rem' }}>{t('page.myReservations.pleaseLogin')}</p>
           ) : loading ? (
-            <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.92rem' }}>불러오는 중…</p>
+            <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.92rem' }}>{t('page.common.loading')}</p>
           ) : (
             <>
               <div style={{ display: 'grid', gap: '0.6rem' }}>
-                <h3 style={{ margin: 0, fontSize: '0.92rem', color: '#3F6212', fontWeight: 800 }}>다가오는 예약 ({upcoming.length})</h3>
+                <h3 style={{ margin: 0, fontSize: '0.92rem', color: '#3F6212', fontWeight: 800 }}>{t('page.myReservations.upcomingCount', { count: upcoming.length })}</h3>
                 {upcoming.length === 0 ? (
-                  <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>예정된 예약이 없습니다.</p>
+                  <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>{t('page.myReservations.noUpcoming')}</p>
                 ) : (
                   <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: '0.55rem' }}>
                     {upcoming.map((r) => {
@@ -221,13 +223,13 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
                                 onClick={() => beginEdit(r)}
                                 disabled={isDeleting || isLoadingEdit}
                                 style={{ padding: '0.25rem 0.6rem', minHeight: 32, borderRadius: 8, border: '1px solid #65A30D', background: '#fff', color: '#3F6212', fontSize: '0.78rem', fontWeight: 800, cursor: (isDeleting || isLoadingEdit) ? 'not-allowed' : 'pointer' }}
-                              >{isLoadingEdit ? '열리는 중…' : '수정'}</button>
+                              >{isLoadingEdit ? t('page.myReservations.opening') : t('page.common.editBtn')}</button>
                               <button
                                 type="button"
                                 onClick={() => onDelete(r)}
                                 disabled={isDeleting}
                                 style={{ padding: '0.25rem 0.6rem', minHeight: 32, borderRadius: 8, border: '1px solid #DC2626', background: '#fff', color: '#DC2626', fontSize: '0.78rem', fontWeight: 800, cursor: isDeleting ? 'not-allowed' : 'pointer' }}
-                              >{isDeleting ? '삭제중…' : '삭제'}</button>
+                              >{isDeleting ? t('page.myReservations.deleting') : t('page.common.deleteBtn')}</button>
                             </span>
                           </div>
                           <div style={{ fontSize: '0.9rem', color: 'var(--color-ink)' }}>{r.title}</div>
@@ -243,7 +245,7 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
 
               {past.length > 0 && (
                 <div style={{ display: 'grid', gap: '0.6rem', marginTop: '0.5rem' }}>
-                  <h3 style={{ margin: 0, fontSize: '0.92rem', color: 'var(--color-ink-2)', fontWeight: 800 }}>지난 예약 ({past.length})</h3>
+                  <h3 style={{ margin: 0, fontSize: '0.92rem', color: 'var(--color-ink-2)', fontWeight: 800 }}>{t('page.myReservations.pastCount', { count: past.length })}</h3>
                   <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: '0.4rem' }}>
                     {past.slice(0, 10).map((r) => {
                       const s = fmtDateTime(r.startAt);
@@ -306,7 +308,7 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
             <div
               role="dialog"
               aria-modal="true"
-              aria-label="예약 수정"
+              aria-label={t('page.myReservations.editDialogLabel')}
               style={{
                 width: '100%',
                 maxWidth: 1100,
@@ -318,12 +320,12 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
               }}
             >
               <div style={{ padding: '0.9rem 1rem', borderBottom: '1px solid var(--color-surface-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-ink)' }}>📍 예약 수정</h3>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-ink)' }}>{t('page.myReservations.editTitle')}</h3>
                 <button type="button" onClick={closeEditModal} aria-label="닫기" style={{ background: 'none', border: 'none', fontSize: '1.3rem', cursor: 'pointer', color: 'var(--color-ink-2)', minWidth: 40, minHeight: 40 }}>✕</button>
               </div>
               <div style={{ padding: isMobile ? '0.85rem 0.75rem 1.5rem' : '1.1rem 1.2rem', overflowY: 'auto', display: 'grid', gap: isMobile ? '0.85rem' : '1rem' }}>
                 {editCtxLoading ? (
-                  <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.9rem', textAlign: 'center', padding: '2rem 0' }}>예약 정보를 불러오는 중…</p>
+                  <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.9rem', textAlign: 'center', padding: '2rem 0' }}>{t('page.myReservations.loadingContext')}</p>
                 ) : editCtxError ? (
                   <p style={{ margin: 0, color: '#B91C1C', fontSize: '0.9rem', fontWeight: 700, textAlign: 'center', padding: '1rem 0' }}>⚠ {editCtxError}</p>
                 ) : editCtx && fixedVenue ? (
@@ -349,7 +351,7 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
                     onCancel={closeEditModal}
                   />
                 ) : (
-                  <p style={{ margin: 0, color: '#B91C1C', fontSize: '0.9rem', fontWeight: 700, textAlign: 'center', padding: '1rem 0' }}>장소 정보를 찾지 못했습니다.</p>
+                  <p style={{ margin: 0, color: '#B91C1C', fontSize: '0.9rem', fontWeight: 700, textAlign: 'center', padding: '1rem 0' }}>{t('page.myReservations.venueNotFound')}</p>
                 )}
               </div>
             </div>
@@ -359,14 +361,14 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
 
       <ConfirmModal
         open={!!confirmTarget}
-        title="이 예약을 삭제하시겠어요?"
+        title={t('page.myReservations.deleteConfirmTitle')}
         details={confirmTarget ? [
           confirmTarget.title || confirmTarget.description || '(제목 없음)',
           `${confirmTarget.startAt.slice(0, 10)} ${confirmTarget.startAt.slice(11, 16)}~${confirmTarget.endAt.slice(11, 16)}`,
           confirmTarget.location || '',
         ].filter(Boolean) : []}
-        warning="삭제 후에는 되돌릴 수 없습니다."
-        confirmLabel="삭제"
+        warning={t('page.myReservations.deleteWarning')}
+        confirmLabel={t('page.common.deleteBtn')}
         confirmTone="danger"
         busy={!!deletingId}
         onCancel={() => setConfirmTarget(null)}

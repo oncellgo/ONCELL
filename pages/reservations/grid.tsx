@@ -1,6 +1,7 @@
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import { useTranslation } from 'react-i18next';
 import SubHeader from '../../components/SubHeader';
 import ReservationSlotPicker from '../../components/ReservationSlotPicker';
 import GridGuide from '../../components/GridGuide';
@@ -38,6 +39,7 @@ type Props = {
 };
 
 const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, availableEnd, reservationLimitMode, reservationLimitPerUser, bookingWindowMonths, profileId, displayName, contact, nickname, email, systemAdminHref }: Props) => {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   const router = useRouter();
   useRequireLogin(profileId);
@@ -85,7 +87,7 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
             gap: isMobile ? '0.85rem' : '1rem',
           }}
         >
-          <h1 style={{ margin: 0, fontSize: isMobile ? '1.15rem' : '1.3rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>📍 장소예약</h1>
+          <h1 style={{ margin: 0, fontSize: isMobile ? '1.15rem' : '1.3rem', color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>{t('page.reservationGrid.title')}</h1>
 
           <ReservationSlotPicker
             mode="create"
