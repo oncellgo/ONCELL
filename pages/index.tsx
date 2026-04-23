@@ -211,6 +211,9 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
           <div>21 Gangsa Road Singapore 678973</div>
           <div>TEL <a href="tel:+6564686694" style={{ color: 'var(--color-ink-2)', display: 'inline-block', minHeight: 28, lineHeight: '28px' }}>+65-6468-6694</a></div>
           <div><a href="mailto:koreanchurch@live.com" style={{ color: 'var(--color-ink-2)', display: 'inline-block', minHeight: 28, lineHeight: '28px' }}>koreanchurch@live.com</a></div>
+          <div style={{ marginTop: '0.9rem', fontSize: '0.62rem', color: 'var(--color-gray)', letterSpacing: '0.02em', opacity: 0.7 }}>
+            © {new Date().getFullYear()} Steward+AI
+          </div>
         </footer>
       </div>
 
