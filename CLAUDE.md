@@ -165,7 +165,8 @@ lib/
 scripts/
   seed-church-events-2026.mjs   # 2026 교회행사 일괄 삽입
   wipe-non-admin-data.mjs       # 사용자/예약 초기화 (관리자 보존)
-  seed-supabase.mjs             # 초기 시딩
+  backup-supabase.mjs           # 전 테이블 JSON dump (backups/<stamp>/)
+  restore-supabase.mjs          # 백업 JSON → DB 복원 (dry-run 기본)
 
 data/
   bible.json             # 개역한글 66권 (큐티 본문용 번들)
