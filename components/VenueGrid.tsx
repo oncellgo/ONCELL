@@ -388,8 +388,39 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                       ? (mine ? '#A7F3D0' : '#9CA089')
                       : '#6B6F5C';
                   const kindFg = kind === 'reservation' && mine ? '#064E3B' : '#FFFFFF';
-                  const bg = isConflict ? '#F59E0B' : isSelected ? '#20CD8D' : isAlternate ? 'rgba(32, 205, 141, 0.18)' : isGhost ? 'rgba(167, 243, 208, 0.45)' : (!inAvailable ? '#E5E7EB' : blocked ? kindBg : '#F7FEE7');
-                  const color = isConflict ? '#FFFFFF' : isSelected ? '#fff' : isAlternate ? '#3F6212' : isGhost ? '#064E3B' : (!inAvailable ? '#9CA3AF' : blocked ? kindFg : '#4D7C0F');
+                  // 과거 시간 배경 — 빈 슬롯은 대각 스트라이프, 블럭은 kindBg 유지 후 opacity 로 흐림 처리
+                  const pastEmptyBg = 'repeating-linear-gradient(135deg, #F3F4F6 0 6px, #F9FAFB 6px 12px)';
+                  // 우선순위: conflict > selected > alternate > ghost > blocked(kindBg 보존) > 과거 빈 슬롯(스트라이프) > 불가 시간 > 기본
+                  const bg = isConflict
+                    ? '#F59E0B'
+                    : isSelected
+                      ? '#20CD8D'
+                      : isAlternate
+                        ? 'rgba(32, 205, 141, 0.18)'
+                        : isGhost
+                          ? 'rgba(167, 243, 208, 0.45)'
+                          : blocked
+                            ? kindBg
+                            : isPast
+                              ? pastEmptyBg
+                              : !inAvailable
+                                ? '#E5E7EB'
+                                : '#F7FEE7';
+                  const color = isConflict
+                    ? '#FFFFFF'
+                    : isSelected
+                      ? '#fff'
+                      : isAlternate
+                        ? '#3F6212'
+                        : isGhost
+                          ? '#064E3B'
+                          : blocked
+                            ? kindFg
+                            : !inAvailable
+                              ? '#9CA3AF'
+                              : '#4D7C0F';
+                  // 과거 블럭 흐림 처리 — 내 예약은 선명도 유지(색상·테두리 그대로), 타인/이벤트/불가만 흐리게.
+                  const pastFadeBlocked = isPast && blocked && !mine;
                   const clickable = !!onSlotClick && inAvailable;
                   const kindLabel = kind === 'event' ? '교회일정' : kind === 'reservation' ? '예약됨' : '예약불가';
                   const titleParts = [`${v.floor} ${v.name} ${toHHMM(m)}`];
@@ -427,7 +458,7 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                           onSlotPointerEnter(v, m, blocked);
                         } : undefined}
                         title={titleParts.join(' | ')}
-                        style={{ width: '100%', height: '100%', minHeight: blocked ? span * SLOT_ROW_H : SLOT_ROW_H, display: 'block', border: isAlternate ? '1.5px dashed #20CD8D' : isGhost ? '1.5px dashed #20CD8D' : mine ? '2px solid #20CD8D' : 'none', outline: mine ? '2px solid #20CD8D' : undefined, outlineOffset: mine ? '-2px' : undefined, background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: isMobile ? '0.62rem' : '0.6rem', fontWeight: mine || isGhost ? 800 : 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box', touchAction: 'manipulation', userSelect: 'none', boxShadow: mine ? 'inset 0 0 0 1px rgba(255,255,255,0.7)' : undefined, pointerEvents: clickable ? undefined : 'none' }}
+                        style={{ width: '100%', height: '100%', minHeight: blocked ? span * SLOT_ROW_H : SLOT_ROW_H, display: 'block', border: isAlternate ? '1.5px dashed #20CD8D' : isGhost ? '1.5px dashed #20CD8D' : mine ? '2px solid #20CD8D' : 'none', outline: mine ? '2px solid #20CD8D' : undefined, outlineOffset: mine ? '-2px' : undefined, background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: isMobile ? '0.62rem' : '0.6rem', fontWeight: mine || isGhost ? 800 : 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box', touchAction: 'manipulation', userSelect: 'none', boxShadow: mine ? 'inset 0 0 0 1px rgba(255,255,255,0.7)' : undefined, pointerEvents: clickable ? undefined : 'none', opacity: pastFadeBlocked ? 0.55 : 1, filter: pastFadeBlocked ? 'saturate(0.55)' : undefined }}
                       >
                         {isConflict ? '예약불가' : isSelected ? '예약가능' : isAlternate ? '○' : isGhost ? (
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: '0.58rem' }}>

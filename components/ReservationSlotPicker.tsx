@@ -774,6 +774,30 @@ const ReservationSlotPicker = ({
             </span>
           </div>
 
+          {/* 인라인 힌트 — 블럭 클릭→예약하기 버튼 흐름 안내. create 모드에서만 (편집은 별도 안내 띠). */}
+          {mode === 'create' && (
+            <div
+              role="note"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.5rem 0.75rem',
+                borderRadius: 10,
+                background: '#F9FAFB',
+                border: '1px solid var(--color-surface-border)',
+                color: 'var(--color-ink-2)',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                lineHeight: 1.45,
+                wordBreak: 'keep-all',
+              }}
+            >
+              <span aria-hidden style={{ flexShrink: 0 }}>💡</span>
+              <span>원하는 시간 블럭을 선택한 뒤, 아래쪽에 나타나는 <strong style={{ color: 'var(--color-primary-deep)', fontWeight: 800 }}>✓ 예약하기</strong> 버튼을 누르면 완료돼요.</span>
+            </div>
+          )}
+
           <VenueGrid
             venues={selectedVenues}
             blocks={visibleBlocks}
@@ -862,12 +886,12 @@ const ReservationSlotPicker = ({
       {venueOpen && (
         <div
           onClick={(e) => { if (e.target === e.currentTarget) setVenueOpen(false); }}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', zIndex: 90, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', padding: isMobile ? 0 : '1rem' }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', zIndex: 90, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
         >
           <div role="dialog" style={{
-            width: '100%', maxWidth: 560, maxHeight: isMobile ? '88vh' : '90vh',
+            width: '100%', maxWidth: 560, maxHeight: '90vh',
             background: '#fff',
-            borderRadius: isMobile ? '18px 18px 0 0' : 16,
+            borderRadius: 16,
             boxShadow: '0 -8px 40px rgba(0,0,0,0.18)',
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
           }}>
@@ -986,13 +1010,13 @@ const ReservationSlotPicker = ({
       {confirmOpen && selection && (
         <div
           onClick={(e) => { if (e.target === e.currentTarget && !submitting) setConfirmOpen(false); }}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', zIndex: 95, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', padding: isMobile ? 0 : '1rem' }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', zIndex: 95, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
         >
           <style>{`@keyframes kcisShake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }`}</style>
           <div role="dialog" aria-modal="true" style={{
-            width: '100%', maxWidth: 520, maxHeight: isMobile ? '92vh' : '90vh',
+            width: '100%', maxWidth: 520, maxHeight: '90vh',
             background: '#fff',
-            borderRadius: isMobile ? '18px 18px 0 0' : 16,
+            borderRadius: 16,
             boxShadow: '0 -8px 40px rgba(0,0,0,0.18)',
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
           }}>
@@ -1170,12 +1194,12 @@ const ReservationSlotPicker = ({
       {/* edit 모드 닫기 버튼 (선택적) */}
       {successModal && (
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 120, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', padding: isMobile ? 0 : '1rem' }}
+          style={{ position: 'fixed', inset: 0, zIndex: 120, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
         >
           <div role="dialog" aria-modal="true" style={{
             width: '100%', maxWidth: 420,
             background: '#fff',
-            borderRadius: isMobile ? '18px 18px 0 0' : 16,
+            borderRadius: 16,
             boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
             overflow: 'hidden',
           }}>
