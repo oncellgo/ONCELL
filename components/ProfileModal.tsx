@@ -33,7 +33,7 @@ const splitContact = (full: string | null | undefined): { cc: string; rest: stri
   return { cc: '+65', rest: s };
 };
 
-const ProfileModal = ({ profileId, email, onClose }: Props) => {
+const ProfileModal = ({ profileId, nickname, email, onClose }: Props) => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [firstLoginAt, setFirstLoginAt] = useState<string | null>(null);
@@ -218,6 +218,37 @@ const ProfileModal = ({ profileId, email, onClose }: Props) => {
                   </li>
                 ))}
               </ul>
+
+              {/* 탈퇴 전 나의 묵상 기록 다운로드 안내 — 기록은 복구 불가이므로 보관 유도 */}
+              <div style={{ marginTop: '0.35rem', padding: '0.8rem 0.9rem', borderRadius: 10, background: '#FFFBEB', border: '1px solid #FDE68A', display: 'grid', gap: '0.45rem' }}>
+                <p style={{ margin: 0, fontWeight: 800, color: '#92400E', fontSize: '0.92rem', lineHeight: 1.4, wordBreak: 'keep-all' }}>
+                  💾 탈퇴 전, 나의 묵상 기록을 받아두세요
+                </p>
+                <p style={{ margin: 0, fontSize: '0.82rem', color: '#78350F', lineHeight: 1.55, wordBreak: 'keep-all' }}>
+                  그 동안 작성한 묵상 기록은 탈퇴 후 복구되지 않습니다. 지금 받아두면 텍스트 파일(.txt) 로 보관할 수 있어요.
+                </p>
+                <a
+                  href={`/api/qt-notes-export?profileId=${encodeURIComponent(profileId)}${nickname ? `&nickname=${encodeURIComponent(nickname)}` : ''}`}
+                  download
+                  style={{
+                    alignSelf: 'flex-start',
+                    minHeight: 40,
+                    padding: '0.5rem 0.95rem',
+                    borderRadius: 8,
+                    background: '#FDE68A',
+                    color: '#78350F',
+                    border: '1px solid #FBBF24',
+                    fontWeight: 800,
+                    fontSize: '0.86rem',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                  }}
+                >
+                  📥 내 묵상 기록 다운로드
+                </a>
+              </div>
 
               <p style={{ margin: '0.2rem 0 0', fontSize: '0.95rem', color: '#7F1D1D', fontWeight: 800, textAlign: 'center', lineHeight: 1.5 }}>
                 삭제되는 데이터에 동의하며 탈퇴하시겠습니까?

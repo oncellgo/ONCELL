@@ -880,7 +880,50 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
             ) : myReservations === null ? (
               <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>불러오는 중…</p>
             ) : myReservations.length === 0 ? (
-              <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>다가오는 예약이 없습니다. <a href="/reservations/grid" style={{ color: 'var(--color-primary-deep)', textDecoration: 'underline', fontWeight: 700 }}>장소 예약하기 →</a></p>
+              <div
+                style={{
+                  marginTop: '0.6rem',
+                  padding: isMobile ? '1rem 0.9rem' : '1.1rem 1rem',
+                  borderRadius: 12,
+                  background: 'var(--color-primary-tint)',
+                  border: '1px dashed var(--color-primary)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                  <span aria-hidden style={{ fontSize: '2rem', lineHeight: 1, flexShrink: 0 }}>📅</span>
+                  <div style={{ display: 'grid', gap: '0.15rem', minWidth: 0 }}>
+                    <p style={{ margin: 0, fontWeight: 800, color: 'var(--color-ink)', fontSize: '0.98rem', lineHeight: 1.3 }}>
+                      장소 예약을 시작해볼까요?
+                    </p>
+                    <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.84rem', lineHeight: 1.5, wordBreak: 'keep-all' }}>
+                      예배실·소모임실 등을<br />30분 단위로 예약할 수 있어요.
+                    </p>
+                  </div>
+                </div>
+                <a
+                  href="/reservations/grid"
+                  style={{
+                    alignSelf: 'center',
+                    minHeight: 44,
+                    padding: '0.55rem 1.15rem',
+                    borderRadius: 10,
+                    background: 'var(--color-primary)',
+                    color: '#ffffff',
+                    fontWeight: 800,
+                    fontSize: '0.92rem',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    boxShadow: '0 2px 8px rgba(32, 205, 141, 0.22)',
+                  }}
+                >
+                  장소 예약하러 가기 →
+                </a>
+              </div>
             ) : (
               <ul style={{ listStyle: 'none', margin: '0.6rem 0 0', padding: 0, display: 'grid', gap: isMobile ? '0.55rem' : '0.45rem' }}>
                 {myReservations.map((r) => {
@@ -946,6 +989,66 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
             const tk = `${today.getFullYear()}-${padN2(today.getMonth() + 1)}-${padN2(today.getDate())}`;
             const doneToday = qtHistoryDates.has(tk);
             const qtHref = `/qt${profileId ? `?profileId=${encodeURIComponent(profileId)}${nickname ? `&nickname=${encodeURIComponent(nickname)}` : ''}${email ? `&email=${encodeURIComponent(email)}` : ''}` : ''}`;
+
+            // 첫 접속 / streak 0 — 장소예약과 동일한 톤의 온보딩 empty-state 로 렌더.
+            // (트로피·7일 pill 은 숨기고, 깔끔한 시작 유도 카드만 노출)
+            if (lv === 0) {
+              return (
+                <section style={cardBase}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <h2 style={{ ...sectionTitle, fontSize: '1.05rem', margin: 0 }}>{t('page.dashboard.qtCard')}</h2>
+                    <span style={{ fontSize: '0.7rem', color: '#65A30D', fontWeight: 600, lineHeight: 1.4 }}>
+                      {t('page.dashboard.qtEncourage')}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      marginTop: '0.6rem',
+                      padding: isMobile ? '1rem 0.9rem' : '1.1rem 1rem',
+                      borderRadius: 12,
+                      background: 'var(--color-primary-tint)',
+                      border: '1px dashed var(--color-primary)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.75rem',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                      <span aria-hidden style={{ fontSize: '2rem', lineHeight: 1, flexShrink: 0 }}>🌱</span>
+                      <div style={{ display: 'grid', gap: '0.15rem', minWidth: 0 }}>
+                        <p style={{ margin: 0, fontWeight: 800, color: 'var(--color-ink)', fontSize: '0.98rem', lineHeight: 1.3 }}>
+                          오늘 묵상을 시작해볼까요?
+                        </p>
+                        <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.84rem', lineHeight: 1.5, wordBreak: 'keep-all' }}>
+                          매일성경 본문을 읽고<br />느낀 점을 짧게 기록해요.
+                        </p>
+                      </div>
+                    </div>
+                    <a
+                      href={qtHref}
+                      style={{
+                        alignSelf: 'center',
+                        minHeight: 44,
+                        padding: '0.55rem 1.15rem',
+                        borderRadius: 10,
+                        background: 'var(--color-primary)',
+                        color: '#ffffff',
+                        fontWeight: 800,
+                        fontSize: '0.92rem',
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        boxShadow: '0 2px 8px rgba(32, 205, 141, 0.22)',
+                      }}
+                    >
+                      ✍️ 오늘 묵상 시작하기 →
+                    </a>
+                  </div>
+                </section>
+              );
+            }
+
             return (
               <section style={cardBase}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -954,13 +1057,18 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                     {t('page.dashboard.qtEncourage')}
                   </span>
                 </div>
-                <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '0.85rem 1rem', borderRadius: 14, background: tier.bg, border: `1px solid ${tier.ring}` }}>
+                <a
+                  href={qtHref}
+                  title="오늘의 큐티로 이동"
+                  style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '0.85rem 1rem', borderRadius: 14, background: tier.bg, border: `1px solid ${tier.ring}`, textDecoration: 'none', cursor: 'pointer' }}
+                >
                   <span aria-hidden style={{ fontSize: '2.4rem', lineHeight: 1 }}>{tier.emoji}</span>
                   <div style={{ display: 'grid', gap: '0.2rem', flex: 1, minWidth: 0 }}>
                     <strong style={{ fontSize: '1rem', color: tier.fg, fontWeight: 800, lineHeight: 1.25 }}>{tier.title}</strong>
                     <span style={{ fontSize: '0.82rem', color: tier.fg, opacity: 0.9, fontWeight: 600, lineHeight: 1.45 }}>{tier.sub}</span>
                   </div>
-                </div>
+                  <span aria-hidden style={{ color: tier.fg, opacity: 0.6, fontSize: '1.1rem', fontWeight: 700, flexShrink: 0 }}>›</span>
+                </a>
                 {!doneToday && (
                   <a
                     href={qtHref}
@@ -1078,6 +1186,66 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
             ];
             const b = badges[level];
             const pct = Math.round((total / 14) * 100);
+            const readingHref = `/reading${profileId ? `?profileId=${encodeURIComponent(profileId)}${nickname ? `&nickname=${encodeURIComponent(nickname)}` : ''}${email ? `&email=${encodeURIComponent(email)}` : ''}` : ''}`;
+
+            // 첫 접속 / 이번주 활동 0 — 온보딩 empty-state (장소예약·QT 카드와 동일 톤)
+            if (level === 0) {
+              return (
+                <section style={cardBase}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <h2 style={{ ...sectionTitle, fontSize: '1.05rem', margin: 0 }}>{t('page.dashboard.readingCard')}</h2>
+                    <span style={{ fontSize: '0.7rem', color: '#65A30D', fontWeight: 600, lineHeight: 1.4 }}>
+                      {t('page.reading.encourage')}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      marginTop: '0.6rem',
+                      padding: isMobile ? '1rem 0.9rem' : '1.1rem 1rem',
+                      borderRadius: 12,
+                      background: 'var(--color-primary-tint)',
+                      border: '1px dashed var(--color-primary)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.75rem',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                      <span aria-hidden style={{ fontSize: '2rem', lineHeight: 1, flexShrink: 0 }}>🌱</span>
+                      <div style={{ display: 'grid', gap: '0.15rem', minWidth: 0 }}>
+                        <p style={{ margin: 0, fontWeight: 800, color: 'var(--color-ink)', fontSize: '0.98rem', lineHeight: 1.3 }}>
+                          성경통독을 시작해볼까요?
+                        </p>
+                        <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.84rem', lineHeight: 1.5, wordBreak: 'keep-all' }}>
+                          하루 정해진 분량을 꾸준히,<br />1년 완독의 여정을 함께해요.
+                        </p>
+                      </div>
+                    </div>
+                    <a
+                      href={readingHref}
+                      style={{
+                        alignSelf: 'center',
+                        minHeight: 44,
+                        padding: '0.55rem 1.15rem',
+                        borderRadius: 10,
+                        background: 'var(--color-primary)',
+                        color: '#ffffff',
+                        fontWeight: 800,
+                        fontSize: '0.92rem',
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        boxShadow: '0 2px 8px rgba(32, 205, 141, 0.22)',
+                      }}
+                    >
+                      📖 성경통독 시작하기 →
+                    </a>
+                  </div>
+                </section>
+              );
+            }
+
             return (
               <section style={cardBase}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -1086,13 +1254,18 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                     {t('page.reading.encourage')}
                   </span>
                 </div>
-                <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '0.85rem 1rem', borderRadius: 14, background: b.bg, border: `1px solid ${b.ring}` }}>
+                <a
+                  href={readingHref}
+                  title="성경통독으로 이동"
+                  style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '0.85rem 1rem', borderRadius: 14, background: b.bg, border: `1px solid ${b.ring}`, textDecoration: 'none', cursor: 'pointer' }}
+                >
                   <span aria-hidden style={{ fontSize: '2.2rem', lineHeight: 1 }}>{b.emoji}</span>
                   <div style={{ display: 'grid', gap: '0.15rem', flex: 1, minWidth: 0 }}>
                     <strong style={{ fontSize: '1rem', color: b.fg, fontWeight: 800 }}>{b.title}</strong>
                     <span style={{ fontSize: '0.82rem', color: b.fg, opacity: 0.85, fontWeight: 600 }}>{b.sub}</span>
                   </div>
-                </div>
+                  <span aria-hidden style={{ color: b.fg, opacity: 0.6, fontSize: '1.1rem', fontWeight: 700, flexShrink: 0 }}>›</span>
+                </a>
                 {/* 진척 bar */}
                 <div style={{ marginTop: '0.75rem', height: 8, borderRadius: 999, background: '#E5E7EB', overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, #20CD8D 0%, #65A30D 100%)', transition: 'width 0.3s ease' }} />

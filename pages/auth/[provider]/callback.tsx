@@ -96,7 +96,7 @@ const CallbackPage = () => {
 
           if (status === 'pending') { router.replace('/auth/pending'); return; }
           if (status === 'rejected') { router.replace('/auth/rejected'); return; }
-          router.replace(`/?profileId=${encodeURIComponent(profileId)}&nickname=${encodeURIComponent(nickname)}&email=${encodeURIComponent(email)}`);
+          router.replace(`/dashboard?profileId=${encodeURIComponent(profileId)}&nickname=${encodeURIComponent(nickname)}&email=${encodeURIComponent(email)}`);
           return;
         }
 
