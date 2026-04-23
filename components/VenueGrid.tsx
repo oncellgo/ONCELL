@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useIsMobile } from '../lib/useIsMobile';
 
 export type Venue = {
@@ -125,9 +125,22 @@ type Props = {
   showActionColumn?: boolean;
 };
 
+type CellInfo = {
+  venue: Venue;
+  startMin: number;
+  endMin: number;
+  kind: 'reservation' | 'event';
+  name: string;
+  contact: string;
+  title: string;
+  mine: boolean;
+};
+
 const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate, slotMin = SLOT_MIN, availableStart = '06:00', availableEnd = '22:00', selectedSlots, alternateSlots, ghostSlots, onSlotClick, onSlotPointerDown, onSlotPointerEnter, renderRowExtra, showActionColumn = false }: Props) => {
   const isMobile = useIsMobile();
   const blockedByVenue = computeBlockedSlotsForDate(groups, selectedDate);
+  // 예약/교회일정 셀 클릭 시 예약자 정보 팝오버 표시 (큰 글씨)
+  const [cellInfo, setCellInfo] = useState<CellInfo | null>(null);
 
   // 그룹 블럭의 reason까지 함께 (venueId → slotMin → reason)
   const groupReasonByVenue = (() => {
@@ -385,12 +398,19 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                   const kindBg = kind === 'event'
                     ? '#4A4E3A'
                     : kind === 'reservation'
-                      ? (mine ? '#A7F3D0' : '#9CA089')
+                      ? (mine ? '#A7F3D0' : '#DBEAFE')
                       : '#6B6F5C';
-                  const kindFg = kind === 'reservation' && mine ? '#064E3B' : '#FFFFFF';
+                  // 타인 예약: 소프트 블루 배경에 딥 블루 글자 (접근성 대비 확보).
+                  // 내 예약: 연라임 + 딥그린. 그 외(교회일정·블럭): 어두운 배경 + 흰 글자.
+                  const kindFg = kind === 'reservation'
+                    ? (mine ? '#064E3B' : '#1E40AF')
+                    : '#FFFFFF';
                   // 과거 시간 배경 — 빈 슬롯은 대각 스트라이프, 블럭은 kindBg 유지 후 opacity 로 흐림 처리
                   const pastEmptyBg = 'repeating-linear-gradient(135deg, #F3F4F6 0 6px, #F9FAFB 6px 12px)';
-                  // 우선순위: conflict > selected > alternate > ghost > blocked(kindBg 보존) > 과거 빈 슬롯(스트라이프) > 불가 시간 > 기본
+                  // 과거 + 내 예약: 연민트 위에 얇은 대각 스트라이프 오버레이로 '지난 내 예약' 시각화
+                  const pastMineBg = 'repeating-linear-gradient(135deg, rgba(6, 78, 59, 0.1) 0 3px, transparent 3px 9px), #A7F3D0';
+                  const isPastMine = isPast && blocked && !!mine;
+                  // 우선순위: conflict > selected > alternate > ghost > blocked(과거+내꺼면 스트라이프 오버레이, 그외 kindBg) > 과거 빈 슬롯(스트라이프) > 불가 시간 > 기본
                   const bg = isConflict
                     ? '#F59E0B'
                     : isSelected
@@ -400,7 +420,7 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                         : isGhost
                           ? 'rgba(167, 243, 208, 0.45)'
                           : blocked
-                            ? kindBg
+                            ? (isPastMine ? pastMineBg : kindBg)
                             : isPast
                               ? pastEmptyBg
                               : !inAvailable
@@ -439,12 +459,31 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                   const hasReserverInfo = !!(reserverName || reserverContact);
                   const showStacked = blocked && kind === 'reservation' && span >= 2 && hasReserverInfo;
                   const compactReserver = blocked && kind === 'reservation' && span === 1 && !!reserverName;
+                  // 블럭된 reservation/event 셀 → 클릭 시 정보 팝오버 (과거여도 클릭 가능)
+                  const infoClickable = blocked && (kind === 'reservation' || kind === 'event') && (hasReserverInfo || !!reason || kind === 'event');
+                  const anyClickable = clickable || infoClickable;
                   return (
                     <td key={v.id} rowSpan={blocked ? span : 1} style={{ padding: 0, borderRight: '1px solid #F4F4F0', minWidth: VENUE_MIN_W, height: blocked ? span * SLOT_ROW_H : SLOT_ROW_H, verticalAlign: 'top' }}>
                       <button
                         type="button"
-                        disabled={!clickable}
-                        onClick={() => { if (!clickable) return; onSlotClick && onSlotClick(v, m, blocked); }}
+                        disabled={!anyClickable}
+                        onClick={() => {
+                          if (infoClickable) {
+                            setCellInfo({
+                              venue: v,
+                              startMin: m,
+                              endMin: m + span * slotMin,
+                              kind: kind === 'event' ? 'event' : 'reservation',
+                              name: reserverName || '',
+                              contact: reserverContact || '',
+                              title: reason || '',
+                              mine: !!mine,
+                            });
+                            return;
+                          }
+                          if (!clickable) return;
+                          onSlotClick && onSlotClick(v, m, blocked);
+                        }}
                         onPointerDown={onSlotPointerDown ? (e) => {
                           // 모바일(터치)은 드래그 선택을 건너뛰고 페이지 스크롤을 우선 — onClick 만으로 토글
                           if (e.pointerType === 'touch') return;
@@ -458,7 +497,7 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
                           onSlotPointerEnter(v, m, blocked);
                         } : undefined}
                         title={titleParts.join(' | ')}
-                        style={{ width: '100%', height: '100%', minHeight: blocked ? span * SLOT_ROW_H : SLOT_ROW_H, display: 'block', border: isAlternate ? '1.5px dashed #20CD8D' : isGhost ? '1.5px dashed #20CD8D' : mine ? '2px solid #20CD8D' : 'none', outline: mine ? '2px solid #20CD8D' : undefined, outlineOffset: mine ? '-2px' : undefined, background: bg, color, cursor: clickable ? 'pointer' : 'not-allowed', fontSize: isMobile ? '0.62rem' : '0.6rem', fontWeight: mine || isGhost ? 800 : 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box', touchAction: 'manipulation', userSelect: 'none', boxShadow: mine ? 'inset 0 0 0 1px rgba(255,255,255,0.7)' : undefined, pointerEvents: clickable ? undefined : 'none', opacity: pastFadeBlocked ? 0.55 : 1, filter: pastFadeBlocked ? 'saturate(0.55)' : undefined }}
+                        style={{ width: '100%', height: '100%', minHeight: blocked ? span * SLOT_ROW_H : SLOT_ROW_H, display: 'block', border: isAlternate ? '1.5px dashed #20CD8D' : isGhost ? '1.5px dashed #20CD8D' : mine ? '2px solid #20CD8D' : 'none', outline: mine ? '2px solid #20CD8D' : undefined, outlineOffset: mine ? '-2px' : undefined, background: bg, color, cursor: anyClickable ? 'pointer' : 'not-allowed', fontSize: isMobile ? '0.62rem' : '0.6rem', fontWeight: mine || isGhost ? 800 : 700, lineHeight: 1.15, padding: blocked ? '2px 4px' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'keep-all', verticalAlign: 'middle', boxSizing: 'border-box', touchAction: 'manipulation', userSelect: 'none', boxShadow: mine ? 'inset 0 0 0 1px rgba(255,255,255,0.7)' : undefined, pointerEvents: anyClickable ? undefined : 'none', opacity: pastFadeBlocked ? 0.55 : 1, filter: pastFadeBlocked ? 'saturate(0.55)' : undefined }}
                       >
                         {isConflict ? '예약불가' : isSelected ? '예약가능' : isAlternate ? '○' : isGhost ? (
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: '0.58rem' }}>
@@ -500,6 +539,53 @@ const VenueGrid = ({ venues: venuesProp, blocks = [], groups = [], selectedDate,
         </tbody>
       </table>
     </div>
+    {cellInfo && (
+      <div
+        role="dialog"
+        aria-label={cellInfo.kind === 'event' ? '교회일정 정보' : '예약 정보'}
+        onClick={(e) => { if (e.target === e.currentTarget) setCellInfo(null); }}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.55)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+      >
+        <div style={{ width: '100%', maxWidth: 400, background: '#fff', borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.25)', padding: '1.2rem 1.25rem', display: 'grid', gap: '0.6rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: cellInfo.kind === 'event' ? '#4A4E3A' : 'var(--color-primary-deep)', letterSpacing: '0.02em' }}>
+              {cellInfo.kind === 'event' ? '📌 교회일정' : cellInfo.mine ? '📍 내 예약' : '📍 예약'}
+            </span>
+            <button type="button" onClick={() => setCellInfo(null)} aria-label="닫기" style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-ink-2)', minWidth: 36, minHeight: 36, borderRadius: 8 }}>✕</button>
+          </div>
+          <div style={{ fontSize: '0.86rem', color: 'var(--color-ink-2)' }}>
+            {cellInfo.venue.floor} {cellInfo.venue.name} · {toHHMM(cellInfo.startMin)}~{toHHMM(cellInfo.endMin)}
+          </div>
+          {cellInfo.kind === 'reservation' ? (
+            <>
+              {cellInfo.name ? (
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.01em', wordBreak: 'keep-all', lineHeight: 1.3 }}>
+                  {cellInfo.name}
+                </div>
+              ) : (
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-ink-2)' }}>예약자 이름 비공개</div>
+              )}
+              {cellInfo.contact ? (
+                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-ink)', fontFamily: 'var(--font-mono, monospace)' }}>
+                  📞 {cellInfo.contact}
+                </div>
+              ) : (
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-ink-2)' }}>연락처는 관리자에게만 표시됩니다</div>
+              )}
+              {cellInfo.title && (
+                <div style={{ fontSize: '0.88rem', color: 'var(--color-ink-2)', wordBreak: 'keep-all' }}>
+                  {cellInfo.title}
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.01em', wordBreak: 'keep-all', lineHeight: 1.3 }}>
+              {cellInfo.title || '(제목 없음)'}
+            </div>
+          )}
+        </div>
+      </div>
+    )}
     </div>
   );
 };

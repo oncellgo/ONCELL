@@ -764,7 +764,7 @@ const ReservationSlotPicker = ({
               <span style={{ color: '#EAB308', fontWeight: 800 }}>★</span> 내 예약
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-              <span style={{ width: 14, height: 14, borderRadius: 3, background: '#9CA089' }} /> 타인 예약
+              <span style={{ width: 14, height: 14, borderRadius: 3, background: '#DBEAFE', border: '1px solid #93C5FD' }} /> 타인 예약
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
               <span style={{ width: 14, height: 14, borderRadius: 3, background: '#4A4E3A' }} /> 예약불가
@@ -1214,7 +1214,7 @@ const ReservationSlotPicker = ({
                 <div style={{ color: 'var(--color-ink-2)', fontWeight: 600 }}>📍 {successModal.venue}</div>
               </div>
               <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-ink-2)', lineHeight: 1.5 }}>
-                확인을 누르시면 <strong style={{ color: 'var(--color-primary-deep)' }}>내 대시보드</strong>로 이동합니다.
+                확인을 누르시면 <strong style={{ color: 'var(--color-primary-deep)' }}>대시보드</strong>로 이동합니다.
               </p>
             </div>
             <div style={{ padding: '0.85rem 1.25rem 1.1rem', borderTop: '1px solid var(--color-surface-border)', display: 'flex', justifyContent: 'flex-end' }}>

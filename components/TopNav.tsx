@@ -106,7 +106,7 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
         {effProfileId && (
           <a
             href={dashboardHref}
-            title="내 대시보드"
+            title="대시보드"
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
               padding: isMobile ? '0.3rem 0.55rem' : '0.35rem 0.75rem',
@@ -119,7 +119,7 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
               textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
             }}
           >
-            <span aria-hidden>📊</span><span>내 대시보드</span>
+            <span aria-hidden>📊</span><span>대시보드</span>
           </a>
         )}
         {/* 시스템 관리자 전용 진입 버튼 — admin 이 자주 쓰는 액션이라 1-클릭 유지 */}
