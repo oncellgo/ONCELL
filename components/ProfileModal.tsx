@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '../lib/useIsMobile';
 
 /**
@@ -33,6 +34,7 @@ const splitContact = (full: string | null | undefined): { cc: string; rest: stri
 };
 
 const ProfileModal = ({ profileId, email, onClose }: Props) => {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [firstLoginAt, setFirstLoginAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -115,7 +117,7 @@ const ProfileModal = ({ profileId, email, onClose }: Props) => {
         }}
       >
         <div style={{ padding: isMobile ? '1rem 1rem' : '1rem 1.25rem', borderBottom: '1px solid var(--color-surface-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-ink)' }}>내 정보</h3>
+          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-ink)' }}>{t('page.profile.title')}</h3>
           <button
             type="button"
             onClick={onClose}
@@ -133,8 +135,8 @@ const ProfileModal = ({ profileId, email, onClose }: Props) => {
 
         <div style={{ padding: isMobile ? '1rem' : '1rem 1.25rem', overflowY: 'auto', display: 'grid', gap: '1rem' }}>
           <div style={{ padding: '0.65rem 0.85rem', borderRadius: 10, background: '#F9FAFB', border: '1px solid var(--color-surface-border)', display: 'grid', gap: '0.3rem', fontSize: '0.85rem' }}>
-            <div><span style={{ color: 'var(--color-ink-2)', fontWeight: 700, minWidth: '4rem', display: 'inline-block' }}>가입일자</span> <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>{loading ? '…' : (joinDateStr || '(기록 없음)')}</span></div>
-            {email && <div><span style={{ color: 'var(--color-ink-2)', fontWeight: 700, minWidth: '4rem', display: 'inline-block' }}>이메일</span> <span style={{ color: 'var(--color-ink-2)' }}>{email}</span></div>}
+            <div><span style={{ color: 'var(--color-ink-2)', fontWeight: 700, minWidth: '4rem', display: 'inline-block' }}>{t('page.profile.joinDate')}</span> <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>{loading ? '…' : (joinDateStr || '-')}</span></div>
+            {email && <div><span style={{ color: 'var(--color-ink-2)', fontWeight: 700, minWidth: '4rem', display: 'inline-block' }}>{t('page.profile.email')}</span> <span style={{ color: 'var(--color-ink-2)' }}>{email}</span></div>}
           </div>
 
           {/* 회원 탈퇴 링크 — 클릭 시 바로 최종 확인 모달 */}
@@ -146,7 +148,7 @@ const ProfileModal = ({ profileId, email, onClose }: Props) => {
               style={{ background: 'none', border: 'none', padding: 0, cursor: withdrawing ? 'not-allowed' : 'pointer', fontSize: '0.85rem', fontWeight: 700, color: '#B91C1C', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
             >
               <span aria-hidden>⚠️</span>
-              <span>{withdrawing ? '탈퇴 처리 중…' : '회원 탈퇴하기'}</span>
+              <span>{withdrawing ? t('page.profile.withdraw') + '…' : t('page.profile.withdraw')}</span>
             </button>
             {withdrawMsg && <p style={{ margin: '0.5rem 0 0', fontSize: '0.82rem', color: '#B91C1C', fontWeight: 700 }}>{withdrawMsg}</p>}
           </div>
@@ -172,7 +174,7 @@ const ProfileModal = ({ profileId, email, onClose }: Props) => {
               minHeight: 48,
               cursor: 'pointer',
             }}
-          >닫기</button>
+          >{t('page.profile.close')}</button>
         </div>
       </div>
 

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import VenueGrid, { Venue, Block, BlockGroup, computeBlockedSlotsForDate } from './VenueGrid';
 import DateTimePicker from './DateTimePicker';
 import { useIsMobile } from '../lib/useIsMobile';
@@ -84,6 +85,7 @@ const ReservationSlotPicker = ({
   onSubmitted,
   onCancel,
 }: ReservationSlotPickerProps) => {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
 
   // SSR 에서 profileId 누락 → liveName/contact 를 /api/profile 로 재조회.
@@ -933,16 +935,16 @@ const ReservationSlotPicker = ({
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
           }}>
             <div style={{ padding: '0.9rem 1rem', borderBottom: '1px solid var(--color-surface-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--color-ink)' }}>📍 {mode === 'edit' ? '예약 수정 확인' : '예약전 정보확인'}</h3>
+              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--color-ink)' }}>📍 {mode === 'edit' ? t('page.reservation.editConfirmTitle') : t('page.reservation.confirmTitle')}</h3>
               <button type="button" onClick={() => !submitting && setConfirmOpen(false)} aria-label="닫기" style={{ background: 'none', border: 'none', fontSize: '1.3rem', cursor: submitting ? 'not-allowed' : 'pointer', color: 'var(--color-ink-2)', minWidth: 40, minHeight: 40, opacity: submitting ? 0.5 : 1 }}>✕</button>
             </div>
 
             <div style={{ padding: '1rem', overflowY: 'auto', display: 'grid', gap: '0.85rem' }}>
               <div style={{ padding: '0.75rem 0.9rem', borderRadius: 12, background: '#FFF7ED', border: '1px solid #FED7AA', display: 'grid', gap: '0.55rem' }}>
                 <style>{`.kcis-resv-input::placeholder { color: #D1D5DB; font-style: italic; font-weight: 400; opacity: 1; }`}</style>
-                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#9A3412', letterSpacing: '0.02em' }}>👤 예약자 정보 (교인확인을 위해 실명과 연락처를 정확히 기입)</div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#9A3412', letterSpacing: '0.02em' }}>👤 {t('page.reservation.reserverInfo')}</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr', gap: '0.4rem 0.5rem', fontSize: '0.92rem', alignItems: 'center' }}>
-                  <span style={{ color: '#9A3412', fontWeight: 800 }}>이름</span>
+                  <span style={{ color: '#9A3412', fontWeight: 800 }}>{t('page.reservation.name')}</span>
                   <input
                     type="text"
                     className="kcis-resv-input"
@@ -951,7 +953,7 @@ const ReservationSlotPicker = ({
                     placeholder="실명을 입력하세요"
                     style={{ padding: '0.5rem 0.7rem', minHeight: 38, borderRadius: 8, border: '1px solid #FED7AA', background: '#fff', fontSize: '0.9rem', color: 'var(--color-ink)', fontWeight: 700 }}
                   />
-                  <span style={{ color: '#9A3412', fontWeight: 800 }}>연락처</span>
+                  <span style={{ color: '#9A3412', fontWeight: 800 }}>{t('page.reservation.contact')}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span style={{ fontSize: '0.9rem', color: 'var(--color-ink-2)', fontWeight: 700, fontFamily: 'monospace', flexShrink: 0 }}>+65</span>
                     <input
@@ -976,7 +978,7 @@ const ReservationSlotPicker = ({
               </div>
 
               <div style={{ padding: '0.75rem 0.9rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E', display: 'grid', gap: '0.4rem' }}>
-                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#3F6212', letterSpacing: '0.02em' }}>📅 예약 일시 · 장소</div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#3F6212', letterSpacing: '0.02em' }}>📅 {t('page.reservation.datePlace')}</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr', gap: '0.4rem 0.5rem', fontSize: '0.92rem', alignItems: 'baseline' }}>
                   <span style={{ color: '#3F6212', fontWeight: 800 }}>일시</span>
                   <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>
@@ -990,7 +992,7 @@ const ReservationSlotPicker = ({
 
               <div style={{ display: 'grid', gap: '0.35rem' }}>
                 <label style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--color-ink)' }}>
-                  예약 설명 <span style={{ color: '#DC2626' }}>*</span>
+                  {t('page.reservation.descriptionLabel')} <span style={{ color: '#DC2626' }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -1090,7 +1092,7 @@ const ReservationSlotPicker = ({
                   cursor: submitting ? 'not-allowed' : 'pointer',
                   boxShadow: '0 4px 12px rgba(32,205,141,0.25)',
                 }}
-              >{submitting ? '저장 중...' : mode === 'edit' ? '✓ 수정 진행하기' : '✓ 예약 진행하기'}</button>
+              >{submitting ? t('page.reservation.submitting') : mode === 'edit' ? t('page.reservation.submitEdit') : t('page.reservation.submit')}</button>
               {!submitting && (
                 <button
                   type="button"

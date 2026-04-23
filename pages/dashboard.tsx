@@ -872,7 +872,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-              <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>📍 다가오는 나의 장소예약</h2>
+              <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>📍 {t('page.dashboard.myReservations')}</h2>
               <a href="/reservations/grid" style={{ color: 'var(--color-primary-deep)', fontSize: isMobile ? '0.85rem' : '0.82rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 40, padding: '0 0.25rem' }}>새 예약 →</a>
             </div>
             {!profileId ? (
@@ -939,7 +939,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
               { emoji: '💎', title: `${cur}일 연속 — 반백 일!`, sub: '이 기록이 교회의 자랑입니다.', ring: '#60A5FA', bg: '#DBEAFE', fg: '#1E3A8A' },
               { emoji: '🕊️', title: `${cur}일 연속 — 100일의 은혜`, sub: '하나님이 주신 귀한 기록입니다.', ring: '#A78BFA', bg: '#EDE9FE', fg: '#5B21B6' },
             ];
-            const t = tiers[lv];
+            const tier = tiers[lv];
             // 오늘 묵상 했는지 여부 (오늘 아직인데 어제 이어짐은 current>0 + today 체크)
             const padN2 = (n: number) => String(n).padStart(2, '0');
             const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -949,16 +949,16 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
             return (
               <section style={cardBase}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <h2 style={{ ...sectionTitle, fontSize: '1.05rem', margin: 0 }}>📖 최근 큐티기록</h2>
+                  <h2 style={{ ...sectionTitle, fontSize: '1.05rem', margin: 0 }}>{t('page.dashboard.qtCard')}</h2>
                   <span style={{ fontSize: '0.7rem', color: '#65A30D', fontWeight: 600, lineHeight: 1.4 }}>
-                    ⏰ 오늘의 큐티를 완료해 보세요
+                    {t('page.dashboard.qtEncourage')}
                   </span>
                 </div>
-                <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '0.85rem 1rem', borderRadius: 14, background: t.bg, border: `1px solid ${t.ring}` }}>
-                  <span aria-hidden style={{ fontSize: '2.4rem', lineHeight: 1 }}>{t.emoji}</span>
+                <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '0.85rem 1rem', borderRadius: 14, background: tier.bg, border: `1px solid ${tier.ring}` }}>
+                  <span aria-hidden style={{ fontSize: '2.4rem', lineHeight: 1 }}>{tier.emoji}</span>
                   <div style={{ display: 'grid', gap: '0.2rem', flex: 1, minWidth: 0 }}>
-                    <strong style={{ fontSize: '1rem', color: t.fg, fontWeight: 800, lineHeight: 1.25 }}>{t.title}</strong>
-                    <span style={{ fontSize: '0.82rem', color: t.fg, opacity: 0.9, fontWeight: 600, lineHeight: 1.45 }}>{t.sub}</span>
+                    <strong style={{ fontSize: '1rem', color: tier.fg, fontWeight: 800, lineHeight: 1.25 }}>{tier.title}</strong>
+                    <span style={{ fontSize: '0.82rem', color: tier.fg, opacity: 0.9, fontWeight: 600, lineHeight: 1.45 }}>{tier.sub}</span>
                   </div>
                 </div>
                 {!doneToday && (
@@ -1081,9 +1081,9 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
             return (
               <section style={cardBase}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <h2 style={{ ...sectionTitle, fontSize: '1.05rem', margin: 0 }}>🏆 최근 성경통독 기록</h2>
+                  <h2 style={{ ...sectionTitle, fontSize: '1.05rem', margin: 0 }}>{t('page.dashboard.readingCard')}</h2>
                   <span style={{ fontSize: '0.7rem', color: '#65A30D', fontWeight: 600, lineHeight: 1.4 }}>
-                    ⏰ 오늘의 성경통독을 완료해 보세요
+                    {t('page.reading.encourage')}
                   </span>
                 </div>
                 <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '0.85rem 1rem', borderRadius: 14, background: b.bg, border: `1px solid ${b.ring}` }}>
