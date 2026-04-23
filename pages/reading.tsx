@@ -2,6 +2,7 @@ import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import SubHeader from '../components/SubHeader';
 import BiblePassageCard from '../components/BiblePassageCard';
 import { getSystemAdminHref } from '../lib/adminGuard';
@@ -22,6 +23,7 @@ type Props = {
 const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
 const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, systemAdminHref }: Props) => {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   const router = useRouter();
   // SSR 프롭에 profileId 가 없으면 localStorage에서 복구 — MenuBar 링크가 authQs 없이 이동했을 때도 동작.
@@ -174,7 +176,7 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
       <main style={{ maxWidth: 1040, margin: '0 auto', padding: isMobile ? '1rem 0.6rem 4rem' : '1.5rem 1rem 5rem', display: 'grid', gap: isMobile ? '1rem' : '1.25rem' }}>
         <section style={{ padding: isMobile ? '0.85rem' : '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: isMobile ? '0.75rem' : '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>성경통독</h2>
+            <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>{t('menu.reading')}</h2>
             <span style={{ fontSize: '0.8rem', color: 'var(--color-ink-2)' }}>1년 1독 · 약 3장/일</span>
           </div>
 

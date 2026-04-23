@@ -1,6 +1,7 @@
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import SubHeader from '../components/SubHeader';
 import BulletinLightbox from '../components/BulletinLightbox';
 import { getSystemAdminHref } from '../lib/adminGuard';
@@ -36,6 +37,7 @@ const mostRecentSunday = (now: Date): Date => {
 };
 
 const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname, email, systemAdminHref }: Props) => {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   useRequireLogin(profileId);
   const today = new Date(todayISO);
@@ -175,7 +177,7 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
       <main style={{ maxWidth: 1040, margin: '0 auto', padding: isMobile ? '1rem 0.6rem 4rem' : '1.5rem 1rem 5rem', display: 'grid', gap: isMobile ? '1rem' : '1.25rem' }}>
         <section style={{ padding: isMobile ? '0.85rem' : '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: isMobile ? '0.75rem' : '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>주보</h2>
+            <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>{t('menu.bulletin')}</h2>
             <span style={{ fontSize: '0.8rem', color: 'var(--color-ink-2)' }}>KoreanChurchInSingapore</span>
           </div>
 
@@ -232,7 +234,7 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
                   aria-label="미스바 파일 바로 열기"
                   style={{ padding: '0.45rem 0.85rem', borderRadius: 999, border: '1px solid #1E40AF', background: '#EFF6FF', color: '#1E40AF', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', minHeight: 40 }}
                 >
-                  <span>📘</span><span>미스바 보기</span>
+                  <span>📘</span><span>{t('page.bulletin.misbaOpen')}</span>
                 </a>
               )}
             </div>

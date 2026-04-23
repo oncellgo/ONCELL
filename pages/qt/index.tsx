@@ -2,6 +2,7 @@ import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { Fragment, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import SubHeader from '../../components/SubHeader';
 import BiblePassageCard from '../../components/BiblePassageCard';
 import { getSystemAdminHref } from '../../lib/adminGuard';
@@ -28,6 +29,7 @@ type Props = {
 const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
 const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, displayName, nickname, email, systemAdminHref }: Props) => {
+  const { t } = useTranslation();
   const router = useRouter();
   const isMobile = useIsMobile();
   // localStorage fallback — MenuBar 하드 네비 시 SSR 프롭 없이 들어와도 동작
@@ -393,7 +395,7 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
                 {/* 라벨 + 인용문 + 목사 한 줄 배치 */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '0.35rem' }}>
                   <span style={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.02em', color: '#65A30D', textTransform: 'uppercase', flexShrink: 0 }}>
-                    {isTodaySelected ? '오늘의 QT말씀' : `${selectedDateKey.slice(5).replace('-', '/')} QT말씀`}
+                    {isTodaySelected ? t('page.qt.todayTitle') : t('page.qt.pastTitle', { date: selectedDateKey.slice(5).replace('-', '/') })}
                   </span>
                   {videoMeta?.quote && (
                     <span style={{ fontSize: isMobile ? '0.85rem' : '0.92rem', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1.4, wordBreak: 'keep-all', overflowWrap: 'break-word', minWidth: 0 }}>
@@ -410,7 +412,7 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
                   <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>불러오는 중…</span>
                 )}
                 {!qtLoading && !qtRef && (
-                  <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>{qtError || '오늘의 QT말씀 정보가 없습니다.'}</span>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>{qtError || t('page.qt.empty')}</span>
                 )}
                 {qtRef && (() => {
                   const hasNote = qtCompletedSet.has(selectedDateKey);

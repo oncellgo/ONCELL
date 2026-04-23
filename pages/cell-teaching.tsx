@@ -1,6 +1,7 @@
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import SubHeader from '../components/SubHeader';
 import BiblePassageCard from '../components/BiblePassageCard';
 import { getSystemAdminHref } from '../lib/adminGuard';
@@ -37,6 +38,7 @@ const mostRecentSunday = (now: Date): Date => {
 };
 
 const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, email, systemAdminHref }: Props) => {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   useRequireLogin(profileId);
   const today = new Date(todayISO);
@@ -158,7 +160,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
       <main style={{ maxWidth: 1040, margin: '0 auto', padding: isMobile ? '1rem 0.6rem 4rem' : '1.5rem 1rem 5rem', display: 'grid', gap: isMobile ? '1rem' : '1.25rem' }}>
         <section style={{ padding: isMobile ? '0.85rem' : '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: isMobile ? '0.75rem' : '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>구역모임교안</h2>
+            <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>{t('menu.cellTeaching')}</h2>
             <span style={{ fontSize: '0.8rem', color: 'var(--color-ink-2)' }}>KoreanChurchInSingapore</span>
           </div>
 
@@ -248,7 +250,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
                     aria-label="구역예배지 PDF 원문 열기"
                     style={{ padding: '0.45rem 0.9rem', borderRadius: 999, border: '1px solid #1E40AF', background: '#EFF6FF', color: '#1E40AF', fontSize: '0.84rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', minHeight: 40, whiteSpace: 'nowrap' }}
                   >
-                    <span>📘</span><span>구역예배지 원문보기</span>
+                    <span>📘</span><span>{t('page.cellTeaching.pdfOpen')}</span>
                   </a>
                 )}
               </div>
@@ -259,14 +261,14 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
             <div style={{ padding: '0.85rem 1rem', borderRadius: 12, background: '#F9FAFB', border: '1px dashed var(--color-gray)', fontSize: '0.88rem', color: 'var(--color-ink-2)' }}>구역예배지를 불러오는 중…</div>
           )}
           {!guideLoading && !guide?.found && (
-            <div style={{ padding: '0.85rem 1rem', borderRadius: 12, background: '#F9FAFB', border: '1px dashed var(--color-gray)', fontSize: '0.88rem', color: 'var(--color-ink-2)' }}>{guideError || '이 주일의 구역예배지가 아직 등록되지 않았습니다.'}</div>
+            <div style={{ padding: '0.85rem 1rem', borderRadius: 12, background: '#F9FAFB', border: '1px dashed var(--color-gray)', fontSize: '0.88rem', color: 'var(--color-ink-2)' }}>{guideError || t('page.cellTeaching.emptyGuide')}</div>
           )}
 
           {/* 카드 0: 찬송가 (말씀 카드와 동일한 스타일) */}
           {guide?.found && guide.hymn && (
             <section style={{ padding: isMobile ? '0.9rem' : '1.1rem', borderRadius: 16, background: '#fff', border: '1px solid #D9F09E', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '0.6rem' }}>
               <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: '#3F6212', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                <span>♪</span><span>찬송가</span>
+                <span>♪</span><span>{t('page.cellTeaching.hymn')}</span>
                 <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-ink-2)' }}>{guide.hymn.number}장{guide.hymn.title ? ` · ${guide.hymn.title}` : ''}</span>
               </h3>
             </section>
@@ -295,7 +297,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
                 style={{ margin: 0, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.98rem', fontWeight: 800, color: '#1E40AF', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', textAlign: 'left' }}
               >
                 <span aria-hidden>💬</span>
-                <span>나눔 내용</span>
+                <span>{t('page.cellTeaching.sharingContent')}</span>
                 <span aria-hidden style={{ fontSize: '0.8rem', transition: 'transform 0.15s', transform: showNaeyong ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▾</span>
               </button>
               {showNaeyong && (
@@ -321,7 +323,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
                 style={{ margin: 0, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.98rem', fontWeight: 800, color: '#92400E', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', textAlign: 'left' }}
               >
                 <span aria-hidden>🙏</span>
-                <span>나눔 기도</span>
+                <span>{t('page.cellTeaching.sharingPrayer')}</span>
                 <span aria-hidden style={{ fontSize: '0.8rem', transition: 'transform 0.15s', transform: showPrayer ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▾</span>
               </button>
               {showPrayer && guide.prayer.map((p, i) => (
