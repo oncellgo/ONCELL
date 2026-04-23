@@ -349,9 +349,9 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
                       title={isFuture ? '미래 날짜는 선택할 수 없습니다' : isLatest ? '최신영상' : undefined}
                       style={{
                         padding: isMobile ? '0.25rem 0.05rem' : '0.3rem 0.2rem',
-                        border: isSelected ? '2px solid #20CD8D' : isDayCompleted ? '1.5px solid #20CD8D' : '1px solid var(--color-gray)',
+                        border: isSelected ? '2px solid #20CD8D' : isDayCompleted ? '2px solid #20CD8D' : '1px solid var(--color-gray)',
                         borderRadius: 8,
-                        background: isFuture ? '#F9FAFB' : isDayCompleted ? '#20CD8D' : '#fff',
+                        background: isFuture ? '#F9FAFB' : '#fff',
                         cursor: isFuture ? 'not-allowed' : 'pointer',
                         opacity: isFuture ? 0.4 : (v ? 1 : 0.7),
                         textAlign: 'center',
@@ -371,17 +371,25 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
                           boxShadow: '0 0 0 2px #fff',
                         }} aria-label="최신영상" />
                       )}
-                      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '0.05rem' : '0.2rem', lineHeight: 1 }}>
-                        <span style={{ fontSize: isMobile ? '0.7rem' : '0.82rem', fontWeight: 800, color: isDayCompleted ? '#fff' : isFuture ? '#9CA3AF' : 'var(--color-ink)', lineHeight: 1 }}>
+                      {isDayCompleted && (
+                        <span aria-hidden style={{
+                          position: 'absolute', top: 2, right: 2,
+                          width: 12, height: 12, borderRadius: 999,
+                          background: '#20CD8D', color: '#fff',
+                          fontSize: 8, fontWeight: 900,
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          lineHeight: 1,
+                        }}>✓</span>
+                      )}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.15rem', lineHeight: 1 }}>
+                        <span style={{ fontSize: isMobile ? '0.7rem' : '0.82rem', fontWeight: 800, color: isDayCompleted ? 'var(--color-primary-deep)' : isFuture ? '#9CA3AF' : 'var(--color-ink)', lineHeight: 1 }}>
                           {m}/{d}
                         </span>
-                        <span style={{ fontSize: isMobile ? '0.58rem' : '0.64rem', fontWeight: 700, color: isDayCompleted ? 'rgba(255,255,255,0.9)' : isFuture ? '#9CA3AF' : dow === 0 ? '#DC2626' : dow === 6 ? '#2563EB' : 'var(--color-ink-2)', lineHeight: 1 }}>
+                        <span style={{ fontSize: isMobile ? '0.58rem' : '0.64rem', fontWeight: 700, color: isDayCompleted ? 'var(--color-primary-deep)' : isFuture ? '#9CA3AF' : dow === 0 ? '#DC2626' : dow === 6 ? '#2563EB' : 'var(--color-ink-2)', lineHeight: 1 }}>
                           {DAY_LABELS[dow]}
                         </span>
                       </div>
-                      {isDayCompleted ? (
-                        <span style={{ fontSize: isMobile ? '0.55rem' : '0.6rem', fontWeight: 800, color: '#20CD8D', background: '#fff', padding: '0.05rem 0.35rem', borderRadius: 999, letterSpacing: '0.02em', justifySelf: 'center' }}>✓ 완료</span>
-                      ) : v ? (
+                      {!isDayCompleted && v ? (
                         <svg viewBox="0 0 24 24" width={isMobile ? 12 : 14} height={isMobile ? 9 : 10} aria-label="YouTube" style={{ justifySelf: 'center' }}>
                           <path fill="#FF0000" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31.3 31.3 0 0 0 0 12a31.3 31.3 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31.3 31.3 0 0 0 24 12a31.3 31.3 0 0 0-.5-5.8z"/>
                           <path fill="#fff" d="M9.6 15.6 15.8 12 9.6 8.4z"/>

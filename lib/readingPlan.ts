@@ -43,18 +43,24 @@ const dayOfYear = (d: Date): number => {
 /**
  * 특정 날짜의 통독 범위 반환 (연속된 장을 묶어 표시).
  * 예: [{ book:'창세기', startCh:1, endCh:3 }] → "창세기 1-3장"
+ *
+ * plan: 1 = 1년 1독 (기본, 하루 ≈ 3장) · 2 = 1년 2독 (하루 6-7장).
+ *       FLAT 을 plan 배수로 반복 후 균등 분배. 이 함수는 DB fallback 용 —
+ *       정확한 범위는 /api/reading-plan 에서 가져오되, 네트워크 실패 시 본 함수로 graceful degrade.
  */
 export type ReadingRange = { book: string; startCh: number; endCh: number };
 
-export const planForDate = (date: Date): ReadingRange[] => {
-  const year = date.getFullYear();
-  const total = FLAT.length;
-  const nDays = daysInYear(year);
+export const planForDate = (date: Date, plan: number = 1): ReadingRange[] => {
+  const p = Number.isInteger(plan) && plan >= 1 ? plan : 1;
+  const flat: Array<{ book: string; chapter: number }> = [];
+  for (let k = 0; k < p; k++) flat.push(...FLAT);
+  const total = flat.length;
+  const nDays = daysInYear(date.getFullYear());
   const i = dayOfYear(date);
   if (i < 0 || i >= nDays) return [];
   const startIdx = Math.floor((i * total) / nDays);
   const endIdx = Math.floor(((i + 1) * total) / nDays);
-  const slice = FLAT.slice(startIdx, endIdx);
+  const slice = flat.slice(startIdx, endIdx);
   if (slice.length === 0) return [];
   // 같은 book 연속은 묶음
   const out: ReadingRange[] = [];

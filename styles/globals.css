@@ -126,3 +126,16 @@ body {
     padding-right: 0.5rem !important;
   }
 }
+
+/* "오늘" 배지 — 부드러운 민트 펄스 (2s 주기). reading 페이지 주간 pill 에서 사용. */
+@keyframes kcis-today-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(32, 205, 141, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(32, 205, 141, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kcis-today-pulse { animation: none !important; }
+}

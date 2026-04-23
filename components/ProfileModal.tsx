@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '../lib/useIsMobile';
+import { getReadingPlan, setReadingPlan, type ReadingPlan } from '../lib/readingPreferences';
 
 /**
  * 프로필 수정 모달 — 실명 + 연락처 수정.
@@ -42,6 +43,13 @@ const ProfileModal = ({ profileId, nickname, email, onClose }: Props) => {
   const [finalConfirmOpen, setFinalConfirmOpen] = useState(false);
   // '⚙️ 설정' 접이식 — 이메일·탈퇴 등 가끔 쓰는 계정 메뉴 수납.
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // 통독 계획 — 1독/2독. null = 아직 미지정.
+  const [readingPlan, setReadingPlanState] = useState<ReadingPlan | null>(null);
+  useEffect(() => { setReadingPlanState(getReadingPlan()); }, []);
+  const pickReadingPlan = (plan: ReadingPlan) => {
+    setReadingPlan(plan);
+    setReadingPlanState(plan);
+  };
 
   // 로그아웃 — TopNav 에서 이전되어 이제 본 모달 primary 액션.
   const doLogout = () => {
@@ -195,6 +203,51 @@ const ProfileModal = ({ profileId, nickname, email, onClose }: Props) => {
                   <span style={{ wordBreak: 'break-all' }}>{email}</span>
                 </div>
               )}
+
+              {/* 통독 계획 — 1독/2독 */}
+              <div style={{ display: 'grid', gap: '0.3rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.82rem', color: 'var(--color-ink)', fontWeight: 700 }}>
+                  <span aria-hidden>📖</span>
+                  <span>성경통독 계획</span>
+                </div>
+                <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                  {([
+                    { value: 1 as ReadingPlan, label: '1독', sub: '하루 ≈ 3장' },
+                    { value: 2 as ReadingPlan, label: '2독', sub: '하루 6-7장' },
+                  ]).map(({ value, label, sub }) => {
+                    const active = readingPlan === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => pickReadingPlan(value)}
+                        style={{
+                          flex: 1,
+                          padding: '0.4rem 0.55rem',
+                          borderRadius: 8,
+                          border: `1px solid ${active ? 'var(--color-primary)' : 'var(--color-gray)'}`,
+                          background: active ? 'var(--color-primary-tint)' : '#fff',
+                          color: active ? 'var(--color-primary-deep)' : 'var(--color-ink-2)',
+                          fontWeight: active ? 800 : 600,
+                          fontSize: '0.78rem',
+                          cursor: 'pointer',
+                          display: 'grid',
+                          gap: '0.1rem',
+                          textAlign: 'center',
+                        }}
+                      >
+                        <span>{label}</span>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 500, opacity: 0.75 }}>{sub}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {readingPlan && (
+                  <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--color-ink-2)', lineHeight: 1.45 }}>
+                    변경 시 오늘부터 분량이 바뀝니다. 과거 기록은 유지됩니다.
+                  </p>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => { setWithdrawMsg(null); setFinalConfirmOpen(true); }}

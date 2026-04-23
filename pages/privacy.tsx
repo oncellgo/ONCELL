@@ -66,9 +66,9 @@ const PrivacyPage = ({ profileId, displayName, nickname, email, systemAdminHref 
           <Section title="3. 보유 및 이용 기간">
             <ul style={{ margin: 0, paddingLeft: '1.2rem' }}>
               <Item>회원 정보: 회원 탈퇴 또는 교회 요청 시까지</Item>
-              <Item>예약 기록: 예약 종료 후 1년</Item>
+              <Item>예약 기록: 회원탈퇴 시 까지</Item>
               <Item>묵상노트: 회원이 직접 삭제하거나 회원 탈퇴 시까지</Item>
-              <Item>로그인 기록: 1년간 보관 후 파기</Item>
+              <Item>로그인 기록: 회원탈퇴 시 삭제</Item>
             </ul>
           </Section>
 

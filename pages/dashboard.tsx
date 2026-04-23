@@ -14,6 +14,7 @@ import { getSystemAdminHref } from '../lib/adminGuard';
 import { useIsMobile } from '../lib/useIsMobile';
 import { isAllDayEvent } from '../lib/events';
 import { planForDate, formatPlan } from '../lib/readingPlan';
+import { getReadingPlan, subscribeReadingPlan, planShortLabel, type ReadingPlan } from '../lib/readingPreferences';
 
 type Community = {
   id: string;
@@ -293,6 +294,13 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
   const [monthlySchedule, setMonthlySchedule] = useState<{ month: number; items: MonthlyItem[] } | null>(null);
   // 이번주(월~일) 큐티·통독 완료 dateKey 집합
   const [weekReadingDates, setWeekReadingDates] = useState<Set<string>>(new Set());
+  // 통독 계획 (1독/2독) — localStorage 에서 읽고, ProfileModal 에서 바뀌면 실시간 반영
+  const [readingPlanChoice, setReadingPlanChoice] = useState<ReadingPlan | null>(null);
+  useEffect(() => {
+    setReadingPlanChoice(getReadingPlan());
+    const unsub = subscribeReadingPlan((next) => setReadingPlanChoice(next));
+    return () => unsub();
+  }, []);
   // 큐티 장기 기록 — 연속 일수(streak) + 총 일수 (최근 180일)
   const [qtHistoryDates, setQtHistoryDates] = useState<Set<string>>(new Set());
   const [weekExpanded, setWeekExpanded] = useState(false);
@@ -1158,8 +1166,10 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
             const b = badges[level];
             const readingHref =`/reading${profileId ? `?profileId=${encodeURIComponent(profileId)}${nickname ? `&nickname=${encodeURIComponent(nickname)}` : ''}${email ? `&email=${encodeURIComponent(email)}` : ''}` : ''}`;
 
-            // 오늘 통독 범위 (lib/readingPlan 번들 상수 — DB/API 호출 없음)
-            const todayRangeText = formatPlan(planForDate(new Date()));
+            // 오늘 통독 범위 — 사용자 선택 플랜(1독/2독) 반영. DB 일치 안 할 수 있어 fallback 성격.
+            const planN: number = readingPlanChoice || 1;
+            const todayRangeText = formatPlan(planForDate(new Date(), planN));
+            const planBadge = readingPlanChoice ? planShortLabel(readingPlanChoice) : '1독';
             const today0ReadingMsg = new Date(); today0ReadingMsg.setHours(0, 0, 0, 0);
             const todayKeyReadingMsg = `${today0ReadingMsg.getFullYear()}-${String(today0ReadingMsg.getMonth() + 1).padStart(2, '0')}-${String(today0ReadingMsg.getDate()).padStart(2, '0')}`;
             const readingDoneToday = weekReadingDates.has(todayKeyReadingMsg);
@@ -1237,13 +1247,13 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                     <span style={{ fontSize: '0.82rem', color: b.fg, opacity: 0.85, fontWeight: 600 }}>{b.sub}</span>
                   </div>
                 </div>
-                {/* 오늘 통독 CTA — QT 카드와 동일 스타일. 범위 메시지를 버튼 안에 담음 */}
+                {/* 오늘 통독 CTA — QT 카드와 동일 스타일. 범위 메시지를 버튼 안에 담음. 플랜(1/2독) 배지 포함. */}
                 {!readingDoneToday && todayRangeText && (
                   <a
                     href={readingHref}
                     style={{
                       marginTop: '0.6rem',
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem',
                       padding: '0.65rem 1rem', minHeight: 44,
                       borderRadius: 10,
                       background: 'var(--color-primary)',
@@ -1257,12 +1267,14 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                       textAlign: 'center',
                     }}
                   >
-                    📖 오늘은 {todayRangeText} — 10분이면 돼요
+                    <span style={{ padding: '0.08rem 0.4rem', borderRadius: 999, background: 'rgba(255,255,255,0.22)', color: '#fff', fontSize: '0.7rem', fontWeight: 800, border: '1px solid rgba(255,255,255,0.5)' }}>{planBadge}</span>
+                    <span>📖 오늘은 {todayRangeText} — 10분이면 돼요</span>
                   </a>
                 )}
                 {readingDoneToday && todayRangeText && (
-                  <div style={{ marginTop: '0.6rem', fontSize: '0.85rem', color: '#15803D', fontWeight: 700 }}>
-                    ✓ 오늘 {todayRangeText} 완독 — 내일도 이어가요!
+                  <div style={{ marginTop: '0.6rem', fontSize: '0.85rem', color: '#15803D', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                    <span style={{ padding: '0.08rem 0.4rem', borderRadius: 999, background: '#fff', color: '#15803D', fontSize: '0.7rem', fontWeight: 800, border: '1px solid #15803D' }}>{planBadge}</span>
+                    <span>✓ 오늘 {todayRangeText} 완독 — 내일도 이어가요!</span>
                   </div>
                 )}
 

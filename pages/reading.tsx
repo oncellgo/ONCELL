@@ -9,7 +9,8 @@ import { getSystemAdminHref } from '../lib/adminGuard';
 import { getProfiles, getUsers } from '../lib/dataStore';
 import { useIsMobile } from '../lib/useIsMobile';
 import { useRequireLogin } from '../lib/useRequireLogin';
-import { planForDate, formatRange, dateKey as keyFor } from '../lib/readingPlan';
+import { planForDate, formatRange, dateKey as keyFor, type ReadingRange } from '../lib/readingPlan';
+import { getReadingPlan, setReadingPlan, hasReadingPlan, subscribeReadingPlan, planShortLabel, type ReadingPlan } from '../lib/readingPreferences';
 
 type Props = {
   todayISO: string;
@@ -76,7 +77,64 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
   const selectedDate = dateForDow(selectedDow);
   const selectedKey = keyFor(selectedDate);
   const todayKey = keyFor(today);
-  const reading = useMemo(() => planForDate(selectedDate), [selectedKey]);
+
+  // 통독 계획 선호도 — 1독/2독 (localStorage). null = 미지정(최초 배너 노출).
+  const [readingPlanChoice, setReadingPlanChoice] = useState<ReadingPlan | null>(null);
+  const [showPlanBanner, setShowPlanBanner] = useState(false);
+  useEffect(() => {
+    const p = getReadingPlan();
+    setReadingPlanChoice(p);
+    setShowPlanBanner(!hasReadingPlan());
+    // ProfileModal 등 다른 컴포넌트가 플랜을 바꾸면 즉시 반영 (같은 탭 내 custom event)
+    const unsub = subscribeReadingPlan((next) => {
+      setReadingPlanChoice(next);
+      setShowPlanBanner(false);
+    });
+    return () => unsub();
+  }, []);
+  const pickPlan = (plan: ReadingPlan) => {
+    setReadingPlan(plan);
+    setReadingPlanChoice(plan);
+    setShowPlanBanner(false);
+  };
+
+  // 주간 계획표 캐시 — /api/reading-plan 에서 주 단위로 prefetch. 미스 시 FLAT 기반 fallback.
+  const [weekPlanMap, setWeekPlanMap] = useState<Map<string, ReadingRange[]>>(new Map());
+  useEffect(() => {
+    let cancelled = false;
+    const planN = readingPlanChoice || 1;
+    const from = keyFor(dateForDow(0));
+    const to = keyFor(dateForDow(6));
+    (async () => {
+      try {
+        const r = await fetch(`/api/reading-plan?plan=${planN}&from=${from}&to=${to}`);
+        if (!r.ok) throw new Error(`status ${r.status}`);
+        const d = await r.json();
+        const m = new Map<string, ReadingRange[]>();
+        for (const day of (d?.days || [])) {
+          if (typeof day?.date === 'string' && Array.isArray(day?.ranges)) {
+            m.set(day.date, day.ranges as ReadingRange[]);
+          }
+        }
+        if (!cancelled) setWeekPlanMap(m);
+      } catch (e) {
+        // 네트워크/DB 실패 시 FLAT 기반 로컬 계산으로 graceful degrade
+        console.warn('[reading] plan fetch failed, using local fallback', e);
+        if (!cancelled) setWeekPlanMap(new Map());
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekOffset, readingPlanChoice]);
+
+  const getRangesFor = (d: Date): ReadingRange[] => {
+    const k = keyFor(d);
+    const hit = weekPlanMap.get(k);
+    if (hit && hit.length > 0) return hit;
+    return planForDate(d); // FLAT 기반 fallback
+  };
+
+  const reading = useMemo(() => getRangesFor(selectedDate), [selectedKey, weekPlanMap]);
 
   // 선택된 날짜의 각 범위별 성경 본문 (한글·KJV 양쪽 동시 로드)
   const [passageTexts, setPassageTexts] = useState<Record<string, { ko: string; en: string }>>({});
@@ -170,7 +228,7 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
   // 텍스트는 절(verse) 단위로 나눠 순차 재생 — Google 단일 요청 5KB 한도 대응 + 중단/속도변경 유연.
   const [speakSupported, setSpeakSupported] = useState(false);
   const [speakState, setSpeakState] = useState<'idle' | 'playing' | 'paused'>('idle');
-  const [speakRate, setSpeakRate] = useState<number>(1.25);
+  const [speakRate, setSpeakRate] = useState<number>(2);
   // 'unknown' = 첫 재생 시 결정. 'remote' = /api/tts 사용. 'browser' = SpeechSynthesis fallback.
   const [ttsMode, setTtsMode] = useState<'unknown' | 'remote' | 'browser'>('unknown');
   const speakQueueRef = useRef<string[]>([]);
@@ -439,8 +497,38 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
         <section style={{ padding: isMobile ? '0.85rem' : '1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: isMobile ? '0.75rem' : '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.5rem' }}>
             <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>{t('menu.reading')}</h2>
-            <span style={{ fontSize: '0.8rem', color: 'var(--color-ink-2)' }}>{t('page.reading.planSubtitle')}</span>
           </div>
+
+          {/* 최초 진입 soft 배너 — 플랜 미지정 사용자만 노출. 한 번 선택하면 사라짐. 설정에서 언제든 변경. */}
+          {showPlanBanner && (
+            <div style={{ padding: isMobile ? '0.7rem 0.8rem' : '0.85rem 1rem', borderRadius: 12, background: '#EFF6FF', border: '1px solid #BFDBFE', display: 'grid', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                <span aria-hidden style={{ fontSize: '1.05rem' }}>📖</span>
+                <strong style={{ fontSize: '0.88rem', color: '#1E40AF' }}>어떤 속도로 통독하시겠어요?</strong>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: '#1E3A8A', lineHeight: 1.55 }}>
+                한 번만 선택하면 됩니다. 나중에 설정(⚙️)에서 변경 가능해요. 선택하지 않으면 기본 1독으로 시작합니다.
+              </p>
+              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => pickPlan(1)}
+                  style={{ flex: 1, minHeight: 44, padding: '0.55rem 0.8rem', borderRadius: 8, border: '1px solid #2563EB', background: '#fff', color: '#1E40AF', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', display: 'grid', gap: '0.15rem' }}
+                >
+                  <span>1독</span>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.8 }}>하루 ≈ 3장</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => pickPlan(2)}
+                  style={{ flex: 1, minHeight: 44, padding: '0.55rem 0.8rem', borderRadius: 8, border: '1px solid #2563EB', background: '#fff', color: '#1E40AF', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', display: 'grid', gap: '0.15rem' }}
+                >
+                  <span>2독</span>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.8 }}>하루 6-7장 · 도전적</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* 7일 캘린더 — QT와 동일한 디자인 */}
           <div style={{ display: 'flex', alignItems: 'stretch', gap: isMobile ? '0.2rem' : '0.3rem' }}>
@@ -456,7 +544,7 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                 const isToday = k === todayKey;
                 const m = d.getMonth() + 1;
                 const day = d.getDate();
-                const ranges = planForDate(d);
+                const ranges = getRangesFor(d);
                 const planLabel = ranges.map(formatRange).join(' · ');
                 const isDayCompleted = completedSet.has(k);
                 const dowColor = dow === 0 ? '#dc2626' : dow === 6 ? '#2563eb' : 'var(--color-ink)';
@@ -466,9 +554,9 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                     title={planLabel}
                     style={{
                       padding: isMobile ? '0.3rem 0.1rem' : '0.4rem 0.25rem',
-                      border: isSelected ? '2px solid #20CD8D' : isDayCompleted ? '1.5px solid #20CD8D' : '1px solid var(--color-gray)',
+                      border: isSelected ? '2px solid #20CD8D' : isDayCompleted ? '2px solid #20CD8D' : '1px solid var(--color-gray)',
                       borderRadius: 8,
-                      background: isDayCompleted ? '#20CD8D' : '#fff',
+                      background: '#fff',
                       cursor: 'pointer',
                       textAlign: 'center',
                       boxShadow: isSelected ? '0 2px 6px rgba(32,205,141,0.28)' : 'none',
@@ -476,19 +564,39 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                       minHeight: isMobile ? 60 : 72, minWidth: 0, position: 'relative',
                     }}
                   >
+                    {isDayCompleted && (
+                      <span aria-hidden style={{
+                        position: 'absolute', top: 3, right: 4,
+                        width: 14, height: 14, borderRadius: 999,
+                        background: '#20CD8D', color: '#fff',
+                        fontSize: 9, fontWeight: 900,
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        lineHeight: 1,
+                      }}>✓</span>
+                    )}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.15rem', lineHeight: 1 }}>
-                      <span style={{ fontSize: isMobile ? '0.72rem' : '0.85rem', fontWeight: 800, color: isDayCompleted ? '#fff' : dowColor, lineHeight: 1 }}>
+                      <span style={{ fontSize: isMobile ? '0.72rem' : '0.85rem', fontWeight: 800, color: isDayCompleted ? 'var(--color-primary-deep)' : dowColor, lineHeight: 1 }}>
                         {m}/{day}
                       </span>
-                      <span style={{ fontSize: isMobile ? '0.58rem' : '0.66rem', fontWeight: 700, color: isDayCompleted ? 'rgba(255,255,255,0.9)' : dow === 0 ? '#DC2626' : dow === 6 ? '#2563EB' : 'var(--color-ink-2)', lineHeight: 1 }}>
-                        {DAY_LABELS[dow]}
-                      </span>
+                      {isToday ? (
+                        <span className="kcis-today-pulse" style={{
+                          fontSize: isMobile ? '0.68rem' : '0.75rem',
+                          fontWeight: 900,
+                          color: '#20CD8D',
+                          lineHeight: 1,
+                          padding: '0.08rem 0.4rem',
+                          borderRadius: 999,
+                          background: 'rgba(32, 205, 141, 0.15)',
+                          border: '1px solid #20CD8D',
+                          letterSpacing: '-0.02em',
+                          animation: 'kcis-today-pulse 2s ease-in-out infinite',
+                        }}>오늘</span>
+                      ) : (
+                        <span style={{ fontSize: isMobile ? '0.58rem' : '0.66rem', fontWeight: 700, color: isDayCompleted ? 'var(--color-primary-deep)' : dow === 0 ? '#DC2626' : dow === 6 ? '#2563EB' : 'var(--color-ink-2)', lineHeight: 1 }}>
+                          {DAY_LABELS[dow]}
+                        </span>
+                      )}
                     </div>
-                    {isDayCompleted ? (
-                      <span style={{ fontSize: isMobile ? '0.56rem' : '0.62rem', fontWeight: 800, color: '#20CD8D', background: '#fff', padding: '0.05rem 0.35rem', borderRadius: 999, justifySelf: 'center' }}>✓ 완료</span>
-                    ) : isToday ? (
-                      <span style={{ fontSize: isMobile ? '0.55rem' : '0.6rem', fontWeight: 800, color: '#fff', background: '#20CD8D', padding: '0.05rem 0.35rem', borderRadius: 999, justifySelf: 'center' }}>오늘</span>
-                    ) : null}
                   </button>
                 );
               })}
@@ -506,6 +614,11 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                 <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#65A30D', textTransform: 'uppercase' }}>
                   {selectedDate.getFullYear()}.{String(selectedDate.getMonth() + 1).padStart(2, '0')}.{String(selectedDate.getDate()).padStart(2, '0')} ({DAY_LABELS[selectedDate.getDay()]}) 통독
                 </span>
+                {readingPlanChoice && (
+                  <span style={{ padding: '0.1rem 0.5rem', borderRadius: 999, background: '#fff', color: '#65A30D', fontSize: '0.68rem', fontWeight: 800, border: '1px solid #65A30D' }}>
+                    {planShortLabel(readingPlanChoice)}
+                  </span>
+                )}
                 {isCompleted && (
                   <span style={{ padding: '0.15rem 0.55rem', borderRadius: 999, background: '#20CD8D', color: '#fff', fontSize: '0.72rem', fontWeight: 800 }}>✓ 완료</span>
                 )}
@@ -580,8 +693,8 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                   type="button"
                   onClick={speakState === 'playing' ? handleSpeakPause : handleSpeakPlay}
                   aria-label={speakState === 'playing' ? '일시정지' : '듣기'}
-                  style={{ padding: '0.35rem 0.75rem', borderRadius: 999, border: '1px solid #65A30D', background: '#65A30D', color: '#fff', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', minHeight: 36 }}
-                >{speakState === 'playing' ? '⏸' : '▶'} {speakState === 'playing' ? '일시정지' : speakState === 'paused' ? '이어서' : '듣기'}</button>
+                  style={{ padding: '0.35rem 0.75rem', borderRadius: 999, border: '1px solid #65A30D', background: '#fff', color: '#65A30D', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', minHeight: 36 }}
+                >{speakState === 'playing' ? '⏸' : '▶'} {speakState === 'playing' ? '일시정지' : speakState === 'paused' ? '이어서' : '오디오 듣기'}</button>
                 {speakState !== 'idle' && (
                   <button
                     type="button"
@@ -596,7 +709,6 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                     { value: 1.25, label: '1x' },
                     { value: 1.5,  label: '1.25x' },
                     { value: 2,    label: '1.5x' },
-                    { value: 3.5,  label: '2x' },
                   ] as const).map(({ value, label }) => {
                     const active = Math.abs(speakRate - value) < 0.01;
                     return (
@@ -607,10 +719,10 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                         style={{
                           padding: '0.25rem 0.45rem',
                           borderRadius: 6,
-                          border: `1px solid ${active ? '#65A30D' : '#D9F09E'}`,
-                          background: active ? '#65A30D' : '#fff',
-                          color: active ? '#fff' : '#65A30D',
-                          fontWeight: 800,
+                          border: `${active ? 2 : 1}px solid ${active ? '#65A30D' : '#D9F09E'}`,
+                          background: '#fff',
+                          color: '#65A30D',
+                          fontWeight: active ? 900 : 800,
                           fontSize: '0.7rem',
                           cursor: 'pointer',
                           minHeight: 30,
