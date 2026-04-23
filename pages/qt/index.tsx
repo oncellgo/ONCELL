@@ -132,7 +132,62 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteMsg, setNoteMsg] = useState<string | null>(null);
 
+  // 과거 묵상 보기 모달 — 읽기 전용
+  const [viewNoteOpen, setViewNoteOpen] = useState(false);
+  const [viewNoteDateKey, setViewNoteDateKey] = useState<string | null>(null);
+  const [viewNoteText, setViewNoteText] = useState('');
+  const [viewNoteRef, setViewNoteRef] = useState<string | null>(null);
+  const [viewNoteLoading, setViewNoteLoading] = useState(false);
+
   const todayKey = getSGTodayKey();
+
+  const openNoteViewModal = async (dateKey: string) => {
+    if (!resolvedProfileId) return;
+    setViewNoteOpen(true);
+    setViewNoteDateKey(dateKey);
+    setViewNoteLoading(true);
+    setViewNoteText('');
+    setViewNoteRef(null);
+    try {
+      const r = await fetch(`/api/qt-notes?profileId=${encodeURIComponent(resolvedProfileId)}&date=${dateKey}`);
+      const j = await r.json();
+      const n = j?.note || {};
+      const pieces: string[] = [];
+      const f = stripLegacyHeaders(n.feelings || '');
+      const d = stripLegacyHeaders(n.decision || '');
+      const p = stripLegacyHeaders(n.prayer || '');
+      if (f) pieces.push(f);
+      if (d) pieces.push(d);
+      if (p) pieces.push(p);
+      const merged = pieces.length > 0 ? pieces.join('\n\n') : (n.text || '');
+      setViewNoteText(merged);
+      setViewNoteRef(n.reference || null);
+    } catch {
+      setViewNoteText('');
+    } finally {
+      setViewNoteLoading(false);
+    }
+  };
+
+  // 단일 textarea UI 정책: 이모지 헤더(💭 느낀점 / 🌱 나의 결단 / 🙏 기도제목)를
+  // "사용자가 작성하지 않은" 프리셋 텍스트로 집어넣지 않는다. 헤더 자동 prepend 는
+  // 2026-04 에 수차례 사용자 혼란을 초래한 이력이 있어 제거 후 복원 금지.
+  //
+  // 레거시 데이터 호환:
+  //  · 과거에 emoji 헤더까지 본문에 저장된 레코드는 load 시 떼어낸다.
+  //  · decision/prayer 필드에 남아있는 내용은 feelings 뒤에 빈줄로 이어붙여 보여준다.
+  const stripLegacyHeaders = (s: string): string => {
+    if (!s) return '';
+    return s
+      .split(/(?=💭 느낀점|🌱 나의 결단|🙏 기도제목)/)
+      .map((seg) => seg
+        .replace(/^\s*💭 느낀점\s*\n?/, '')
+        .replace(/^\s*🌱 나의 결단\s*\n?/, '')
+        .replace(/^\s*🙏 기도제목\s*\n?/, '')
+        .trim())
+      .filter(Boolean)
+      .join('\n\n');
+  };
 
   const openNoteModal = async () => {
     if (!resolvedProfileId) {
@@ -147,13 +202,14 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
       const r = await fetch(`/api/qt-notes?profileId=${encodeURIComponent(resolvedProfileId)}&date=${todayKey}`);
       const j = await r.json();
       const n = j?.note || {};
-      // 이전 스키마(text) 호환: text가 있고 3필드가 비어있으면 느낀점에 마이그레이션
-      // 단일 필드 UI — 기존 3필드 레코드는 합쳐서 불러온다
-      const parts: string[] = [];
-      if (n.feelings && n.feelings.trim()) parts.push(`💭 느낀점\n${n.feelings.trim()}`);
-      if (n.decision && n.decision.trim()) parts.push(`🌱 나의 결단\n${n.decision.trim()}`);
-      if (n.prayer && n.prayer.trim()) parts.push(`🙏 기도제목\n${n.prayer.trim()}`);
-      const merged = parts.length > 0 ? parts.join('\n\n') : (n.text || '');
+      const pieces: string[] = [];
+      const f = stripLegacyHeaders(n.feelings || '');
+      const d = stripLegacyHeaders(n.decision || '');
+      const p = stripLegacyHeaders(n.prayer || '');
+      if (f) pieces.push(f);
+      if (d) pieces.push(d);
+      if (p) pieces.push(p);
+      const merged = pieces.length > 0 ? pieces.join('\n\n') : (n.text || '');
       setNoteFeelings(merged);
       setNoteDecision('');
       setNotePrayer('');
@@ -171,6 +227,8 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
     setNoteSaving(true);
     setNoteMsg(null);
     try {
+      // 단일 textarea → feelings 필드 하나에만 저장. decision/prayer 는 비움.
+      // 헤더 삽입 없이 사용자가 입력한 원본을 그대로 저장.
       const r = await fetch('/api/qt-notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -179,8 +237,8 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
           date: todayKey,
           reference: qtRef,
           feelings: noteFeelings,
-          decision: noteDecision,
-          prayer: notePrayer,
+          decision: '',
+          prayer: '',
         }),
       });
       if (!r.ok) throw new Error('save failed');
@@ -419,7 +477,41 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
                   // 도메인 규칙(service-plan §7): 큐티 완료는 오늘(SG)만 가능. 과거/미래는 읽기 모드.
                   const isToday = selectedDateKey === todayKey;
                   if (!isToday) {
-                    // 비활성 상태 배지 — 토글 대신 상태만 표시
+                    // 과거 날짜: 기록 있으면 '묵상 보기' 클릭 → 읽기 전용 모달. 없으면 비활성 배지.
+                    if (hasNote) {
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '0.3rem' }}>
+                          <button
+                            type="button"
+                            onClick={() => openNoteViewModal(selectedDateKey)}
+                            aria-label={`${selectedDateKey} 묵상 보기`}
+                            title="클릭하여 묵상 내용 보기"
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '0.45rem',
+                              padding: isMobile ? '0.75rem 1rem' : '0.65rem 1rem',
+                              borderRadius: 999,
+                              border: '1px solid #20CD8D',
+                              background: '#20CD8D',
+                              color: '#fff',
+                              fontSize: '0.95rem',
+                              fontWeight: 800,
+                              letterSpacing: '0.02em',
+                              minHeight: 52,
+                              width: '100%',
+                              cursor: 'pointer',
+                              transition: 'filter 0.15s ease',
+                            }}
+                          >
+                            <span aria-hidden>📖</span>
+                            <span>묵상 보기</span>
+                          </button>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--color-ink-2)', fontWeight: 600, textAlign: 'center' }}>클릭해서 내가 쓴 묵상 내용을 확인하세요!</span>
+                        </div>
+                      );
+                    }
                     return (
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '0.3rem' }}>
                         <div style={{
@@ -429,17 +521,17 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
                           gap: '0.45rem',
                           padding: isMobile ? '0.75rem 1rem' : '0.65rem 1rem',
                           borderRadius: 999,
-                          border: `1px solid ${hasNote ? '#20CD8D' : 'var(--color-gray)'}`,
-                          background: hasNote ? '#20CD8D' : '#F9FAFB',
-                          color: hasNote ? '#fff' : 'var(--color-ink-2)',
+                          border: '1px solid var(--color-gray)',
+                          background: '#F9FAFB',
+                          color: 'var(--color-ink-2)',
                           fontSize: '0.95rem',
                           fontWeight: 800,
                           letterSpacing: '0.02em',
                           minHeight: 52,
                           width: '100%',
                         }}>
-                          <span aria-hidden>{hasNote ? '✓' : '✎'}</span>
-                          <span>{hasNote ? '묵상 완료' : '묵상 미입력'}</span>
+                          <span aria-hidden>✎</span>
+                          <span>묵상 미입력</span>
                         </div>
                         <span style={{ fontSize: '0.7rem', color: 'var(--color-ink-2)', fontWeight: 600, textAlign: 'center' }}>📖 보기만 가능 — 큐티는 오늘만 작성 가능합니다</span>
                       </div>
@@ -585,11 +677,22 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
                   rows={isMobile ? 9 : 12}
                   style={{
                     width: '100%', padding: '0.75rem 0.9rem', borderRadius: 10,
-                    border: '1px solid var(--color-gray)', fontSize: isMobile ? '1rem' : '0.93rem', lineHeight: 1.75,
+                    border: `1px solid ${noteFeelings.length > NOTE_MAX_CHARS ? '#DC2626' : 'var(--color-gray)'}`, fontSize: isMobile ? '1rem' : '0.93rem', lineHeight: 1.75,
                     fontFamily: '"Noto Sans KR", "Nanum Gothic", "Malgun Gothic", system-ui, sans-serif',
                     resize: 'vertical', boxSizing: 'border-box',
                   }}
                 />
+                {(() => {
+                  const len = noteFeelings.length;
+                  const over = len > NOTE_MAX_CHARS;
+                  const warn = !over && len >= NOTE_MAX_CHARS * 0.9;
+                  const color = over ? '#DC2626' : warn ? '#B45309' : 'var(--color-ink-2)';
+                  return (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: '0.78rem', fontWeight: over || warn ? 700 : 500, color, fontVariantNumeric: 'tabular-nums' }}>
+                      {over ? '한도 초과 — ' : ''}{len.toLocaleString()} / {NOTE_MAX_CHARS.toLocaleString()}자
+                    </div>
+                  );
+                })()}
               </div>
             )}
             {noteMsg && (
@@ -604,10 +707,10 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
               <button
                 type="button"
                 onClick={saveNote}
-                disabled={noteSaving || noteLoading || !hasNoteInput}
+                disabled={noteSaving || noteLoading || !hasNoteInput || noteFeelings.length > NOTE_MAX_CHARS}
                 style={{
                   padding: '0.7rem 1.3rem', borderRadius: 8, border: 'none',
-                  background: (!hasNoteInput || noteLoading) ? '#D1D5DB' : noteSaving ? '#86EFAC' : '#20CD8D',
+                  background: (!hasNoteInput || noteLoading || noteFeelings.length > NOTE_MAX_CHARS) ? '#D1D5DB' : noteSaving ? '#86EFAC' : '#20CD8D',
                   color: '#fff',
                   cursor: (noteSaving || !hasNoteInput || noteLoading) ? 'not-allowed' : 'pointer',
                   fontWeight: 800,
@@ -620,11 +723,92 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
           </div>
         </div>
       )}
+
+      {/* 과거 묵상 보기 모달 — 읽기 전용 */}
+      {viewNoteOpen && (
+        <div
+          onClick={() => setViewNoteOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)',
+            display: 'flex',
+            alignItems: isMobile ? 'flex-end' : 'center',
+            justifyContent: 'center',
+            padding: isMobile ? 0 : '1rem', zIndex: 1000,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="modal-card"
+            style={{
+              width: '100%', maxWidth: isMobile ? '100%' : 560, background: '#fff',
+              borderRadius: isMobile ? '16px 16px 0 0' : 16,
+              padding: isMobile ? '1.25rem 1rem 2rem' : '1.5rem',
+              boxShadow: '0 -4px 30px rgba(0,0,0,0.18)',
+              display: 'grid', gap: isMobile ? '0.75rem' : '0.9rem',
+              maxHeight: isMobile ? '92dvh' : '92vh', overflowY: 'auto',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#1F2937', display: 'inline-flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span>📖 과거 묵상 보기</span>
+                {viewNoteDateKey && (
+                  <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#65A30D', letterSpacing: '0.01em' }}>
+                    {(() => {
+                      const [y, m, d] = viewNoteDateKey.split('-').map(Number);
+                      if (!y || !m || !d) return viewNoteDateKey;
+                      const dow = new Date(y, m - 1, d).getDay();
+                      return `${viewNoteDateKey}(${DAY_LABELS[dow]})`;
+                    })()}
+                  </span>
+                )}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setViewNoteOpen(false)}
+                style={{ border: 'none', background: 'transparent', fontSize: '1.3rem', cursor: 'pointer', color: 'var(--color-ink-2)', minWidth: 40, minHeight: 40 }}
+                aria-label="닫기"
+              >✕</button>
+            </div>
+            {viewNoteRef && (
+              <div style={{ fontSize: '0.82rem', color: 'var(--color-ink-2)' }}>📖 {viewNoteRef}</div>
+            )}
+            {viewNoteLoading ? (
+              <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--color-ink-2)' }}>불러오는 중…</div>
+            ) : (
+              <div
+                style={{
+                  whiteSpace: 'pre-wrap',
+                  padding: '0.9rem 1rem',
+                  borderRadius: 10,
+                  background: '#F9FAFB',
+                  border: '1px solid var(--color-gray)',
+                  fontSize: isMobile ? '1rem' : '0.93rem',
+                  lineHeight: 1.75,
+                  fontFamily: '"Noto Sans KR", "Nanum Gothic", "Malgun Gothic", system-ui, sans-serif',
+                  color: 'var(--color-ink)',
+                  minHeight: 120,
+                  wordBreak: 'keep-all',
+                }}
+              >
+                {viewNoteText || <span style={{ color: 'var(--color-ink-2)' }}>(작성된 내용이 없습니다)</span>}
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setViewNoteOpen(false)}
+                style={{ padding: '0.7rem 1.1rem', borderRadius: 8, border: '1px solid var(--color-gray)', background: '#fff', cursor: 'pointer', fontWeight: 700, minHeight: 48, width: isMobile ? '100%' : 'auto' }}
+              >닫기</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
 
 const DEFAULT_CHANNEL_HANDLE = 'KoreanChurchInSingapore';
+const NOTE_MAX_CHARS = 5000;
 
 export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
   // 모든 날짜 계산은 싱가폴(UTC+8) 기준 — Vercel 서버 UTC 때문에 KST 새벽에 전날로 밀리는 버그 방지

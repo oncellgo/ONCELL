@@ -61,13 +61,6 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
   const { t } = useTranslation();
   const audio = useAudio();
   const isMobile = useIsMobile();
-  const [profileDone, setProfileDone] = useState<boolean>(!!storedProfile);
-  const [realName, setRealName] = useState<string>(storedProfile?.realName || nickname || '');
-  const [countryCode, setCountryCode] = useState<string>('+65');
-  const [contact, setContact] = useState<string>(storedProfile?.contact?.replace(/^\+\d+\s*/, '').trim() || '');
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [profileMsg, setProfileMsg] = useState<string | null>(null);
-  const [profileExpanded, setProfileExpanded] = useState(false);
   const [communityDropdownOpen, setCommunityDropdownOpen] = useState(false);
   const [newCommunityName, setNewCommunityName] = useState('');
   const [newCommunityApproval, setNewCommunityApproval] = useState<'auto' | 'admin'>('auto');
@@ -173,42 +166,6 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
       setCreateMsg('생성 중 오류가 발생했습니다.');
     } finally {
       setCreatingCommunity(false);
-    }
-  };
-
-  const saveProfile = async () => {
-    if (!profileId) return;
-    if (!realName.trim() || !contact.trim()) {
-      setProfileMsg('실명과 연락처를 입력해주세요.');
-      return;
-    }
-    setSavingProfile(true);
-    setProfileMsg(null);
-    try {
-      const response = await fetch('/api/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          profileId,
-          provider: provider || 'kakao',
-          nickname: nickname || '',
-          realName: realName.trim(),
-          contact: `${countryCode}-${contact.trim()}`,
-          email: email || '',
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        setProfileMsg(data.error || '저장에 실패했습니다.');
-      } else {
-        setProfileDone(true);
-        setProfileMsg('프로필이 저장되었습니다.');
-      }
-    } catch (error) {
-      console.error(error);
-      setProfileMsg('저장 중 오류가 발생했습니다.');
-    } finally {
-      setSavingProfile(false);
     }
   };
 
@@ -335,7 +292,6 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
   type MonthlyItem = { date: string; label: string; title: string };
   const [monthlySchedule, setMonthlySchedule] = useState<{ month: number; items: MonthlyItem[] } | null>(null);
   // 이번주(월~일) 큐티·통독 완료 dateKey 집합
-  const [weekQtDates, setWeekQtDates] = useState<Set<string>>(new Set());
   const [weekReadingDates, setWeekReadingDates] = useState<Set<string>>(new Set());
   // 큐티 장기 기록 — 연속 일수(streak) + 총 일수 (최근 180일)
   const [qtHistoryDates, setQtHistoryDates] = useState<Set<string>>(new Set());
@@ -404,7 +360,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
 
   // 오늘 포함 최근 7일 큐티·통독 완료 + 큐티는 180일 히스토리도 같이 fetch (streak 계산용)
   useEffect(() => {
-    if (!profileId) { setWeekQtDates(new Set()); setWeekReadingDates(new Set()); setQtHistoryDates(new Set()); return; }
+    if (!profileId) { setWeekReadingDates(new Set()); setQtHistoryDates(new Set()); return; }
     const now = new Date();
     const end = new Date(now); end.setHours(0, 0, 0, 0);
     const start7 = new Date(end); start7.setDate(end.getDate() - 6);
@@ -422,7 +378,6 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
         setter(new Set(Array.isArray(d?.dates) ? d.dates : []));
       } catch {}
     };
-    load('qt', from7, setWeekQtDates);
     load('reading', from7, setWeekReadingDates);
     load('qt', from180, setQtHistoryDates);
   }, [profileId]);
@@ -1062,18 +1017,13 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                     {t('page.dashboard.qtEncourage')}
                   </span>
                 </div>
-                <a
-                  href={qtHref}
-                  title="오늘의 큐티로 이동"
-                  style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '0.85rem 1rem', borderRadius: 14, background: tier.bg, border: `1px solid ${tier.ring}`, textDecoration: 'none', cursor: 'pointer' }}
-                >
+                <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '0.85rem 1rem', borderRadius: 14, background: tier.bg, border: `1px solid ${tier.ring}` }}>
                   <span aria-hidden style={{ fontSize: '2.4rem', lineHeight: 1 }}>{tier.emoji}</span>
                   <div style={{ display: 'grid', gap: '0.2rem', flex: 1, minWidth: 0 }}>
                     <strong style={{ fontSize: '1rem', color: tier.fg, fontWeight: 800, lineHeight: 1.25 }}>{tier.title}</strong>
                     <span style={{ fontSize: '0.82rem', color: tier.fg, opacity: 0.9, fontWeight: 600, lineHeight: 1.45 }}>{tierSub}</span>
                   </div>
-                  <span aria-hidden style={{ color: tier.fg, opacity: 0.6, fontSize: '1.1rem', fontWeight: 700, flexShrink: 0 }}>›</span>
-                </a>
+                </div>
                 {!doneToday && (
                   <a
                     href={qtHref}
@@ -1175,12 +1125,10 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
             );
           })()}
 
-          {/* 이번주 영적 참여 뱃지 — 요일 pill 은 각 카드(#qt / #reading) 로 이동됨. 여기엔 카운터+응원 메세지만 */}
+          {/* 성경통독 이번주 기록 — 통독 단독 측정 (QT 합산 아님). 0~7일 스케일. */}
           {profileId && (() => {
-            const qt = weekQtDates.size;
-            const rd = weekReadingDates.size;
-            const total = Math.min(qt, 7) + Math.min(rd, 7);  // 최대 14
-            const level = total >= 14 ? 5 : total >= 12 ? 4 : total >= 8 ? 3 : total >= 4 ? 2 : total >= 1 ? 1 : 0;
+            const rd = weekReadingDates.size;  // 0~7
+            const level = rd >= 7 ? 5 : rd >= 6 ? 4 : rd >= 4 ? 3 : rd >= 2 ? 2 : rd >= 1 ? 1 : 0;
             const badges = [
               { emoji: '🌱', title: '이번주 함께 시작해볼까요?', sub: '작은 한 걸음부터 시작이에요.', ring: '#E5E7EB', bg: '#F9FAFB', fg: '#6B7280' },
               { emoji: '🌿', title: '시작이 좋아요!', sub: '오늘 한 걸음 더 내딛어봐요.', ring: '#BBF7D0', bg: '#F0FDF4', fg: '#15803D' },
@@ -1264,18 +1212,13 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                     {t('page.reading.encourage')}
                   </span>
                 </div>
-                <a
-                  href={readingHref}
-                  title="성경통독으로 이동"
-                  style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '0.85rem 1rem', borderRadius: 14, background: b.bg, border: `1px solid ${b.ring}`, textDecoration: 'none', cursor: 'pointer' }}
-                >
+                <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '0.85rem 1rem', borderRadius: 14, background: b.bg, border: `1px solid ${b.ring}` }}>
                   <span aria-hidden style={{ fontSize: '2.2rem', lineHeight: 1 }}>{b.emoji}</span>
                   <div style={{ display: 'grid', gap: '0.15rem', flex: 1, minWidth: 0 }}>
                     <strong style={{ fontSize: '1rem', color: b.fg, fontWeight: 800 }}>{b.title}</strong>
                     <span style={{ fontSize: '0.82rem', color: b.fg, opacity: 0.85, fontWeight: 600 }}>{b.sub}</span>
                   </div>
-                  <span aria-hidden style={{ color: b.fg, opacity: 0.6, fontSize: '1.1rem', fontWeight: 700, flexShrink: 0 }}>›</span>
-                </a>
+                </div>
                 {/* 오늘 통독 CTA — QT 카드와 동일 스타일. 범위 메시지를 버튼 안에 담음 */}
                 {!readingDoneToday && todayRangeText && (
                   <a
@@ -1471,70 +1414,6 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
             <p style={{ margin: '0.55rem 0 0', fontSize: isMobile ? '0.78rem' : '0.74rem', color: 'var(--color-ink-2)', lineHeight: 1.5 }}>※ 교회의 사정에 따라 일정은 변경될 수 있습니다. (출처: 미스바 목회일정)</p>
           </section>
 
-          {profileId && !profileDone && !activeCommunity && (
-            <section style={{ padding: profileExpanded ? (isMobile ? '1.1rem' : '1.5rem') : '1rem 1.25rem', borderRadius: 16, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', transition: 'padding 0.2s ease' }}>
-              <button
-                type="button"
-                onClick={() => setProfileExpanded((v) => !v)}
-                aria-expanded={profileExpanded}
-                style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  <span style={{ display: 'inline-flex', padding: '0.3rem 0.7rem', borderRadius: 999, background: 'var(--color-primary-tint)', color: 'var(--color-primary-deep)', fontWeight: 700, fontSize: '0.78rem' }}>선택사항</span>
-                  <h2 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--color-ink)', fontWeight: 800, letterSpacing: '-0.01em' }}>프로필을 완성해 주세요</h2>
-                </div>
-                <span style={{ color: 'var(--color-ink-2)', fontSize: '1rem', transform: profileExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease', lineHeight: 1 }}>▾</span>
-              </button>
-
-              {profileExpanded && (
-                <div style={{ marginTop: '1.1rem' }}>
-                  <p style={{ margin: '0 0 1rem', color: 'var(--color-ink-2)', fontSize: '0.92rem', lineHeight: 1.6 }}>실명과 연락처를 등록하면 소모임·공동체 관리자가 더 원활히 안내할 수 있어요.</p>
-                  <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                    <div style={{ display: 'grid', gap: '0.35rem' }}>
-                      <label style={{ color: 'var(--color-ink)', fontWeight: 700, fontSize: '0.88rem' }}>실명</label>
-                      <input
-                        type="text"
-                        value={realName}
-                        onChange={(e) => setRealName(e.target.value)}
-                        placeholder="실명을 입력하세요"
-                        style={{ padding: '0.85rem 0.95rem', borderRadius: 12, border: '1px solid var(--color-gray)', background: 'var(--color-surface)', fontSize: '0.95rem', color: 'var(--color-ink)', minHeight: 44 }}
-                      />
-                    </div>
-                    <div style={{ display: 'grid', gap: '0.35rem' }}>
-                      <label style={{ color: 'var(--color-ink)', fontWeight: 700, fontSize: '0.88rem' }}>연락처</label>
-                      <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: '0.5rem' }}>
-                        <select value={countryCode} onChange={(e) => setCountryCode(e.target.value)} style={{ padding: '0.85rem 0.6rem', borderRadius: 12, border: '1px solid var(--color-gray)', background: 'var(--color-surface)', color: 'var(--color-ink)', appearance: 'none', minHeight: 44 }}>
-                          <option value="+65">🇸🇬 +65</option>
-                          <option value="+82">🇰🇷 +82</option>
-                          <option value="+1">🇺🇸 +1</option>
-                          <option value="+44">🇬🇧 +44</option>
-                          <option value="+81">🇯🇵 +81</option>
-                        </select>
-                        <input
-                          type="text"
-                          value={contact}
-                          onChange={(e) => setContact(e.target.value)}
-                          placeholder="1111-1111"
-                          style={{ padding: '0.85rem 0.95rem', borderRadius: 12, border: '1px solid var(--color-gray)', background: 'var(--color-surface)', fontSize: '0.95rem', color: 'var(--color-ink)', minHeight: 44 }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap' }}>
-                    <span style={{ color: profileMsg?.includes('저장') ? 'var(--color-primary-deep)' : 'var(--color-danger)', fontSize: '0.88rem' }}>{profileMsg || ''}</span>
-                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <button type="button" onClick={() => setProfileDone(true)} style={{ padding: '0.7rem 1.1rem', minHeight: 44, borderRadius: 10, border: '1px solid var(--color-gray)', background: 'var(--color-surface)', color: 'var(--color-ink-2)', fontWeight: 700, cursor: 'pointer' }}>
-                        나중에
-                      </button>
-                      <button type="button" onClick={saveProfile} disabled={savingProfile} style={{ padding: '0.7rem 1.2rem', minHeight: 44, borderRadius: 10, border: 'none', background: savingProfile ? 'rgba(32, 205, 141, 0.5)' : 'var(--color-primary)', color: '#ffffff', fontWeight: 800, cursor: savingProfile ? 'not-allowed' : 'pointer', boxShadow: 'var(--shadow-button)' }}>
-                        {savingProfile ? '저장 중...' : '저장'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </section>
-          )}
       </AppShell>
 
       {previewBulletin && (
