@@ -212,7 +212,7 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
                   </span>
                   <span style={{ fontSize: isMobile ? '0.68rem' : '0.72rem', fontWeight: 700, color: '#DC2626', lineHeight: 1 }}>{weekLabel}</span>
                   {isToday && (
-                    <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#fff', background: '#20CD8D', padding: '0.08rem 0.4rem', borderRadius: 999, letterSpacing: '0.02em' }}>오늘</span>
+                    <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#fff', background: '#20CD8D', padding: '0.08rem 0.4rem', borderRadius: 999, letterSpacing: '0.02em' }}>{t('page.bulletin.todayBadge')}</span>
                   )}
                 </button>
               );
@@ -243,7 +243,7 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
           {/* 주보 이미지 — 토글 없이 곧바로 표시. 클릭하면 라이트박스로 확대. */}
           {bulletin?.bulletinIdx && (
             bulletinFilesLoading ? (
-              <div style={{ padding: '0.85rem 1rem', borderRadius: 12, background: '#F9FAFB', border: '1px dashed var(--color-gray)', fontSize: '0.88rem', color: 'var(--color-ink-2)' }}>주보를 불러오는 중…</div>
+              <div style={{ padding: '0.85rem 1rem', borderRadius: 12, background: '#F9FAFB', border: '1px dashed var(--color-gray)', fontSize: '0.88rem', color: 'var(--color-ink-2)' }}>{t('page.bulletin.loadingBulletin')}</div>
             ) : bulletinFilesError ? (
               <div style={{ padding: '0.85rem 1rem', borderRadius: 12, background: '#FEF2F2', border: '1px solid #FCA5A5', fontSize: '0.88rem', color: '#B91C1C' }}>{bulletinFilesError}</div>
             ) : bulletinFiles.length === 0 ? null : (
@@ -254,7 +254,7 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
                     return (
                       <button
                         key={f.n} type="button" onClick={() => setLightboxIndex(imgIdx)}
-                        title="클릭하여 크게 보기"
+                        title={t('page.bulletin.zoomHint')}
                         style={{ position: 'relative', padding: 0, border: '1px solid var(--color-surface-border)', borderRadius: 12, background: '#fff', cursor: 'zoom-in', display: 'block', width: '100%' }}
                       >
                         <img
@@ -262,7 +262,7 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
                           style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 12 }}
                         />
                         <span style={{ position: 'absolute', right: 8, bottom: 8, padding: '0.25rem 0.55rem', borderRadius: 999, background: 'rgba(17,24,39,0.72)', color: '#fff', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                          🔍 크게 보기
+                          {t('page.bulletin.zoomButton')}
                         </span>
                       </button>
                     );
@@ -287,10 +287,10 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
           )}
 
           {bulletinLookupLoading && (
-            <div style={{ padding: '0.85rem 1rem', borderRadius: 12, background: '#F9FAFB', border: '1px dashed var(--color-gray)', fontSize: '0.88rem', color: 'var(--color-ink-2)' }}>주보를 확인하는 중…</div>
+            <div style={{ padding: '0.85rem 1rem', borderRadius: 12, background: '#F9FAFB', border: '1px dashed var(--color-gray)', fontSize: '0.88rem', color: 'var(--color-ink-2)' }}>{t('page.bulletin.checkingBulletin')}</div>
           )}
           {!bulletinLookupLoading && !bulletin?.found && (
-            <div style={{ padding: '0.85rem 1rem', borderRadius: 12, background: '#F9FAFB', border: '1px dashed var(--color-gray)', fontSize: '0.88rem', color: 'var(--color-ink-2)' }}>{bulletinLookupError || '이 주일의 주보가 아직 등록되지 않았습니다.'}</div>
+            <div style={{ padding: '0.85rem 1rem', borderRadius: 12, background: '#F9FAFB', border: '1px dashed var(--color-gray)', fontSize: '0.88rem', color: 'var(--color-ink-2)' }}>{bulletinLookupError || t('page.bulletin.noBulletinFound')}</div>
           )}
         </section>
       </main>

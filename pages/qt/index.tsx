@@ -191,7 +191,7 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
 
   const openNoteModal = async () => {
     if (!resolvedProfileId) {
-      alert('로그인 후 사용하실 수 있습니다.');
+      alert(t('page.qt.loginRequired'));
       router.push('/auth/login');
       return;
     }
@@ -321,7 +321,7 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
                 <button
                   type="button"
                   onClick={goPrev}
-                  aria-label="이전 날짜"
+                  aria-label={t('page.qt.navPrev')}
                   style={{
                     padding: isMobile ? '0 0.4rem' : '0 0.45rem', borderRadius: 8, border: '1px solid var(--color-gray)',
                     background: '#fff', color: 'var(--color-ink-2)', cursor: 'pointer',
@@ -394,7 +394,7 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
                 <button
                   type="button"
                   onClick={goNext}
-                  aria-label="다음 날짜"
+                  aria-label={t('page.qt.navNext')}
                   style={{
                     padding: isMobile ? '0 0.4rem' : '0 0.45rem', borderRadius: 8, border: '1px solid var(--color-gray)',
                     background: '#fff', color: 'var(--color-ink-2)', cursor: 'pointer',
@@ -426,18 +426,18 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
                     // videoFetchStatus 에 따라 안내 문구 분기 — 단순 '영상 없음' 대신 원인 노출.
                     if (videos.length === 0 && videoFetchStatus !== 'ok' && videoFetchStatus !== 'empty') {
                       const msg =
-                        videoFetchStatus === 'quota' ? 'YouTube API 일일 한도 초과 — 잠시 후 다시 시도해주세요' :
-                        videoFetchStatus === 'unauthorized' ? 'YouTube API 인증 오류 — 관리자에 문의' :
-                        videoFetchStatus === 'network' ? '일시 네트워크 오류 — 잠시 후 새로고침' :
-                        '영상 서비스 일시 오류';
+                        videoFetchStatus === 'quota' ? t('page.qt.ytQuotaError') :
+                        videoFetchStatus === 'unauthorized' ? t('page.qt.ytAuthError') :
+                        videoFetchStatus === 'network' ? t('page.qt.ytNetworkError') :
+                        t('page.qt.ytGenericError');
                       return (
                         <>
-                          <span>영상 없음</span>
+                          <span>{t('page.qt.noVideo')}</span>
                           <span style={{ fontSize: '0.78rem', fontWeight: 500, color: '#B91C1C' }}>⚠ {msg}</span>
                         </>
                       );
                     }
-                    return <span>영상 없음</span>;
+                    return <span>{t('page.qt.noVideo')}</span>;
                   })()}
                 </div>
               )}
@@ -508,7 +508,7 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
                             <span aria-hidden>📖</span>
                             <span>묵상 보기</span>
                           </button>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--color-ink-2)', fontWeight: 600, textAlign: 'center' }}>클릭해서 내가 쓴 묵상 내용을 확인하세요!</span>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--color-ink-2)', fontWeight: 600, textAlign: 'center' }}>{t('page.qt.viewNoteHint')}</span>
                         </div>
                       );
                     }
@@ -533,7 +533,7 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
                           <span aria-hidden>✎</span>
                           <span>묵상 미입력</span>
                         </div>
-                        <span style={{ fontSize: '0.7rem', color: 'var(--color-ink-2)', fontWeight: 600, textAlign: 'center' }}>📖 보기만 가능 — 큐티는 오늘만 작성 가능합니다</span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--color-ink-2)', fontWeight: 600, textAlign: 'center' }}>{t('page.qt.readOnlyHint')}</span>
                       </div>
                     );
                   }
@@ -595,7 +595,7 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
                         <span>{hasNote ? '✓ 묵상 완료' : '묵상 미입력'}</span>
                       </button>
                       {!hasNote && (
-                        <span style={{ fontSize: '0.7rem', color: 'var(--color-ink-2)', fontWeight: 600, textAlign: 'center' }}>묵상 기록 후 자동 완료 처리됩니다</span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--color-ink-2)', fontWeight: 600, textAlign: 'center' }}>{t('page.qt.hintAutoComplete')}</span>
                       )}
                     </div>
                   );
@@ -645,7 +645,7 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#1F2937', display: 'inline-flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <span>✍️ 나의 묵상노트</span>
+                <span>{t('page.qt.myNoteHeader')}</span>
                 <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#65A30D', letterSpacing: '0.01em' }}>
                   {(() => {
                     const [y, m, d] = todayKey.split('-').map(Number);
@@ -750,7 +750,7 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#1F2937', display: 'inline-flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <span>📖 과거 묵상 보기</span>
+                <span>{t('page.qt.pastNoteViewHeader')}</span>
                 {viewNoteDateKey && (
                   <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#65A30D', letterSpacing: '0.01em' }}>
                     {(() => {
@@ -790,7 +790,7 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
                   wordBreak: 'keep-all',
                 }}
               >
-                {viewNoteText || <span style={{ color: 'var(--color-ink-2)' }}>(작성된 내용이 없습니다)</span>}
+                {viewNoteText || <span style={{ color: 'var(--color-ink-2)' }}>{t('page.qt.emptyNoteContent')}</span>}
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>

@@ -107,7 +107,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
     fetch(`/api/cell-worship?date=${selectedKey}`)
       .then((r) => r.json())
       .then((d: CellGuide) => { if (!cancelled) { guideCacheRef.current.set(selectedKey, d); setGuide(d); } })
-      .catch(() => { if (!cancelled) setGuideError('구역예배지를 불러오지 못했습니다.'); })
+      .catch(() => { if (!cancelled) setGuideError(t('page.cellTeaching.guideLoadError')); })
       .finally(() => { if (!cancelled) setGuideLoading(false); });
     return () => { cancelled = true; };
   }, [selectedKey]);
@@ -210,7 +210,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
                     -{endLabel}
                   </span>
                   {isToday && (
-                    <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#fff', background: '#20CD8D', padding: '0.08rem 0.4rem', borderRadius: 999, letterSpacing: '0.02em' }}>오늘</span>
+                    <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#fff', background: '#20CD8D', padding: '0.08rem 0.4rem', borderRadius: 999, letterSpacing: '0.02em' }}>{t('page.cellTeaching.todayBadge')}</span>
                   )}
                 </button>
               );
@@ -258,7 +258,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
           </div>
 
           {guideLoading && (
-            <div style={{ padding: '0.85rem 1rem', borderRadius: 12, background: '#F9FAFB', border: '1px dashed var(--color-gray)', fontSize: '0.88rem', color: 'var(--color-ink-2)' }}>구역예배지를 불러오는 중…</div>
+            <div style={{ padding: '0.85rem 1rem', borderRadius: 12, background: '#F9FAFB', border: '1px dashed var(--color-gray)', fontSize: '0.88rem', color: 'var(--color-ink-2)' }}>{t('page.cellTeaching.loadingGuide')}</div>
           )}
           {!guideLoading && !guide?.found && (
             <div style={{ padding: '0.85rem 1rem', borderRadius: 12, background: '#F9FAFB', border: '1px dashed var(--color-gray)', fontSize: '0.88rem', color: 'var(--color-ink-2)' }}>{guideError || t('page.cellTeaching.emptyGuide')}</div>
@@ -293,7 +293,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
                 type="button"
                 onClick={() => setShowNaeyong((v) => !v)}
                 aria-expanded={showNaeyong}
-                aria-label={showNaeyong ? '나눔 내용 접기' : '나눔 내용 펼치기'}
+                aria-label={showNaeyong ? t('page.cellTeaching.sharingContentCollapse') : t('page.cellTeaching.sharingContentExpand')}
                 style={{ margin: 0, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.98rem', fontWeight: 800, color: '#1E40AF', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', textAlign: 'left' }}
               >
                 <span aria-hidden>💬</span>
@@ -319,7 +319,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
                 type="button"
                 onClick={() => setShowPrayer((v) => !v)}
                 aria-expanded={showPrayer}
-                aria-label={showPrayer ? '나눔 기도 접기' : '나눔 기도 펼치기'}
+                aria-label={showPrayer ? t('page.cellTeaching.sharingPrayerCollapse') : t('page.cellTeaching.sharingPrayerExpand')}
                 style={{ margin: 0, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.98rem', fontWeight: 800, color: '#92400E', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', textAlign: 'left' }}
               >
                 <span aria-hidden>🙏</span>
@@ -328,7 +328,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
               </button>
               {showPrayer && guide.prayer.map((p, i) => (
                 <div key={i} style={{ padding: '0.7rem 0.85rem', borderRadius: 8, background: '#FEF3C7', display: 'grid', gap: '0.35rem' }}>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#92400E' }}>{p.label === '삶' ? '삶을 위한 기도' : p.label === '공동체' ? '공동체를 위한 기도' : p.label}</div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#92400E' }}>{p.label === '삶' ? t('page.cellTeaching.prayerLabelLife') : p.label === '공동체' ? t('page.cellTeaching.prayerLabelCommunity') : p.label}</div>
                   <div style={{ fontSize: '0.92rem', lineHeight: 1.75, color: 'var(--color-ink)' }}>{p.text}</div>
                 </div>
               ))}
