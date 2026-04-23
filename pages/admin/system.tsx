@@ -89,6 +89,10 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
   const [userFilter, setUserFilter] = useState<'all' | 'admin'>('all');
   const [activeDays, setActiveDays] = useState<number>(30);
   const [userSort, setUserSort] = useState<'recent' | 'name'>('recent');
+  // 접속자 관리 / 시스템 관리자 목록 — 초기 4행만 노출, '펼쳐보기' 클릭 시 전체.
+  const [usersShowAll, setUsersShowAll] = useState(false);
+  const [adminsShowAll, setAdminsShowAll] = useState(false);
+  const INITIAL_ROWS = 4;
   const [communitySort, setCommunitySort] = useState<'createdDesc' | 'name' | 'members' | 'activity'>('createdDesc');
   type WorshipItem = { id: string; title: string; description?: string; presenter?: string; allTogether?: boolean; link?: string; passage?: string; members?: string; prayerNote?: string; songs?: { title: string; link: string }[] };
   const ytId = (url: string): string | null => {
@@ -420,7 +424,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((u, i) => (
+                  {(usersShowAll ? filteredUsers : filteredUsers.slice(0, INITIAL_ROWS)).map((u, i) => (
                     <tr key={u.profileId} style={{ borderTop: '1px solid var(--color-surface-border)' }}>
                       <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)' }}>{i + 1}</td>
                       <td style={{ padding: '0.55rem 0.6rem', fontWeight: 700, color: '#182527', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
@@ -439,6 +443,17 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
                   ))}
                 </tbody>
               </table>
+              {filteredUsers.length > INITIAL_ROWS && (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.55rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setUsersShowAll((v) => !v)}
+                    style={{ padding: '0.4rem 0.9rem', minHeight: 32, borderRadius: 999, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                  >
+                    {usersShowAll ? (<><span>접기</span><span aria-hidden>▴</span></>) : (<><span>펼쳐보기</span><span style={{ color: 'var(--color-primary-deep)', fontWeight: 800 }}>+{filteredUsers.length - INITIAL_ROWS}</span><span aria-hidden>▾</span></>)}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </section>
@@ -483,7 +498,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
                   </tr>
                 </thead>
                 <tbody>
-                  {admins.map((id, i) => {
+                  {(adminsShowAll ? admins : admins.slice(0, INITIAL_ROWS)).map((id, i) => {
                     const u = users.find((x) => x.profileId === id);
                     const name = u?.realName || u?.nickname || '(이름 미입력)';
                     const idDisplay = u?.nickname || u?.email?.split('@')[0] || id;
@@ -506,6 +521,17 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
                   })}
                 </tbody>
               </table>
+              {admins.length > INITIAL_ROWS && (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.55rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setAdminsShowAll((v) => !v)}
+                    style={{ padding: '0.4rem 0.9rem', minHeight: 32, borderRadius: 999, border: '1px solid var(--color-gray)', background: '#fff', color: 'var(--color-ink-2)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                  >
+                    {adminsShowAll ? (<><span>접기</span><span aria-hidden>▴</span></>) : (<><span>펼쳐보기</span><span style={{ color: 'var(--color-primary-deep)', fontWeight: 800 }}>+{admins.length - INITIAL_ROWS}</span><span aria-hidden>▾</span></>)}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </section>

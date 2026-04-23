@@ -22,23 +22,24 @@ const AdminTabBar = ({ authQS, active = null, defaultCommunityId }: Props) => {
   return (
     <section
       className="nav-scroll"
+      aria-label="시스템 관리 메뉴"
       style={{
         position: 'sticky',
         top: 0,
         zIndex: 15,
         display: 'flex',
-        gap: isMobile ? '0.3rem' : '0.4rem',
-        flexWrap: isMobile ? 'nowrap' : 'wrap',
-        padding: isMobile ? '0.45rem 0.55rem' : '0.55rem 0.75rem',
-        borderRadius: 12,
-        background: 'rgba(236, 252, 203, 0.92)',
-        backdropFilter: 'saturate(180%) blur(10px)',
+        gap: isMobile ? '0.25rem' : '0.35rem',
+        flexWrap: 'nowrap',
+        padding: isMobile ? '0.3rem 0.45rem' : '0.35rem 0.55rem',
+        borderRadius: 10,
+        background: 'rgba(247, 254, 231, 0.92)',
+        backdropFilter: 'saturate(160%) blur(8px)',
         border: '1px solid #D9F09E',
         alignItems: 'center',
-        /* 스크롤바 숨김은 globals.css .nav-scroll 클래스에서 처리 */
+        overflowX: 'auto',
+        whiteSpace: 'nowrap',
       }}
     >
-      <span style={{ padding: isMobile ? '0.28rem 0.55rem' : '0.3rem 0.75rem', minHeight: 40, display: 'inline-flex', alignItems: 'center', borderRadius: 999, background: '#BEF264', color: '#3F6212', fontWeight: 800, fontSize: isMobile ? '0.78rem' : '0.85rem', flexShrink: 0, whiteSpace: 'nowrap' }}>시스템 관리</span>
       {tabs.map((item) => {
         const isActive = item.key === active;
         return (
@@ -50,19 +51,19 @@ const AdminTabBar = ({ authQS, active = null, defaultCommunityId }: Props) => {
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              minHeight: 40,
-              padding: isMobile ? '0 0.75rem' : '0 1.05rem',
+              minHeight: 34,
+              padding: isMobile ? '0 0.65rem' : '0 0.9rem',
               borderRadius: 999,
-              background: isActive ? '#65A30D' : '#ECFCCB',
+              background: isActive ? '#65A30D' : 'transparent',
               color: isActive ? '#F7FEE7' : '#4D7C0F',
-              border: `1px solid ${isActive ? '#65A30D' : '#D9F09E'}`,
-              fontWeight: 800,
-              fontSize: isMobile ? '0.8rem' : '0.9rem',
+              border: `1px solid ${isActive ? '#65A30D' : 'transparent'}`,
+              fontWeight: isActive ? 800 : 700,
+              fontSize: isMobile ? '0.78rem' : '0.86rem',
               textDecoration: 'none',
               whiteSpace: 'nowrap',
               flexShrink: 0,
-              boxShadow: isActive ? '0 4px 12px rgba(101, 163, 13, 0.28)' : 'none',
-              transition: 'background 0.15s ease, transform 0.15s ease',
+              boxShadow: isActive ? '0 2px 6px rgba(101, 163, 13, 0.22)' : 'none',
+              transition: 'background 0.15s ease, color 0.15s ease',
             }}
           >
             {item.label}

@@ -122,6 +122,26 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
             <span aria-hidden>📊</span><span>내 대시보드</span>
           </a>
         )}
+        {/* 시스템 관리자 전용 진입 버튼 — admin 이 자주 쓰는 액션이라 1-클릭 유지 */}
+        {effProfileId && systemAdminHref && (
+          <a
+            href={systemAdminHref}
+            title={t('nav.sysSettings')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+              padding: isMobile ? '0.3rem 0.55rem' : '0.35rem 0.75rem',
+              borderRadius: 999,
+              background: '#ECFCCB',
+              border: '1px solid #D9F09E',
+              color: '#3F6212',
+              fontWeight: 800,
+              fontSize: isMobile ? '0.78rem' : '0.85rem',
+              textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
+            }}
+          >
+            <span aria-hidden>🛠️</span><span>관리자</span>
+          </a>
+        )}
         {effProfileId && (
           <span style={{
             display: 'inline-flex',
@@ -145,51 +165,50 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
               aria-label="내 정보"
               style={{ background: 'none', border: 'none', padding: 0, margin: 0, font: 'inherit', color: 'inherit', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'underline', textUnderlineOffset: 3, textDecorationColor: 'var(--color-gray)' }}
             >{userLabel}</button>
-            {systemAdminHref && (
-              <a href={systemAdminHref} aria-label={t('nav.sysSettings')} title={t('nav.sysSettings')} style={{
+            {/* 톱니 아이콘 — 모든 사용자에게 노출. 클릭 시 닉네임 클릭과 동일한 드롭다운 오픈.
+                시스템 관리자는 드롭다운 안에 '🛠️ 시스템 관리자' 메뉴 자동 노출. */}
+            <button
+              type="button"
+              onClick={() => setProfileModalOpen(true)}
+              aria-label="계정 설정"
+              title="계정 설정"
+              style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 width: 22, height: 22, borderRadius: 999,
                 background: 'var(--color-primary-tint)', color: 'var(--color-primary-deep)',
-                textDecoration: 'none', marginLeft: '0.1rem',
-              }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                </svg>
-              </a>
-            )}
+                border: 'none', padding: 0, cursor: 'pointer',
+                marginLeft: '0.1rem',
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </button>
           </span>
         )}
-        <a
-          href={effProfileId ? '/' : '/auth/login'}
-          onClick={(e) => {
-            if (effProfileId) {
-              e.preventDefault();
-              try {
-                window.localStorage.removeItem('kcisProfileId');
-                window.localStorage.removeItem('kcisNickname');
-                window.localStorage.removeItem('kcisEmail');
-              } catch {}
-              window.location.href = '/';
-            }
-          }}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: 44,
-            padding: isMobile ? '0.5rem 0.9rem' : '0.6rem 1.1rem',
-            borderRadius: 'var(--radius-md)',
-            background: 'var(--color-primary)',
-            color: '#ffffff',
-            fontWeight: 700,
-            fontSize: isMobile ? '0.82rem' : '0.9rem',
-            textDecoration: 'none',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {effProfileId ? t('nav.logout') : t('nav.login')}
-        </a>
+        {/* 로그인 상태일 땐 로그아웃 버튼 숨김 — ProfileModal(닉네임 클릭) 의 primary 액션으로 이전. */}
+        {!effProfileId && (
+          <a
+            href="/auth/login"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 44,
+              padding: isMobile ? '0.5rem 0.9rem' : '0.6rem 1.1rem',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--color-primary)',
+              color: '#ffffff',
+              fontWeight: 700,
+              fontSize: isMobile ? '0.82rem' : '0.9rem',
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {t('nav.login')}
+          </a>
+        )}
         <LanguageSwitcher />
       </div>
     </section>

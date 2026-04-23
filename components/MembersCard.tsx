@@ -51,6 +51,8 @@ const MembersCard = ({ profileId, k }: Props) => {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<{ kind: ConfirmKind; member: Approval } | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const INITIAL_ROWS = 4;
 
   const load = async () => {
     setLoading(true);
@@ -130,7 +132,7 @@ const MembersCard = ({ profileId, k }: Props) => {
               </tr>
             </thead>
             <tbody>
-              {members.map((m, i) => {
+              {(showAll ? members : members.slice(0, INITIAL_ROWS)).map((m, i) => {
                 const isMe = m.profileId === profileId;
                 const working = busy === m.profileId;
                 return (
@@ -177,6 +179,30 @@ const MembersCard = ({ profileId, k }: Props) => {
               })}
             </tbody>
           </table>
+          {members.length > INITIAL_ROWS && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.55rem' }}>
+              <button
+                type="button"
+                onClick={() => setShowAll((v) => !v)}
+                style={{
+                  padding: '0.4rem 0.9rem', minHeight: 32,
+                  borderRadius: 999,
+                  border: '1px solid var(--color-gray)',
+                  background: '#fff',
+                  color: 'var(--color-ink-2)',
+                  fontSize: '0.8rem', fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                }}
+              >
+                {showAll ? (
+                  <><span>접기</span><span aria-hidden>▴</span></>
+                ) : (
+                  <><span>펼쳐보기</span><span style={{ color: 'var(--color-primary-deep)', fontWeight: 800 }}>+{members.length - INITIAL_ROWS}</span><span aria-hidden>▾</span></>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

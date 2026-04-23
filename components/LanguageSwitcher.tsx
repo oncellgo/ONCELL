@@ -12,16 +12,16 @@ const LanguageSwitcher = () => {
       value={current}
       onChange={(e) => changeLanguage(e.target.value as 'ko' | 'en' | 'zh')}
       style={{
-        minHeight: isMobile ? 32 : 40,
-        padding: isMobile ? '0.2rem 0.25rem' : '0.45rem 0.5rem',
-        borderRadius: 8,
+        minHeight: isMobile ? 28 : 40,
+        padding: isMobile ? '0.1rem 0.15rem' : '0.45rem 0.5rem',
+        borderRadius: 6,
         border: '1px solid var(--color-gray)',
         background: 'var(--color-surface)',
         color: 'var(--color-ink)',
-        fontSize: isMobile ? '0.72rem' : '0.9rem',
+        fontSize: isMobile ? '0.62rem' : '0.9rem',
         fontWeight: 700,
         cursor: 'pointer',
-        maxWidth: isMobile ? 70 : undefined,
+        maxWidth: isMobile ? 56 : undefined,
       }}
     >
       <option value="ko">한국어</option>
