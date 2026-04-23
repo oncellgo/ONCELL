@@ -1,0 +1,33 @@
+{
+  "name": "KCIS — 싱가폴한인교회",
+  "short_name": "KCIS",
+  "description": "장소 예약과 나의 기록을 한 곳에서 — 카카오·Google 로그인",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7FEE7",
+  "theme_color": "#20CD8D",
+  "lang": "ko",
+  "categories": ["social", "lifestyle", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
