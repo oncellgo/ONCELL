@@ -4,7 +4,7 @@
 // 오프라인 캐시/푸시 알림은 일단 미구현. 필요 시 추후 확장.
 // ---------------------------------------------------------------
 
-const CACHE_NAME = 'kcis-static-v1';
+const CACHE_NAME = 'kcis-static-v2';
 const PRECACHE_URLS = [
   '/',
   '/manifest.json',
