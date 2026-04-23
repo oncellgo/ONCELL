@@ -607,8 +607,42 @@ const ReservationSlotPicker = ({
     ? venues.find((v) => selectedVenueIds.has(v.id))
     : null;
 
+  // 편집 모드 — 원본 예약 스냅샷 (변경 요약용)
+  const originalEditSummary = mode === 'edit' && editReservation ? (() => {
+    const v = venues.find((x) => x.id === editReservation.venueId);
+    const venueLabel = v ? `${v.floor} ${v.name}` : '';
+    const mmToHHMM = (mm: number) => `${String(Math.floor(mm / 60)).padStart(2, '0')}:${String(mm % 60).padStart(2, '0')}`;
+    const dKey = editReservation.dateKey || editReservation.date || '';
+    const [y, m, d] = dKey.split('-');
+    const dateLabel = y && m && d ? `${Number(m)}/${Number(d)}` : dKey;
+    return { venueLabel, dateLabel, range: `${mmToHHMM(editReservation.startMin)}~${mmToHHMM(editReservation.endMin)}` };
+  })() : null;
+
   return (
     <>
+      {/* 편집 모드 안내 띠 — 덮어쓰기 동작을 매번 상기 */}
+      {mode === 'edit' && (
+        <div
+          role="note"
+          style={{
+            padding: '0.55rem 0.8rem',
+            borderRadius: 10,
+            background: '#F0FDF4',
+            border: '1px solid #86EFAC',
+            color: '#065F46',
+            fontSize: '0.82rem',
+            fontWeight: 700,
+            lineHeight: 1.5,
+            wordBreak: 'keep-all',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+          }}
+        >
+          <span aria-hidden style={{ fontSize: '0.95rem', lineHeight: 1, flexShrink: 0 }}>ℹ️</span>
+          <span>새로 선택한 시간이 기존 예약을 대체합니다</span>
+        </div>
+      )}
       {/* 상단: 날짜 + 장소 */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? '0.5rem' : '0.75rem' }}>
         <div style={{ display: 'grid', gap: '0.35rem' }}>
@@ -756,20 +790,48 @@ const ReservationSlotPicker = ({
           />
 
           {selection ? (
-            <div style={{
-              display: 'flex', alignItems: isMobile ? 'stretch' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '0.55rem',
-              padding: '0.7rem 0.9rem', borderRadius: 12,
-              background: '#ECFDF5', border: '1px solid #20CD8D',
-            }}>
-              <span style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-primary-deep)', lineHeight: 1.4 }}>
-                ✓ {selection.venue.floor} {selection.venue.name} · {selection.startLabel}~{selection.endLabel} ({selection.totalLabel})
-              </span>
-              <div style={{ display: 'flex', gap: '0.35rem', marginLeft: isMobile ? 0 : 'auto' }}>
-                <button
-                  type="button"
-                  onClick={openConfirmModal}
-                  style={{ flex: isMobile ? 1 : undefined, padding: '0.45rem 0.95rem', minHeight: 40, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: 'none', background: 'var(--color-primary)', color: '#fff', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer' }}
-                >{mode === 'edit' ? '✓ 수정하기' : '✓ 예약하기'}</button>
+            <div style={{ display: 'grid', gap: '0.4rem' }}>
+              {/* 편집 모드 변경 요약 — 원본 vs 새 선택 */}
+              {mode === 'edit' && originalEditSummary && (
+                <div
+                  role="note"
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: 10,
+                    background: '#FFFBEB',
+                    border: '1px solid #FDE68A',
+                    color: '#78350F',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    lineHeight: 1.5,
+                    wordBreak: 'keep-all',
+                    display: 'grid',
+                    gap: '0.15rem',
+                  }}
+                >
+                  <span style={{ fontSize: '0.72rem', color: '#92400E', fontWeight: 800, letterSpacing: '0.02em' }}>변경 요약</span>
+                  <span>
+                    {originalEditSummary.venueLabel} · {originalEditSummary.dateLabel} {originalEditSummary.range}
+                    <span style={{ margin: '0 0.35rem', color: '#A16207' }}>→</span>
+                    {selection.venue.floor} {selection.venue.name} · {selection.startLabel}~{selection.endLabel}
+                  </span>
+                </div>
+              )}
+              <div style={{
+                display: 'flex', alignItems: isMobile ? 'stretch' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '0.55rem',
+                padding: '0.7rem 0.9rem', borderRadius: 12,
+                background: '#ECFDF5', border: '1px solid #20CD8D',
+              }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-primary-deep)', lineHeight: 1.4 }}>
+                  ✓ {selection.venue.floor} {selection.venue.name} · {selection.startLabel}~{selection.endLabel} ({selection.totalLabel})
+                </span>
+                <div style={{ display: 'flex', gap: '0.35rem', marginLeft: isMobile ? 0 : 'auto' }}>
+                  <button
+                    type="button"
+                    onClick={openConfirmModal}
+                    style={{ flex: isMobile ? 1 : undefined, padding: '0.45rem 0.95rem', minHeight: 40, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: 'none', background: 'var(--color-primary)', color: '#fff', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer' }}
+                  >{mode === 'edit' ? '✓ 수정하기' : '✓ 예약하기'}</button>
+                </div>
               </div>
             </div>
           ) : null}

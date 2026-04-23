@@ -3,6 +3,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import SubHeader from '../../components/SubHeader';
 import ReservationSlotPicker from '../../components/ReservationSlotPicker';
+import GridGuide from '../../components/GridGuide';
 import { Venue, Block, BlockGroup } from '../../components/VenueGrid';
 import { getSystemAdminHref } from '../../lib/adminGuard';
 import { useIsMobile } from '../../lib/useIsMobile';
@@ -71,6 +72,8 @@ const ReservationGridPage = ({ venues, blocks, groups, slotMin, availableStart, 
       />
 
       <main style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '1rem 0.5rem 4rem' : '1.5rem 1rem 5rem', display: 'grid', gap: isMobile ? '0.85rem' : '1rem' }}>
+        {/* 온보딩 가이드 — 처음 이용자용 배너 + 3단계 walkthrough. localStorage 로 dismissible. */}
+        <GridGuide />
         <section
           style={{
             padding: isMobile ? '0.85rem 0.75rem' : '1.1rem 1.2rem',
