@@ -13,6 +13,7 @@ import { getCommunities, getUsers, getProfiles, getSignupApprovals } from '../li
 import { getSystemAdminHref } from '../lib/adminGuard';
 import { useIsMobile } from '../lib/useIsMobile';
 import { isAllDayEvent } from '../lib/events';
+import { planForDate, formatPlan } from '../lib/readingPlan';
 
 type Community = {
   id: string;
@@ -989,6 +990,10 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
             const tk = `${today.getFullYear()}-${padN2(today.getMonth() + 1)}-${padN2(today.getDate())}`;
             const doneToday = qtHistoryDates.has(tk);
             const qtHref = `/qt${profileId ? `?profileId=${encodeURIComponent(profileId)}${nickname ? `&nickname=${encodeURIComponent(nickname)}` : ''}${email ? `&email=${encodeURIComponent(email)}` : ''}` : ''}`;
+            // lv 1 (cur === 1) 에서 오늘 아직 묵상 안 한 경우 "내일도" 는 어색. "오늘도 이어가볼까요?" 로 분기.
+            const tierSub = (lv === 1 && !doneToday)
+              ? '첫걸음을 내딛었어요. 오늘도 이어가볼까요?'
+              : tier.sub;
 
             // 첫 접속 / streak 0 — 장소예약과 동일한 톤의 온보딩 empty-state 로 렌더.
             // (트로피·7일 pill 은 숨기고, 깔끔한 시작 유도 카드만 노출)
@@ -1065,7 +1070,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                   <span aria-hidden style={{ fontSize: '2.4rem', lineHeight: 1 }}>{tier.emoji}</span>
                   <div style={{ display: 'grid', gap: '0.2rem', flex: 1, minWidth: 0 }}>
                     <strong style={{ fontSize: '1rem', color: tier.fg, fontWeight: 800, lineHeight: 1.25 }}>{tier.title}</strong>
-                    <span style={{ fontSize: '0.82rem', color: tier.fg, opacity: 0.9, fontWeight: 600, lineHeight: 1.45 }}>{tier.sub}</span>
+                    <span style={{ fontSize: '0.82rem', color: tier.fg, opacity: 0.9, fontWeight: 600, lineHeight: 1.45 }}>{tierSub}</span>
                   </div>
                   <span aria-hidden style={{ color: tier.fg, opacity: 0.6, fontSize: '1.1rem', fontWeight: 700, flexShrink: 0 }}>›</span>
                 </a>
@@ -1185,8 +1190,13 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
               { emoji: '👑', title: '완벽한 한 주!', sub: '은혜가 가득한 기록이네요. 축복합니다 🙌', ring: '#F59E0B', bg: '#FEF3C7', fg: '#78350F' },
             ];
             const b = badges[level];
-            const pct = Math.round((total / 14) * 100);
-            const readingHref = `/reading${profileId ? `?profileId=${encodeURIComponent(profileId)}${nickname ? `&nickname=${encodeURIComponent(nickname)}` : ''}${email ? `&email=${encodeURIComponent(email)}` : ''}` : ''}`;
+            const readingHref =`/reading${profileId ? `?profileId=${encodeURIComponent(profileId)}${nickname ? `&nickname=${encodeURIComponent(nickname)}` : ''}${email ? `&email=${encodeURIComponent(email)}` : ''}` : ''}`;
+
+            // 오늘 통독 범위 (lib/readingPlan 번들 상수 — DB/API 호출 없음)
+            const todayRangeText = formatPlan(planForDate(new Date()));
+            const today0ReadingMsg = new Date(); today0ReadingMsg.setHours(0, 0, 0, 0);
+            const todayKeyReadingMsg = `${today0ReadingMsg.getFullYear()}-${String(today0ReadingMsg.getMonth() + 1).padStart(2, '0')}-${String(today0ReadingMsg.getDate()).padStart(2, '0')}`;
+            const readingDoneToday = weekReadingDates.has(todayKeyReadingMsg);
 
             // 첫 접속 / 이번주 활동 0 — 온보딩 empty-state (장소예약·QT 카드와 동일 톤)
             if (level === 0) {
@@ -1266,10 +1276,34 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
                   </div>
                   <span aria-hidden style={{ color: b.fg, opacity: 0.6, fontSize: '1.1rem', fontWeight: 700, flexShrink: 0 }}>›</span>
                 </a>
-                {/* 진척 bar */}
-                <div style={{ marginTop: '0.75rem', height: 8, borderRadius: 999, background: '#E5E7EB', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, #20CD8D 0%, #65A30D 100%)', transition: 'width 0.3s ease' }} />
-                </div>
+                {/* 오늘 통독 CTA — QT 카드와 동일 스타일. 범위 메시지를 버튼 안에 담음 */}
+                {!readingDoneToday && todayRangeText && (
+                  <a
+                    href={readingHref}
+                    style={{
+                      marginTop: '0.6rem',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      padding: '0.65rem 1rem', minHeight: 44,
+                      borderRadius: 10,
+                      background: 'var(--color-primary)',
+                      color: '#fff',
+                      border: '1.5px solid var(--color-primary)',
+                      fontWeight: 800, fontSize: '0.92rem',
+                      textDecoration: 'none',
+                      width: isMobile ? '100%' : 'auto',
+                      letterSpacing: '-0.01em',
+                      wordBreak: 'keep-all',
+                      textAlign: 'center',
+                    }}
+                  >
+                    📖 오늘은 {todayRangeText} — 10분이면 돼요
+                  </a>
+                )}
+                {readingDoneToday && todayRangeText && (
+                  <div style={{ marginTop: '0.6rem', fontSize: '0.85rem', color: '#15803D', fontWeight: 700 }}>
+                    ✓ 오늘 {todayRangeText} 완독 — 내일도 이어가요!
+                  </div>
+                )}
 
                 {/* 최근 7일 성경통독 원형 요일 기록 — 완료=민트, 오늘 미완료면 펄스 유도 */}
                 {(() => {

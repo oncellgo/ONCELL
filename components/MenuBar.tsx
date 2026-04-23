@@ -113,22 +113,31 @@ const MenuBar = ({ profileId, nickname, email }: Props) => {
       className="nav-scroll"
       aria-label="메인 메뉴"
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: isMobile ? '0.35rem' : '0.45rem',
-        padding: isMobile ? '0.4rem 0.6rem' : '0.4rem 0.85rem',
-        background: 'transparent',
         overflowX: 'auto',
         // 스크롤바 숨김 (WebKit + 표준 모두)
         scrollbarWidth: 'none',
         WebkitOverflowScrolling: 'touch',
-        whiteSpace: 'nowrap',
-        // 모바일: 항목이 많으면 스크롤되도록 stretch 금지; 데스크톱: 중앙 정렬
-        justifyContent: isMobile ? 'flex-start' : 'center',
+        background: 'transparent',
         position: 'relative',
         zIndex: 15,
       }}
     >
+      {/* 내부 div 가 fit-content + margin:auto 로 실제 중앙정렬 담당.
+          콘텐츠 폭 > 컨테이너면 자연스럽게 왼쪽으로 정렬되고 스크롤 동작. */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: isMobile ? '0.35rem' : '0.45rem',
+          padding: isMobile ? '0.4rem 0.6rem' : '0.4rem 0.85rem',
+          whiteSpace: 'nowrap',
+          width: 'fit-content',
+          minWidth: '100%',
+          margin: '0 auto',
+          justifyContent: 'center',
+          boxSizing: 'border-box',
+        }}
+      >
       {VISIBLE_ITEMS.map((item) => {
         const active = isActive(item.href);
         return (
@@ -163,6 +172,7 @@ const MenuBar = ({ profileId, nickname, email }: Props) => {
           </Link>
         );
       })}
+      </div>
     </nav>
   );
 };
