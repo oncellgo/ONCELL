@@ -213,7 +213,6 @@ const ProfileModal = ({ profileId, nickname, email, onClose }: Props) => {
                 <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
                   {([
                     { value: 1 as ReadingPlan, label: '1독', sub: '하루 ≈ 3장' },
-                    { value: 2 as ReadingPlan, label: '2독', sub: '하루 6-7장' },
                   ]).map(({ value, label, sub }) => {
                     const active = readingPlan === value;
                     return (
