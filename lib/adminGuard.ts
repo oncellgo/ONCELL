@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import type { GetServerSidePropsContext, GetServerSidePropsResult } from 'next';
-import { getSystemAdmins, getCommunities, getUsers } from './dataStore';
+import { getSystemAdmins, getCommunities } from './dataStore';
 import { kvGet, kvSet } from './db';
 
 /**
@@ -193,26 +193,11 @@ export const requireAdminAccessSSR = async (
   const admins = await loadAdmins();
   const isSystemAdmin = isAdminByEither(admins, profileId, email);
 
-  // 공동체 관리자 체크 (user entries 를 통한 email/nickname fallback 포함)
+  // 공동체 관리자 체크 — "다른 userId = 다른 사용자" 원칙. profileId 엄격 매칭만.
+  // (user entries 기반 joinedIds 도 더 이상 필터 근거로 쓰지 않음 — adminProfileId 가 본인이면 공동체 관리자)
   const communities = ((await getCommunities()) || []) as Array<{ id: string; adminProfileId?: string }>;
-  const users = ((await getUsers()) || []) as Array<{ providerProfileId: string; nickname: string; communityId: string; profile?: { kakao_account?: { email?: string } } }>;
-  const providerPrefix = profileId.includes('-') ? profileId.split('-')[0] : null;
-  const matchedUsers = users.filter((u) => {
-    if (u.providerProfileId === profileId) return true;
-    if (providerPrefix && nickname && u.providerProfileId.startsWith(`${providerPrefix}-`) && u.nickname === nickname) return true;
-    if (email && u.profile?.kakao_account?.email === email) return true;
-    return false;
-  });
-  const joinedIds = new Set(matchedUsers.map((u) => u.communityId));
   const adminCommunityIds = communities
-    .filter((c) => {
-      if (!joinedIds.has(c.id)) return false;
-      if (!c.adminProfileId) return false;
-      if (c.adminProfileId === profileId) return true;
-      if (providerPrefix && nickname && c.adminProfileId === `${providerPrefix}-${nickname}`) return true;
-      if (email && c.adminProfileId === email) return true;
-      return false;
-    })
+    .filter((c) => !!c.adminProfileId && c.adminProfileId === profileId)
     .map((c) => c.id);
 
   if (!isSystemAdmin && adminCommunityIds.length === 0) {

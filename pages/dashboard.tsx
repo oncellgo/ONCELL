@@ -53,12 +53,13 @@ type DashboardProps = {
   nickname: string | null;
   email: string | null;
   joinedCommunities: Array<Community & { isAdmin: boolean }>;
+  adminCommunities: Community[];
   userEntries: UserEntry[];
   storedProfile: StoredProfile;
   systemAdminHref: string | null;
 };
 
-const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, userEntries, storedProfile, systemAdminHref }: DashboardProps) => {
+const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, adminCommunities, userEntries, storedProfile, systemAdminHref }: DashboardProps) => {
   const { t } = useTranslation();
   const audio = useAudio();
   const isMobile = useIsMobile();
@@ -301,6 +302,39 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
     const unsub = subscribeReadingPlan((next) => setReadingPlanChoice(next));
     return () => unsub();
   }, []);
+
+  // 가입 완료 직후 1회성 환영 배너 — complete.tsx 에서 kcisShowWelcome 플래그 설정
+  const [showWelcome, setShowWelcome] = useState(false);
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem('kcisShowWelcome') === '1') {
+        setShowWelcome(true);
+        window.localStorage.removeItem('kcisShowWelcome');
+      }
+    } catch {}
+  }, []);
+
+  // 관리 대상 커뮤니티 — SSR props 로 받되, URL 쿼리 없이 진입(refresh 등) 시 localStorage 로 pid 복구.
+  // 매칭은 **엄격히 profileId 기준**. 다른 provider 로 로그인하면 다른 사용자로 간주 (이메일 교차 매칭 안 함).
+  const [effectiveAdminCommunities, setEffectiveAdminCommunities] = useState<Community[]>(adminCommunities);
+  useEffect(() => {
+    if (adminCommunities.length > 0) { setEffectiveAdminCommunities(adminCommunities); return; }
+    let pid: string | null = profileId;
+    if (!pid) {
+      try { pid = window.localStorage.getItem('kcisProfileId'); } catch {}
+    }
+    if (!pid) { setEffectiveAdminCommunities([]); return; }
+    let cancelled = false;
+    fetch('/api/communities')
+      .then((r) => r.ok ? r.json() : { communities: [] })
+      .then((d: { communities?: Community[] }) => {
+        if (cancelled) return;
+        const all = Array.isArray(d?.communities) ? d.communities : [];
+        setEffectiveAdminCommunities(all.filter((c) => c.adminProfileId === pid));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [adminCommunities, profileId]);
   // 큐티 장기 기록 — 연속 일수(streak) + 총 일수 (최근 180일)
   const [qtHistoryDates, setQtHistoryDates] = useState<Set<string>>(new Set());
   const [weekExpanded, setWeekExpanded] = useState(false);
@@ -616,6 +650,21 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
           </div>
         ) : undefined}
       >
+          {showWelcome && (
+            <section style={{ padding: isMobile ? '0.9rem 1rem' : '1rem 1.2rem', borderRadius: 16, background: 'linear-gradient(135deg, rgba(32, 205, 141, 0.14) 0%, rgba(190, 242, 100, 0.22) 100%)', border: '1px solid var(--color-primary)', boxShadow: '0 4px 14px rgba(32, 205, 141, 0.18)', display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
+              <span aria-hidden style={{ fontSize: '1.6rem', lineHeight: 1, flexShrink: 0 }}>🎉</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <strong style={{ fontSize: isMobile ? '0.98rem' : '1.02rem', color: 'var(--color-primary-deep)', fontWeight: 800, display: 'block' }}>KCIS 에 가입완료!</strong>
+                <span style={{ fontSize: isMobile ? '0.85rem' : '0.88rem', color: 'var(--color-ink)', fontWeight: 600 }}>환영합니다!</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowWelcome(false)}
+                aria-label="환영 배너 닫기"
+                style={{ background: 'transparent', border: 'none', padding: '0.3rem 0.5rem', cursor: 'pointer', fontSize: '1rem', color: 'var(--color-ink-2)', fontWeight: 800, borderRadius: 8 }}
+              >✕</button>
+            </section>
+          )}
           {activeCommunity && (
           <section id="qt" style={{ display: 'grid', gap: '0.65rem', padding: '1.1rem 1.25rem', borderRadius: 16, background: 'linear-gradient(135deg, var(--color-ink) 0%, var(--color-ink-2) 100%)', color: '#ffffff', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-card-lg)' }}>
             <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 90% 10%, rgba(32, 205, 141, 0.35), transparent 55%)', pointerEvents: 'none' }} />
@@ -768,61 +817,6 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
           </section>
           )}
 
-          {joinedCommunities.length > 0 && !router.query.communityId && (
-            <section id="community" style={{ ...cardBase, padding: '1rem 1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>
-                  {t('dashboard.myCommunities')} <span style={{ color: 'var(--color-ink-2)', fontWeight: 700 }}>({joinedCommunities.length}{t('dashboard.countSuffix')})</span>
-                </h2>
-              </div>
-
-              <div style={{
-                marginTop: '0.75rem',
-                display: 'grid',
-                gap: '0.75rem',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-              }}>
-                {joinedCommunities.map((community) => {
-                  const membershipEntry = userEntries.find((entry) => entry.communityId === community.id);
-                  const membershipLabel = membershipEntry?.membershipStatus === 'pending' ? '가입대기' : '일반';
-                  const isActive = activeCommunityId === community.id;
-                  return (
-                    <button
-                      key={community.id}
-                      type="button"
-                      onClick={() => selectCommunity(community.id)}
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-start',
-                        gap: '0.55rem',
-                        padding: '0.95rem 1rem',
-                        borderRadius: 12,
-                        border: isActive ? '1px solid var(--color-primary)' : '1px solid #E7F3EE',
-                        background: isActive ? 'var(--color-primary-tint)' : '#CCF4E5',
-                        color: 'var(--color-ink)',
-                        boxShadow: isActive ? 'var(--shadow-card)' : 'none',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                      }}
-                    >
-                      <span style={{ fontWeight: 800, fontSize: '0.98rem', lineHeight: 1.3, wordBreak: 'break-word' }}>
-                        {community.name}
-                      </span>
-                      <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '0.3rem' }}>
-                        {community.isAdmin && (
-                          <span style={{ padding: '0.15rem 0.5rem', borderRadius: 999, background: 'var(--color-ink)', color: '#ffffff', fontSize: '0.68rem', fontWeight: 700 }}>관리자</span>
-                        )}
-                        <span style={{ padding: '0.15rem 0.5rem', borderRadius: 999, background: isActive ? '#ffffff' : 'var(--color-primary-tint)', color: 'var(--color-primary-deep)', fontSize: '0.68rem', fontWeight: 700 }}>
-                          {membershipLabel}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          )}
 
 
           <section
@@ -1444,6 +1438,51 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, us
             <p style={{ margin: '0.55rem 0 0', fontSize: isMobile ? '0.78rem' : '0.74rem', color: 'var(--color-ink-2)', lineHeight: 1.5 }}>※ 교회의 사정에 따라 일정은 변경될 수 있습니다. (출처: 미스바 목회일정)</p>
           </section>
 
+          {/* 내 공동체 — 공동체 관리자인 경우에만 노출 (대시보드 마지막 섹션) */}
+          {(() => {
+            if (effectiveAdminCommunities.length === 0) return null;
+            return (
+              <section id="community" style={{ ...cardBase, padding: '1rem 1.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <h2 style={{ ...sectionTitle, fontSize: '1.05rem' }}>
+                    내 공동체 <span style={{ color: 'var(--color-ink-2)', fontWeight: 700 }}>({effectiveAdminCommunities.length})</span>
+                  </h2>
+                </div>
+                <div style={{ marginTop: '0.75rem', display: 'grid', gap: '0.75rem', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
+                  {effectiveAdminCommunities.map((community) => {
+                    const isActive = activeCommunityId === community.id;
+                    return (
+                      <button
+                        key={community.id}
+                        type="button"
+                        onClick={() => selectCommunity(community.id)}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'flex-start',
+                          gap: '0.55rem',
+                          padding: '0.95rem 1rem',
+                          borderRadius: 12,
+                          border: isActive ? '1px solid var(--color-primary)' : '1px solid #E7F3EE',
+                          background: isActive ? 'var(--color-primary-tint)' : '#CCF4E5',
+                          color: 'var(--color-ink)',
+                          boxShadow: isActive ? 'var(--shadow-card)' : 'none',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                        }}
+                      >
+                        <span style={{ fontWeight: 800, fontSize: '0.98rem', lineHeight: 1.3, wordBreak: 'break-word' }}>
+                          {community.name}
+                        </span>
+                        <span style={{ padding: '0.15rem 0.5rem', borderRadius: 999, background: 'var(--color-ink)', color: '#ffffff', fontSize: '0.68rem', fontWeight: 700 }}>관리자</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })()}
+
       </AppShell>
 
       {previewBulletin && (
@@ -1588,29 +1627,23 @@ export const getServerSideProps: GetServerSideProps<DashboardProps> = async (con
         } as NonNullable<StoredProfile>)
       : null;
 
-  const providerPrefix = profileId && profileId.includes('-') ? profileId.split('-')[0] : null;
+  // "다른 userId = 다른 사용자" 원칙 — profileId 엄격 매칭. email/nickname 교차 매칭 금지.
   const userEntries = profileId
-    ? users.filter((entry) => {
-        const exactMatch = entry.providerProfileId === profileId;
-        const nicknameFallback = providerPrefix && queryNickname && entry.providerProfileId.startsWith(`${providerPrefix}-`) && entry.nickname === queryNickname;
-        const emailFallback = queryEmail && entry.profile?.kakao_account?.email === queryEmail;
-        return exactMatch || nicknameFallback || emailFallback;
-      })
+    ? users.filter((entry) => entry.providerProfileId === profileId)
     : [];
 
   const joinedCommunityIds = profileId ? Array.from(new Set(userEntries.map((user) => user.communityId))) : [];
   const myNickname = queryNickname || userEntries[0]?.nickname || null;
   const myEmail = queryEmail || userEntries[0]?.profile?.kakao_account?.email || null;
+  const isUserAdminOf = (community: Community): boolean =>
+    !!profileId && community.adminProfileId === profileId;
+
   const joinedCommunities = communities
     .filter((community) => joinedCommunityIds.includes(community.id))
-    .map((community) => ({
-      ...community,
-      isAdmin: profileId
-        ? community.adminProfileId === profileId
-          || (!!providerPrefix && !!myNickname && community.adminProfileId === `${providerPrefix}-${myNickname}`)
-          || (!!myEmail && community.adminProfileId === myEmail)
-        : false,
-    }));
+    .map((community) => ({ ...community, isAdmin: isUserAdminOf(community) }));
+
+  // 관리 대상 커뮤니티 — kcis_users 가입 기록과 무관하게 adminProfileId 기준으로 직접 산출.
+  const adminCommunities = communities.filter(isUserAdminOf);
 
   const systemAdminHref = await getSystemAdminHref(profileId, { nickname: myNickname, email: myEmail });
 
@@ -1621,6 +1654,7 @@ export const getServerSideProps: GetServerSideProps<DashboardProps> = async (con
       nickname: queryNickname,
       email: queryEmail,
       joinedCommunities,
+      adminCommunities,
       userEntries,
       storedProfile,
       systemAdminHref,

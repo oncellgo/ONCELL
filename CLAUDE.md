@@ -96,6 +96,8 @@ node scripts/wipe-non-admin-data.mjs --execute
 10. **외부 라이브러리 실제 검증 의무** — 새 npm 패키지 설치 직후 ≤5줄 smoke test (`node -e "..."`)로 **실제 API 동작 확인**. 특히 major 버전(v1→v2)이 바뀐 패키지는 import 방식/클래스/함수 시그니처를 README로 재확인. 가정만으로 코드 작성 금지.
 11. **Silent failure 금지** — catch 블록에서 에러를 삼키고 null/fallback만 반환하는 코드 금지. 최소한 `console.error`와 응답에 `error`/`errorReason` 필드 포함해서 클라이언트·로그에서 원인 추적 가능하게.
 12. **라이브러리 교체 검토 시**: `cat node_modules/<pkg>/README.md | head -80` 으로 최신 API 확인. `package.json` major version과 내 기억이 다르면 무조건 re-read.
+13. **조건부 UI 작성 전 데이터 소스 실측** — "X 테이블에 ~가 있겠지" 식 가정으로 분기 만들지 말 것. Supabase 에서 row 수·샘플 쿼리로 **실제 상태를 확인한 후** 조건 로직. 예: `kcis_users` 가 "가입자 전체" 테이블이라는 가정은 실제 0 rows 와 충돌해 모든 조건이 빈 배열 반환.
+14. **SSR props 의 null 경로 필수 검증** — `getServerSideProps` 가 `context.query.X` 에 의존한다면, URL 쿼리 없이 진입(새로고침·직링크) 시의 값·UX 를 항상 확인. SSR 은 `localStorage` 를 못 읽으므로, **SSR 의존 UI 는 클라이언트 localStorage fallback 또는 API 재조회 경로를 반드시 병행**. 대시보드·관리 화면처럼 인증 기반 페이지는 특히 주의.
 
 ---
 

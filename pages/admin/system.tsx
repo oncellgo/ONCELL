@@ -369,8 +369,9 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
 
           <AdminTabBar
             authQS={authQS}
-            active={!sectionFilter ? 'users' : sectionFilter === 'bulletinTemplate' ? 'bulletinTemplate' : sectionFilter === 'venue' ? 'venue' : sectionFilter === 'etc' ? 'etc' : sectionFilter === 'stats' ? 'stats' : null}
+            active={!sectionFilter ? 'users' : sectionFilter === 'bulletinTemplate' ? 'bulletinTemplate' : sectionFilter === 'venue' ? 'venue' : sectionFilter === 'etc' ? 'etc' : sectionFilter === 'stats' ? 'stats' : sectionFilter === 'community' ? 'community' : null}
             defaultCommunityId={scheduleDefaultCommunityId}
+            isCommunityAdmin={communities.some((c) => !!c.adminProfileId && c.adminProfileId === profileId)}
           />
 
         {!sectionFilter && (
@@ -598,6 +599,47 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
             subtle={subtle}
             isMobile={isMobile}
           />
+        )}
+
+        {sectionFilter === 'community' && (
+          <section style={{ ...cardStyle, padding: isMobile ? '0.85rem' : cardStyle.padding, display: 'grid', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#182527' }}>공동체 관리</h2>
+              <span style={{ fontSize: '0.78rem', color: '#4D7C0F', fontWeight: 700 }}>
+                총 {sortedCommunities.length}개 공동체
+              </span>
+            </div>
+            {sortedCommunities.length === 0 ? (
+              <p style={{ margin: 0, fontSize: '0.88rem', color: '#4D7C0F' }}>등록된 공동체가 없습니다.</p>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr style={{ background: '#F7FEE7', color: '#4D7C0F', textAlign: 'left' }}>
+                      <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>이름</th>
+                      <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>ID</th>
+                      <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>관리자</th>
+                      <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>가입 승인</th>
+                      <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap', textAlign: 'right' }}>멤버</th>
+                      <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap', textAlign: 'right' }}>승인 대기</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedCommunities.map((c) => (
+                      <tr key={c.id} style={{ borderTop: '1px solid var(--color-surface-border)' }}>
+                        <td style={{ padding: '0.55rem 0.6rem', fontWeight: 700, color: '#182527', wordBreak: 'keep-all' }}>{c.name}</td>
+                        <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)', fontFamily: 'monospace', fontSize: '0.78rem' }}>{c.id}</td>
+                        <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)', fontFamily: 'monospace', fontSize: '0.78rem', wordBreak: 'break-all' }}>{c.adminProfileId || '—'}</td>
+                        <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)' }}>{c.joinApprovalMode === 'admin' ? '관리자 승인' : '자동 승인'}</td>
+                        <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink)', textAlign: 'right', fontWeight: 700 }}>{c.memberCount}</td>
+                        <td style={{ padding: '0.55rem 0.6rem', color: '#B45309', textAlign: 'right', fontWeight: 700 }}>{c.pendingCount}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
         )}
 
         {sectionFilter === 'etc' && (

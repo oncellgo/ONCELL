@@ -516,7 +516,7 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                   style={{ flex: 1, minHeight: 44, padding: '0.55rem 0.8rem', borderRadius: 8, border: '1px solid #2563EB', background: '#fff', color: '#1E40AF', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', display: 'grid', gap: '0.15rem' }}
                 >
                   <span>1독</span>
-                  <span style={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.8 }}>하루 ≈ 3장</span>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.8 }}>하루 3-4장</span>
                 </button>
                 <button
                   type="button"
@@ -612,13 +612,11 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
             <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#65A30D', textTransform: 'uppercase' }}>
-                  {selectedDate.getFullYear()}.{String(selectedDate.getMonth() + 1).padStart(2, '0')}.{String(selectedDate.getDate()).padStart(2, '0')} ({DAY_LABELS[selectedDate.getDay()]}) 통독
+                  {selectedDate.getFullYear()}.{String(selectedDate.getMonth() + 1).padStart(2, '0')}.{String(selectedDate.getDate()).padStart(2, '0')} ({DAY_LABELS[selectedDate.getDay()]})
                 </span>
-                {readingPlanChoice && (
-                  <span style={{ padding: '0.1rem 0.5rem', borderRadius: 999, background: '#fff', color: '#65A30D', fontSize: '0.68rem', fontWeight: 800, border: '1px solid #65A30D' }}>
-                    {planShortLabel(readingPlanChoice)}
-                  </span>
-                )}
+                <span style={{ padding: '0.1rem 0.5rem', borderRadius: 999, background: '#fff', color: '#65A30D', fontSize: '0.68rem', fontWeight: 800, border: '1px solid #65A30D' }}>
+                  {(readingPlanChoice || 1) === 2 ? '1년에 2독 목표' : '1년에 1독 목표'}
+                </span>
                 {isCompleted && (
                   <span style={{ padding: '0.15rem 0.55rem', borderRadius: 999, background: '#20CD8D', color: '#fff', fontSize: '0.72rem', fontWeight: 800 }}>✓ 완료</span>
                 )}
@@ -762,7 +760,7 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
           )}
 
           <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--color-ink-2)', lineHeight: 1.6 }}>
-            1월 1일부터 12월 31일까지 1년 1회 완독할 수 있도록 하루 평균 약 3장씩 분배됩니다.
+            1월 1일부터 12월 31일까지 1년 1회 완독할 수 있도록 하루 3-4장씩 분배됩니다.
           </p>
         </section>
       </main>

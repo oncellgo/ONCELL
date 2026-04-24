@@ -905,7 +905,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
             const myEmailQ = typeof mgmtRouter.query.email === 'string' ? mgmtRouter.query.email : '';
             const adminQS = new URLSearchParams({ profileId, ...(k ? { k } : {}), ...(myNicknameQ ? { nickname: myNicknameQ } : {}), ...(myEmailQ ? { email: myEmailQ } : {}) }).toString();
             return (
-              <AdminTabBar authQS={adminQS} active="schedule" defaultCommunityId={mgmtCommunityId || undefined} />
+              <AdminTabBar authQS={adminQS} active="schedule" defaultCommunityId={mgmtCommunityId || undefined} isCommunityAdmin={adminCommunities.length > 0} />
             );
           })()}
 
@@ -2732,14 +2732,9 @@ export const getServerSideProps: GetServerSideProps<ManagementProps> = async (co
   const communities = communitiesArr as Community[];
   const users = usersArr as UserEntry[];
 
-  const providerPrefix = profileId && profileId.includes('-') ? profileId.split('-')[0] : null;
+  // "다른 userId = 다른 사용자" 원칙 — profileId 엄격 매칭. email/nickname 교차 매칭 금지.
   const userEntries = profileId
-    ? users.filter((entry) => {
-        const exactMatch = entry.providerProfileId === profileId;
-        const nicknameFallback = providerPrefix && queryNickname && entry.providerProfileId.startsWith(`${providerPrefix}-`) && entry.nickname === queryNickname;
-        const emailFallback = queryEmail && entry.profile?.kakao_account?.email === queryEmail;
-        return exactMatch || nicknameFallback || emailFallback;
-      })
+    ? users.filter((entry) => entry.providerProfileId === profileId)
     : [];
 
   const joinedCommunityIds = profileId ? Array.from(new Set(userEntries.map((user) => user.communityId))) : [];
@@ -2749,11 +2744,7 @@ export const getServerSideProps: GetServerSideProps<ManagementProps> = async (co
     .filter((community) => joinedCommunityIds.includes(community.id))
     .map((community) => ({
       ...community,
-      isAdmin: profileId
-        ? community.adminProfileId === profileId
-          || (!!providerPrefix && !!myNickname && community.adminProfileId === `${providerPrefix}-${myNickname}`)
-          || (!!myEmail && community.adminProfileId === myEmail)
-        : false,
+      isAdmin: !!profileId && community.adminProfileId === profileId,
     }));
 
   const adminCommunities = joinedCommunities.filter((community) => community.isAdmin);

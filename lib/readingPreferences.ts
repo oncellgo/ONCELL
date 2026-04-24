@@ -1,7 +1,7 @@
 /**
  * 성경통독 계획 선호도 — 클라이언트 측 영속화.
  *
- * 값: 1 (1년 1독, 하루 ≈ 3장) | 2 (1년 2독, 하루 ≈ 6-7장)
+ * 값: 1 (1년 1독, 하루 3-4장) | 2 (1년 2독, 하루 6-7장)
  * 저장소: localStorage `kcis_reading_plan`
  *
  * 미래 확장: DB (kcis_profiles.reading_plan) 동기화 시 본 파일에서 fetch/PUT 추가.
@@ -52,7 +52,7 @@ export const hasReadingPlan = (): boolean => getReadingPlan() !== null;
 
 /** 플랜 라벨 — UI 공용. */
 export const planLabel = (plan: ReadingPlan): string =>
-  plan === 2 ? '1년 2독 (하루 6–7장)' : '1년 1독 (하루 ≈ 3장)';
+  plan === 2 ? '1년 2독 (하루 6-7장)' : '1년 1독 (하루 3-4장)';
 
 export const planShortLabel = (plan: ReadingPlan): string =>
   plan === 2 ? '2독' : '1독';
