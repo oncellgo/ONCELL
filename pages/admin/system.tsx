@@ -29,17 +29,6 @@ type Props = {
   scheduleDefaultCommunityId: string;
 };
 
-type AdminCommunity = {
-  id: string;
-  name: string;
-  adminProfileId?: string;
-  joinApprovalMode?: 'auto' | 'admin';
-  memberCount: number;
-  pendingCount: number;
-  createdAt: string | null;
-  latestActivityAt: string | null;
-};
-
 type AdminUser = {
   profileId: string;
   nickname?: string;
@@ -78,7 +67,6 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
   const sectionFilter = typeof router.query.section === 'string' ? router.query.section : null;
   const subFilter = typeof router.query.sub === 'string' ? router.query.sub : null;
 
-  const [communities, setCommunities] = useState<AdminCommunity[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [admins, setAdmins] = useState<string[]>([]);
   const [adminEmails, setAdminEmails] = useState<string[]>([]);
@@ -93,7 +81,6 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
   const [usersShowAll, setUsersShowAll] = useState(false);
   const [adminsShowAll, setAdminsShowAll] = useState(false);
   const INITIAL_ROWS = 4;
-  const [communitySort, setCommunitySort] = useState<'createdDesc' | 'name' | 'members' | 'activity'>('createdDesc');
   type WorshipItem = { id: string; title: string; description?: string; presenter?: string; allTogether?: boolean; link?: string; passage?: string; members?: string; prayerNote?: string; songs?: { title: string; link: string }[] };
   const ytId = (url: string): string | null => {
     const m = (url || '').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([\w-]{11})/);
@@ -224,15 +211,13 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
     setLoading(true);
     setError(null);
     try {
-      const [cRes, uRes, aRes, wRes] = await Promise.all([
-        fetch(`/api/admin/communities?${authQS}`),
+      const [uRes, aRes, wRes] = await Promise.all([
         fetch(`/api/admin/users?${authQS}`),
         fetch(`/api/admin/system-admins?${authQS}`),
         fetch(`/api/admin/worship-templates?${authQS}`),
       ]);
-      if (!cRes.ok || !uRes.ok || !aRes.ok) throw new Error('권한이 없거나 로드 실패');
-      const [cData, uData, aData] = await Promise.all([cRes.json(), uRes.json(), aRes.json()]);
-      setCommunities(cData.communities || []);
+      if (!uRes.ok || !aRes.ok) throw new Error('권한이 없거나 로드 실패');
+      const [uData, aData] = await Promise.all([uRes.json(), aRes.json()]);
       setUsers(uData.users || []);
       setAdmins(aData.profileIds || []);
       setAdminEmails(aData.emails || []);
@@ -262,14 +247,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  const sortedCommunities = communities.slice().sort((a, b) => {
-    if (communitySort === 'name') return a.name.localeCompare(b.name, 'ko');
-    if (communitySort === 'members') return b.memberCount - a.memberCount;
-    if (communitySort === 'activity') return (b.latestActivityAt || '').localeCompare(a.latestActivityAt || '');
-    return (b.createdAt || '').localeCompare(a.createdAt || '');
-  });
-
-  const filteredUsers = (userFilter === 'admin' ? users.filter((u) => u.isCommunityAdmin) : users)
+const filteredUsers = (userFilter === 'admin' ? users.filter((u) => u.isCommunityAdmin) : users)
     .slice()
     .sort((a, b) => {
       if (userSort === 'name') {
@@ -282,21 +260,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
       return bd.localeCompare(ad);
     });
 
-  const deleteCommunity = async (c: AdminCommunity) => {
-    if (!window.confirm(t('admin.confirmDeleteCommunity', { name: c.name, count: c.memberCount }))) return;
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/admin/communities/${encodeURIComponent(c.id)}?${authQS}`, { method: 'DELETE', headers: authHeaders });
-      if (!res.ok) throw new Error('삭제 실패');
-      await loadAll();
-    } catch (e: any) {
-      window.alert(e?.message || '삭제 실패');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const addAdmin = async () => {
+const addAdmin = async () => {
     const id = newAdmin.trim();
     if (!id) return;
     const isEmail = /@/.test(id);
@@ -369,9 +333,7 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
 
           <AdminTabBar
             authQS={authQS}
-            active={!sectionFilter ? 'users' : sectionFilter === 'bulletinTemplate' ? 'bulletinTemplate' : sectionFilter === 'venue' ? 'venue' : sectionFilter === 'etc' ? 'etc' : sectionFilter === 'stats' ? 'stats' : sectionFilter === 'community' ? 'community' : null}
-            defaultCommunityId={scheduleDefaultCommunityId}
-            isCommunityAdmin={communities.some((c) => !!c.adminProfileId && c.adminProfileId === profileId)}
+            active={!sectionFilter ? 'users' : sectionFilter === 'bulletinTemplate' ? 'bulletinTemplate' : sectionFilter === 'venue' ? 'venue' : sectionFilter === 'etc' ? 'etc' : sectionFilter === 'stats' ? 'stats' : null}
           />
 
         {!sectionFilter && (
@@ -599,47 +561,6 @@ const SystemAdminPage = ({ profileId, displayName, nickname, email, scheduleComm
             subtle={subtle}
             isMobile={isMobile}
           />
-        )}
-
-        {sectionFilter === 'community' && (
-          <section style={{ ...cardStyle, padding: isMobile ? '0.85rem' : cardStyle.padding, display: 'grid', gap: '0.75rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#182527' }}>공동체 관리</h2>
-              <span style={{ fontSize: '0.78rem', color: '#4D7C0F', fontWeight: 700 }}>
-                총 {sortedCommunities.length}개 공동체
-              </span>
-            </div>
-            {sortedCommunities.length === 0 ? (
-              <p style={{ margin: 0, fontSize: '0.88rem', color: '#4D7C0F' }}>등록된 공동체가 없습니다.</p>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                  <thead>
-                    <tr style={{ background: '#F7FEE7', color: '#4D7C0F', textAlign: 'left' }}>
-                      <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>이름</th>
-                      <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>ID</th>
-                      <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>관리자</th>
-                      <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>가입 승인</th>
-                      <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap', textAlign: 'right' }}>멤버</th>
-                      <th style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap', textAlign: 'right' }}>승인 대기</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedCommunities.map((c) => (
-                      <tr key={c.id} style={{ borderTop: '1px solid var(--color-surface-border)' }}>
-                        <td style={{ padding: '0.55rem 0.6rem', fontWeight: 700, color: '#182527', wordBreak: 'keep-all' }}>{c.name}</td>
-                        <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)', fontFamily: 'monospace', fontSize: '0.78rem' }}>{c.id}</td>
-                        <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)', fontFamily: 'monospace', fontSize: '0.78rem', wordBreak: 'break-all' }}>{c.adminProfileId || '—'}</td>
-                        <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)' }}>{c.joinApprovalMode === 'admin' ? '관리자 승인' : '자동 승인'}</td>
-                        <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink)', textAlign: 'right', fontWeight: 700 }}>{c.memberCount}</td>
-                        <td style={{ padding: '0.55rem 0.6rem', color: '#B45309', textAlign: 'right', fontWeight: 700 }}>{c.pendingCount}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
         )}
 
         {sectionFilter === 'etc' && (

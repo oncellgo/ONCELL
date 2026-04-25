@@ -3,26 +3,19 @@ import { useIsMobile } from '../lib/useIsMobile';
 
 type Props = {
   authQS: string;
-  active?: 'users' | 'schedule' | 'bulletinTemplate' | 'venue' | 'etc' | 'stats' | 'community' | null;
-  defaultCommunityId?: string;
-  isCommunityAdmin?: boolean;
+  active?: 'users' | 'bulletinTemplate' | 'venue' | 'etc' | 'stats' | null;
 };
 
-const AdminTabBar = ({ authQS, active = null, defaultCommunityId, isCommunityAdmin = false }: Props) => {
+const AdminTabBar = ({ authQS, active = null }: Props) => {
   const isMobile = useIsMobile();
-  const baseTabs = [
+  const tabs = [
     { key: 'users' as const, label: '사용자관리', href: `/admin/system?${authQS}` },
-    { key: 'schedule' as const, label: '일정관리', href: `/management?${authQS}${defaultCommunityId ? `&communityId=${encodeURIComponent(defaultCommunityId)}` : ''}&isAdmin=1&menu=${encodeURIComponent('일정관리')}` },
-  ];
-  const communityTab = { key: 'community' as const, label: '공동체관리', href: `/admin/system?${authQS}&section=community` };
-  const tailTabs = [
     // 주보관리는 hidden (필요 시 아래 주석 해제)
     // { key: 'bulletinTemplate' as const, label: '주보관리', href: `/admin/system?${authQS}&section=bulletinTemplate` },
     { key: 'venue' as const, label: '장소예약관리', href: `/admin/system?${authQS}&section=venue` },
     { key: 'stats' as const, label: '통계관리', href: `/admin/system?${authQS}&section=stats` },
     { key: 'etc' as const, label: '기타설정', href: `/admin/system?${authQS}&section=etc` },
   ];
-  const tabs = isCommunityAdmin ? [...baseTabs, communityTab, ...tailTabs] : [...baseTabs, ...tailTabs];
 
   return (
     <section

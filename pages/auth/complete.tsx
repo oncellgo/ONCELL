@@ -1,10 +1,12 @@
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type PendingProfile = { profileId: string; provider: string; nickname: string; email: string };
 
 const CompleteSignupPage = () => {
+  const { t } = useTranslation();
   const router = useRouter();
 
   // A 방안: OAuth 프로필은 callback 에서 sessionStorage 에 보관. 여기서 읽어서 동의 후에만 서버에 저장.
@@ -72,6 +74,8 @@ const CompleteSignupPage = () => {
         if (pending.nickname) window.localStorage.setItem('kcisNickname', pending.nickname);
         if (pending.email) window.localStorage.setItem('kcisEmail', pending.email);
         window.localStorage.setItem('kcisProfileId', pending.profileId);
+        // 가입 완료 직후 대시보드에서 1회 환영 배너 노출 플래그
+        window.localStorage.setItem('kcisShowWelcome', '1');
         window.sessionStorage.removeItem('kcisPendingProfile');
       } catch {}
 

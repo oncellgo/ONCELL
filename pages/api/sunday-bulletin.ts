@@ -17,6 +17,9 @@ import { makeKvCache } from '../../lib/crawlCache';
 
 const LIST_URL = 'https://koreanchurch.sg/noticeandnews';
 const POST_URL = (idx: string) => `https://koreanchurch.sg/noticeandnews/?bmode=view&idx=${idx}&t=board`;
+// 게시판 1페이지에는 보통 약 한 달치만 노출됨. 공지/구역예배지가 끼어 더 빨리 밀리는 경우가 있어
+// 4페이지(약 5~6주)까지 스캔. dateKey 매치는 캐시되므로 비용은 1회 누적.
+const LIST_PAGES = 4;
 const LIST_TTL = 30 * 60 * 1000;        // 목록(주보 게시글 인덱스) — 30분
 const DETAIL_TTL = 24 * 60 * 60 * 1000; // 게시글 상세(PDF 파싱 결과 포함) — 24시간
 
@@ -90,22 +93,29 @@ const detailCache = makeKvCache<PostDetail>('bulletin_detail_cache_v1', DETAIL_T
 const fetchBulletinList = async (): Promise<BulletinItem[]> => {
   const cached = await listCache.get('default');
   if (cached) return cached;
-  const res = await fetch(LIST_URL, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-  const html = await res.text();
   const items: BulletinItem[] = [];
-  const re = /idx=(\d+)[^"]*"[\s\S]{0,2000}?<span[^>]*>\s*([^<]{3,100})\s*<\/span>/g;
   const seen = new Set<string>();
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(html)) !== null) {
-    const idx = m[1];
-    if (seen.has(idx)) continue;
-    seen.add(idx);
-    const title = decodeEntities(m[2]).trim();
-    if (!/주보/.test(title)) continue;
-    const dm = title.match(/(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
-    if (!dm) continue;
-    const dateKey = `${dm[1]}-${pad(Number(dm[2]))}-${pad(Number(dm[3]))}`;
-    items.push({ idx, title, dateKey });
+  for (let p = 1; p <= LIST_PAGES; p++) {
+    const url = p === 1 ? LIST_URL : `${LIST_URL}?page=${p}`;
+    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    if (!res.ok) {
+      console.error('[sunday-bulletin] list page fetch failed', { page: p, status: res.status });
+      continue;
+    }
+    const html = await res.text();
+    const re = /idx=(\d+)[^"]*"[\s\S]{0,2000}?<span[^>]*>\s*([^<]{3,100})\s*<\/span>/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(html)) !== null) {
+      const idx = m[1];
+      if (seen.has(idx)) continue;
+      seen.add(idx);
+      const title = decodeEntities(m[2]).trim();
+      if (!/주보/.test(title)) continue;
+      const dm = title.match(/(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
+      if (!dm) continue;
+      const dateKey = `${dm[1]}-${pad(Number(dm[2]))}-${pad(Number(dm[3]))}`;
+      items.push({ idx, title, dateKey });
+    }
   }
   await listCache.set('default', items);
   return items;

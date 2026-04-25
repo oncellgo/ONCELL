@@ -385,9 +385,24 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
                         <span style={{ fontSize: isMobile ? '0.7rem' : '0.82rem', fontWeight: 800, color: isDayCompleted ? 'var(--color-primary-deep)' : isFuture ? '#9CA3AF' : 'var(--color-ink)', lineHeight: 1 }}>
                           {m}/{d}
                         </span>
-                        <span style={{ fontSize: isMobile ? '0.58rem' : '0.64rem', fontWeight: 700, color: isDayCompleted ? 'var(--color-primary-deep)' : isFuture ? '#9CA3AF' : dow === 0 ? '#DC2626' : dow === 6 ? '#2563EB' : 'var(--color-ink-2)', lineHeight: 1 }}>
-                          {DAY_LABELS[dow]}
-                        </span>
+                        {isToday ? (
+                          <span className="kcis-today-pulse" style={{
+                            fontSize: isMobile ? '0.62rem' : '0.7rem',
+                            fontWeight: 900,
+                            color: '#20CD8D',
+                            lineHeight: 1,
+                            padding: '0.06rem 0.35rem',
+                            borderRadius: 999,
+                            background: 'rgba(32, 205, 141, 0.15)',
+                            border: '1px solid #20CD8D',
+                            letterSpacing: '-0.02em',
+                            animation: 'kcis-today-pulse 2s ease-in-out infinite',
+                          }}>오늘</span>
+                        ) : (
+                          <span style={{ fontSize: isMobile ? '0.58rem' : '0.64rem', fontWeight: 700, color: isDayCompleted ? 'var(--color-primary-deep)' : isFuture ? '#9CA3AF' : dow === 0 ? '#DC2626' : dow === 6 ? '#2563EB' : 'var(--color-ink-2)', lineHeight: 1 }}>
+                            {DAY_LABELS[dow]}
+                          </span>
+                        )}
                       </div>
                       {!isDayCompleted && v ? (
                         <svg viewBox="0 0 24 24" width={isMobile ? 12 : 14} height={isMobile ? 9 : 10} aria-label="YouTube" style={{ justifySelf: 'center' }}>
@@ -516,7 +531,6 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
                             <span aria-hidden>📖</span>
                             <span>묵상 보기</span>
                           </button>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--color-ink-2)', fontWeight: 600, textAlign: 'center' }}>{t('page.qt.viewNoteHint')}</span>
                         </div>
                       );
                     }
@@ -539,9 +553,8 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
                           width: '100%',
                         }}>
                           <span aria-hidden>✎</span>
-                          <span>묵상 미입력</span>
+                          <span>묵상내용없음</span>
                         </div>
-                        <span style={{ fontSize: '0.7rem', color: 'var(--color-ink-2)', fontWeight: 600, textAlign: 'center' }}>{t('page.qt.readOnlyHint')}</span>
                       </div>
                     );
                   }
@@ -600,7 +613,7 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
                             }}
                           />
                         </span>
-                        <span>{hasNote ? '✓ 묵상 완료' : '묵상 미입력'}</span>
+                        <span>{hasNote ? '✓ 묵상 완료' : '묵상 기록하기'}</span>
                       </button>
                       {!hasNote && (
                         <span style={{ fontSize: '0.7rem', color: 'var(--color-ink-2)', fontWeight: 600, textAlign: 'center' }}>{t('page.qt.hintAutoComplete')}</span>

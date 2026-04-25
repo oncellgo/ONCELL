@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type InAppInfo = {
   kind: 'kakao' | 'instagram' | 'facebook' | 'naver' | 'line' | 'kakaostory' | 'other';
@@ -25,6 +26,7 @@ const detectInAppBrowser = (ua: string): InAppInfo | null => {
 };
 
 const LoginPage = () => {
+  const { t } = useTranslation();
   const [inApp, setInApp] = useState<InAppInfo | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -63,8 +65,8 @@ const LoginPage = () => {
         <div style={{ width: '100%', maxWidth: 420, padding: '2rem 1.75rem', borderRadius: 16, background: '#fff', border: '1px solid #D9F09E', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '1.1rem' }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '2rem' }}>🕊️</div>
-            <h1 style={{ margin: '0.4rem 0 0', fontSize: '1.3rem', color: '#3F6212' }}>KCIS 로그인</h1>
-            <p style={{ margin: '0.4rem 0 0', color: 'var(--color-ink-2)', fontSize: '0.9rem' }}>싱가폴한인교회 · 로그인 방법을 선택하세요</p>
+            <h1 style={{ margin: '0.4rem 0 0', fontSize: '1.3rem', color: '#3F6212' }}>{t('page.auth.loginTitle')}</h1>
+            <p style={{ margin: '0.4rem 0 0', color: 'var(--color-ink-2)', fontSize: '0.9rem' }}>{t('page.auth.loginSub')}</p>
           </div>
 
           {inApp && (
@@ -80,21 +82,21 @@ const LoginPage = () => {
               }}
             >
               <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#78350F', lineHeight: 1.4 }}>
-                ⚠️ {inApp.label} 브라우저에서는 Google 로그인이 차단됩니다
+                {t('page.auth.inappWarn', { browser: inApp.label })}
               </div>
               <div style={{ fontSize: '0.82rem', color: '#92400E', lineHeight: 1.55 }}>
                 {inApp.platform === 'ios' ? (
                   <>
-                    <strong>iPhone 해결 방법</strong><br />
-                    우측 상단 <strong>⋯ 메뉴</strong> → <strong>&quot;Safari로 열기&quot;</strong> 또는 <strong>&quot;다른 브라우저로 열기&quot;</strong> 선택
+                    <strong>{t('page.auth.inappIos')}</strong><br />
+                    {t('page.auth.inappIosDetail')}
                   </>
                 ) : inApp.platform === 'android' ? (
                   <>
-                    <strong>Android 해결 방법</strong><br />
-                    아래 <strong>&quot;Chrome에서 열기&quot;</strong> 버튼을 누르거나, 우측 상단 <strong>⋯ 메뉴</strong> → <strong>&quot;다른 브라우저로 열기&quot;</strong> 선택
+                    <strong>{t('page.auth.inappAndroid')}</strong><br />
+                    {t('page.auth.inappAndroidDetail')}
                   </>
                 ) : (
-                  <>우측 상단 메뉴에서 <strong>외부 브라우저로 열기</strong>를 선택해주세요.</>
+                  <>{t('page.auth.inappFallback')}</>
                 )}
               </div>
               {inApp.platform === 'android' && (
@@ -113,7 +115,7 @@ const LoginPage = () => {
                     minHeight: 42,
                   }}
                 >
-                  Chrome에서 열기
+                  {t('page.auth.openChrome')}
                 </button>
               )}
               <button
@@ -131,7 +133,7 @@ const LoginPage = () => {
                   minHeight: 40,
                 }}
               >
-                {copied ? '✓ 주소 복사됨' : '📋 로그인 주소 복사'}
+                {copied ? t('page.auth.copied') : t('page.auth.copyUrl')}
               </button>
             </div>
           )}
@@ -157,7 +159,7 @@ const LoginPage = () => {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M12 3C6.48 3 2 6.58 2 11c0 2.78 1.77 5.23 4.5 6.65L5.5 21l3.85-2.12c.86.16 1.75.24 2.65.24 5.52 0 10-3.58 10-8S17.52 3 12 3z" fill="#181600"/>
             </svg>
-            카카오 로그인
+            {t('page.auth.loginKakao')}
           </a>
 
           <a
@@ -192,11 +194,11 @@ const LoginPage = () => {
               <path fill="#4CAF50" d="M24 44c5.2 0 9.8-2 13.3-5.2l-6.2-5.2c-2 1.4-4.5 2.3-7.2 2.3-5.3 0-9.7-3.4-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
               <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.5l6.2 5.2C41.3 35 44 29.9 44 24c0-1.2-.1-2.3-.4-3.5z"/>
             </svg>
-            Google 로그인
+            {t('page.auth.loginGoogle')}
           </a>
 
           <div style={{ textAlign: 'center', marginTop: '0.4rem' }}>
-            <Link href="/" style={{ fontSize: '0.82rem', color: 'var(--color-ink-2)', textDecoration: 'none' }}>← 홈으로</Link>
+            <Link href="/" style={{ fontSize: '0.82rem', color: 'var(--color-ink-2)', textDecoration: 'none' }}>{t('page.auth.homeLink')}</Link>
           </div>
         </div>
       </main>

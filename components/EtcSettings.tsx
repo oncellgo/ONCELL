@@ -456,47 +456,6 @@ const EtcSettings = ({ profileId, k }: Props) => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gap: '0.75rem', padding: isMobile ? '0.7rem 0.75rem' : '0.85rem 1rem', borderRadius: 12, background: '#FEF2F2', border: '1px solid #FECACA' }}>
-            <div>
-              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#991B1B' }}>관리자 토큰 재설정</div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--color-ink-2)', marginTop: '0.2rem' }}>
-                토큰 노출이 의심될 때 새 토큰으로 즉시 교체합니다. 모든 관리자 페이지 접속 URL이 갱신됩니다.
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={async () => {
-                if (!confirm('관리자 토큰을 새로 발급할까요?\n현재 토큰은 즉시 무효화되며, 다른 관리자가 보고 있는 화면도 다시 로그인해야 할 수 있습니다.')) return;
-                try {
-                  const r = await fetch(`/api/admin/rotate-token?${authQS}`, {
-                    method: 'POST',
-                    headers: authHeaders,
-                  });
-                  const d = await r.json();
-                  if (!r.ok || !d.token) {
-                    alert(d.error || '토큰 재설정 실패');
-                    return;
-                  }
-                  alert(`새 토큰이 발급되었습니다.\n\n${d.token}\n\n⚠️ 안전한 곳에 백업하세요. 페이지 URL이 자동으로 새 토큰으로 갱신됩니다.`);
-                  // URL의 k 파라미터를 새 토큰으로 교체
-                  const url = new URL(window.location.href);
-                  url.searchParams.set('k', d.token);
-                  window.history.replaceState(null, '', url.toString());
-                  // 페이지 새로고침하여 새 토큰으로 다시 SSR
-                  window.location.reload();
-                } catch {
-                  alert('토큰 재설정 중 오류가 발생했습니다.');
-                }
-              }}
-              style={{
-                alignSelf: 'flex-start',
-                padding: '0.55rem 1.1rem', borderRadius: 10, border: 'none',
-                background: '#DC2626', color: '#fff', fontWeight: 800, fontSize: '0.86rem',
-                cursor: 'pointer',
-              }}
-            >🔑 토큰 재설정</button>
-          </div>
-
           {message && <p style={{ margin: 0, fontSize: '0.8rem', color: '#4D7C0F', fontWeight: 700 }}>{message}</p>}
         </>
       )}

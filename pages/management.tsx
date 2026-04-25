@@ -905,7 +905,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
             const myEmailQ = typeof mgmtRouter.query.email === 'string' ? mgmtRouter.query.email : '';
             const adminQS = new URLSearchParams({ profileId, ...(k ? { k } : {}), ...(myNicknameQ ? { nickname: myNicknameQ } : {}), ...(myEmailQ ? { email: myEmailQ } : {}) }).toString();
             return (
-              <AdminTabBar authQS={adminQS} active="schedule" defaultCommunityId={mgmtCommunityId || undefined} isCommunityAdmin={adminCommunities.length > 0} />
+              <AdminTabBar authQS={adminQS} />
             );
           })()}
 
