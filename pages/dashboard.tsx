@@ -14,7 +14,6 @@ import { getSystemAdminHref } from '../lib/adminGuard';
 import { useIsMobile } from '../lib/useIsMobile';
 import { isAllDayEvent } from '../lib/events';
 import { planForDate, formatPlan } from '../lib/readingPlan';
-import { getReadingPlan, subscribeReadingPlan, planShortLabel, type ReadingPlan } from '../lib/readingPreferences';
 
 type Community = {
   id: string;
@@ -295,13 +294,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, ad
   const [monthlySchedule, setMonthlySchedule] = useState<{ month: number; items: MonthlyItem[] } | null>(null);
   // 이번주(월~일) 큐티·통독 완료 dateKey 집합
   const [weekReadingDates, setWeekReadingDates] = useState<Set<string>>(new Set());
-  // 통독 계획 (1독/2독) — localStorage 에서 읽고, ProfileModal 에서 바뀌면 실시간 반영
-  const [readingPlanChoice, setReadingPlanChoice] = useState<ReadingPlan | null>(null);
-  useEffect(() => {
-    setReadingPlanChoice(getReadingPlan());
-    const unsub = subscribeReadingPlan((next) => setReadingPlanChoice(next));
-    return () => unsub();
-  }, []);
+  // 통독 계획 = 1독 고정. (1독/2독 선택 기능 제거됨)
 
   // 가입 완료 직후 1회성 환영 배너 — complete.tsx 에서 kcisShowWelcome 플래그 설정
   const [showWelcome, setShowWelcome] = useState(false);
@@ -1161,9 +1154,8 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, ad
             const readingHref =`/reading${profileId ? `?profileId=${encodeURIComponent(profileId)}${nickname ? `&nickname=${encodeURIComponent(nickname)}` : ''}${email ? `&email=${encodeURIComponent(email)}` : ''}` : ''}`;
 
             // 오늘 통독 범위 — 사용자 선택 플랜(1독/2독) 반영. DB 일치 안 할 수 있어 fallback 성격.
-            const planN: number = readingPlanChoice || 1;
-            const todayRangeText = formatPlan(planForDate(new Date(), planN));
-            const planBadge = readingPlanChoice ? planShortLabel(readingPlanChoice) : '1독';
+            const todayRangeText = formatPlan(planForDate(new Date(), 1));
+            const planBadge = '1독';
             const today0ReadingMsg = new Date(); today0ReadingMsg.setHours(0, 0, 0, 0);
             const todayKeyReadingMsg = `${today0ReadingMsg.getFullYear()}-${String(today0ReadingMsg.getMonth() + 1).padStart(2, '0')}-${String(today0ReadingMsg.getDate()).padStart(2, '0')}`;
             const readingDoneToday = weekReadingDates.has(todayKeyReadingMsg);

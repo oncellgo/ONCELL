@@ -17,7 +17,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 type TtsBody = { text?: unknown; voice?: unknown };
 
 const TTS_URL = 'https://texttospeech.googleapis.com/v1/text:synthesize';
-const DEFAULT_VOICE = 'ko-KR-Neural2-C'; // 자연스러운 여성음. 대안: ko-KR-Neural2-A/B, ko-KR-Wavenet-A~D
+const DEFAULT_VOICE = 'ko-KR-Wavenet-D'; // 남성음, 또렷한 톤. 대안: Wavenet-C (더 깊음), Neural2-B (현대적)
 const MAX_BYTES = 4500; // Google TTS 단일 요청 한도 ~5000bytes 안전 마진
 
 // 간단한 warm-lambda LRU (최대 40개). 콜드스타트 시 리셋됨 — 그래도 동일 구절을 반복해서 듣는 사용자에게 도움.

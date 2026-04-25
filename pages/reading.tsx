@@ -10,7 +10,6 @@ import { getProfiles, getUsers } from '../lib/dataStore';
 import { useIsMobile } from '../lib/useIsMobile';
 import { useRequireLogin } from '../lib/useRequireLogin';
 import { planForDate, formatRange, dateKey as keyFor, type ReadingRange } from '../lib/readingPlan';
-import { getReadingPlan, setReadingPlan, hasReadingPlan, subscribeReadingPlan, planShortLabel, type ReadingPlan } from '../lib/readingPreferences';
 
 type Props = {
   todayISO: string;
@@ -78,36 +77,16 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
   const selectedKey = keyFor(selectedDate);
   const todayKey = keyFor(today);
 
-  // 통독 계획 선호도 — 1독/2독 (localStorage). null = 미지정(최초 배너 노출).
-  const [readingPlanChoice, setReadingPlanChoice] = useState<ReadingPlan | null>(null);
-  const [showPlanBanner, setShowPlanBanner] = useState(false);
-  useEffect(() => {
-    const p = getReadingPlan();
-    setReadingPlanChoice(p);
-    setShowPlanBanner(!hasReadingPlan());
-    // ProfileModal 등 다른 컴포넌트가 플랜을 바꾸면 즉시 반영 (같은 탭 내 custom event)
-    const unsub = subscribeReadingPlan((next) => {
-      setReadingPlanChoice(next);
-      setShowPlanBanner(false);
-    });
-    return () => unsub();
-  }, []);
-  const pickPlan = (plan: ReadingPlan) => {
-    setReadingPlan(plan);
-    setReadingPlanChoice(plan);
-    setShowPlanBanner(false);
-  };
-
+  // 통독 계획 = 1독 고정. (1독/2독 선택 기능 제거됨)
   // 주간 계획표 캐시 — /api/reading-plan 에서 주 단위로 prefetch. 미스 시 FLAT 기반 fallback.
   const [weekPlanMap, setWeekPlanMap] = useState<Map<string, ReadingRange[]>>(new Map());
   useEffect(() => {
     let cancelled = false;
-    const planN = readingPlanChoice || 1;
     const from = keyFor(dateForDow(0));
     const to = keyFor(dateForDow(6));
     (async () => {
       try {
-        const r = await fetch(`/api/reading-plan?plan=${planN}&from=${from}&to=${to}`);
+        const r = await fetch(`/api/reading-plan?plan=1&from=${from}&to=${to}`);
         if (!r.ok) throw new Error(`status ${r.status}`);
         const d = await r.json();
         const m = new Map<string, ReadingRange[]>();
@@ -118,14 +97,13 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
         }
         if (!cancelled) setWeekPlanMap(m);
       } catch (e) {
-        // 네트워크/DB 실패 시 FLAT 기반 로컬 계산으로 graceful degrade
         console.warn('[reading] plan fetch failed, using local fallback', e);
         if (!cancelled) setWeekPlanMap(new Map());
       }
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekOffset, readingPlanChoice]);
+  }, [weekOffset]);
 
   const getRangesFor = (d: Date): ReadingRange[] => {
     const k = keyFor(d);
@@ -223,17 +201,19 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
   };
 
   // ── 오디오 듣기 ────────────────────────────────────────────────────
-  // Phase 2 기본: Google Cloud TTS (서버 proxy /api/tts) + <audio> 재생.
-  // Fallback: 브라우저 SpeechSynthesis (네트워크/설정 실패 시).
-  // 텍스트는 절(verse) 단위로 나눠 순차 재생 — Google 단일 요청 5KB 한도 대응 + 중단/속도변경 유연.
+  // 기본: Supabase Storage 의 사전 녹음 MP3 (장 단위) 순차 재생.
+  // 사전 녹음 누락 시: Google Cloud TTS live (/api/tts) 로 fallback.
   const [speakSupported, setSpeakSupported] = useState(false);
   const [speakState, setSpeakState] = useState<'idle' | 'playing' | 'paused'>('idle');
-  const [speakRate, setSpeakRate] = useState<number>(2);
-  // 'unknown' = 첫 재생 시 결정. 'remote' = /api/tts 사용. 'browser' = SpeechSynthesis fallback.
-  const [ttsMode, setTtsMode] = useState<'unknown' | 'remote' | 'browser'>('unknown');
-  const speakQueueRef = useRef<string[]>([]);
-  const speakIdxRef = useRef<number>(0);
+  const [speakRate, setSpeakRate] = useState<number>(1);
+  const [ttsError, setTtsError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  // 장 단위 URL 큐 (사전 녹음). idle 시작 시 buildChapterUrls 로 채움.
+  const chapterUrlsRef = useRef<string[]>([]);
+  const chapterIdxRef = useRef<number>(0);
+  // live TTS fallback 용 — 사전녹음 누락 chapter 일 때만 절단위 chunk 큐 사용
+  const liveChunksRef = useRef<string[]>([]);
+  const liveIdxRef = useRef<number>(0);
   const blobUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -258,8 +238,10 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
     if (audioRef.current) audioRef.current.src = '';
     if (blobUrlRef.current) { URL.revokeObjectURL(blobUrlRef.current); blobUrlRef.current = null; }
     setSpeakState('idle');
-    speakQueueRef.current = [];
-    speakIdxRef.current = 0;
+    chapterUrlsRef.current = [];
+    chapterIdxRef.current = 0;
+    liveChunksRef.current = [];
+    liveIdxRef.current = 0;
   }, [selectedKey]);
 
   // 한자어 숫자 변환 (브라우저 TTS 기본 고유어 읽기 "스물아홉" 교정).
@@ -332,44 +314,98 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
     return out;
   };
 
-  // 절 끝 syllable 체크 → 짧은 호흡 pause (2배속 기준 ≈1글자 = 100ms)
-  const VERSE_END_CHARS = new Set(['니', '고', '다', '까', '요', '오', '라', '며', '나', '마']);
-  const VERSE_PAUSE_MS = 100;
-  const needsVersePause = (text: string): boolean => {
-    const stripped = text.replace(/[.。!?~\s]+$/, '');
-    return VERSE_END_CHARS.has(stripped.slice(-1));
+  // 사전 녹음 chapter URL 큐 빌드 — 일일 reading 의 모든 장 URL 수집
+  const buildChapterUrls = (): string[] => {
+    const urls: string[] = [];
+    for (const r of reading) {
+      for (let ch = r.startCh; ch <= r.endCh; ch++) {
+        urls.push(`/api/bible-audio?book=${encodeURIComponent(r.book)}&chapter=${ch}`);
+      }
+    }
+    return urls;
   };
 
-  // 브라우저 TTS 한 chunk 재생
-  const speakBrowserChunk = (rate: number) => {
-    if (typeof window === 'undefined') return;
-    const synth = window.speechSynthesis;
-    const q = speakQueueRef.current;
-    const i = speakIdxRef.current;
-    if (i >= q.length) { setSpeakState('idle'); return; }
-    const u = new SpeechSynthesisUtterance(q[i]);
-    u.lang = 'ko-KR';
-    u.rate = rate;
-    u.pitch = 1;
-    u.onend = () => {
-      const justFinished = q[i] || '';
-      speakIdxRef.current = i + 1;
-      if (speakIdxRef.current >= q.length) { setSpeakState('idle'); return; }
-      const pause = needsVersePause(justFinished) ? VERSE_PAUSE_MS : 0;
-      if (pause > 0) setTimeout(() => speakBrowserChunk(rate), pause);
-      else speakBrowserChunk(rate);
-    };
-    u.onerror = () => setSpeakState('idle');
-    synth.speak(u);
+  // live TTS fallback 청크 생성 (사전녹음 누락 chapter 일 때만 호출됨)
+  const buildLiveChunksForChapter = (book: string, chapter: number): string[] => {
+    const ref = `${book} ${chapter}장`;
+    const ko = passageTexts[ref]?.ko?.trim() || '';
+    const out: string[] = [];
+    out.push(hangulizeForSpeech(`${book} ${sinoKorean(chapter)}장.`));
+    if (!ko) return out;
+    for (const rawLine of ko.split(/\n+/)) {
+      const line = rawLine.trim();
+      if (!line) continue;
+      if (/^\[\d+\s*장\]$/.test(line)) continue; // chapter header skip (이미 위에 추가)
+      const verseM = line.match(/^(\d+)\s+(.+)$/);
+      if (verseM) { out.push(verseM[2].trim()); continue; }
+      out.push(hangulizeForSpeech(line));
+    }
+    return out;
   };
 
-  // 원격 TTS: 현재 idx 의 텍스트를 /api/tts 에서 받아 <audio> 로 재생. onended 에서 다음 idx.
-  const speakRemoteChunk = async (rate: number): Promise<void> => {
-    const q = speakQueueRef.current;
-    const i = speakIdxRef.current;
+  // /api/bible-audio 응답에서 mp3 URL 받아 audio 에 set + play
+  const playPrerecordedAt = async (idx: number) => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (i >= q.length) { setSpeakState('idle'); return; }
+    const apiUrls = chapterUrlsRef.current;
+    if (idx >= apiUrls.length) { setSpeakState('idle'); return; }
+    chapterIdxRef.current = idx;
+    try {
+      const r = await fetch(apiUrls[idx]);
+      if (!r.ok) throw new Error(`bible-audio ${r.status}`);
+      const j = await r.json() as { url: string; book: string; chapter: number };
+      audio.src = j.url;
+      audio.playbackRate = speakRate;
+      try { await audio.play(); }
+      catch (e) {
+        // 자동재생 차단 가능 — user gesture 컨텍스트에서 호출되어야 첫 재생 됨
+        console.warn('[bible-audio] play blocked', e);
+      }
+    } catch (e) {
+      console.error('[bible-audio] fetch failed', e);
+      setTtsError('오디오 파일 정보를 가져오지 못했습니다.');
+      setSpeakState('idle');
+    }
+  };
+
+  // <audio> 가 src 의 mp3 를 못 찾을 때 (사전녹음 누락) → live TTS fallback
+  const handleAudioError = async () => {
+    const audio = audioRef.current;
+    if (!audio || speakState === 'idle') return;
+    const idx = chapterIdxRef.current;
+    const apiUrls = chapterUrlsRef.current;
+    if (idx >= apiUrls.length) { setSpeakState('idle'); return; }
+    // 현재 chapter 가 어느 책·몇 장인지 역산
+    let cursor = 0;
+    let target: { book: string; chapter: number } | null = null;
+    for (const r of reading) {
+      for (let ch = r.startCh; ch <= r.endCh; ch++) {
+        if (cursor === idx) { target = { book: r.book, chapter: ch }; break; }
+        cursor++;
+      }
+      if (target) break;
+    }
+    if (!target) { setSpeakState('idle'); return; }
+    console.warn(`[bible-audio] missing prerecorded ${target.book} ${target.chapter}, falling back to live TTS`);
+    // live TTS chunk 큐 셋업 + 첫 chunk 재생
+    liveChunksRef.current = buildLiveChunksForChapter(target.book, target.chapter);
+    liveIdxRef.current = 0;
+    void playLiveChunk();
+  };
+
+  // live TTS 한 chunk → /api/tts → blob → audio 재생
+  const playLiveChunk = async () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const q = liveChunksRef.current;
+    const i = liveIdxRef.current;
+    if (i >= q.length) {
+      // 이 chapter 의 live chunk 끝 → 다음 prerecorded chapter
+      liveChunksRef.current = [];
+      liveIdxRef.current = 0;
+      void playPrerecordedAt(chapterIdxRef.current + 1);
+      return;
+    }
     try {
       const r = await fetch('/api/tts', {
         method: 'POST',
@@ -377,14 +413,9 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
         body: JSON.stringify({ text: q[i] }),
       });
       if (!r.ok) {
-        // 첫 chunk 에서 실패 → 브라우저 TTS 로 fallback
-        if (i === 0 && ttsMode !== 'browser') {
-          console.warn('[tts] remote failed, falling back to browser', r.status);
-          setTtsMode('browser');
-          speakBrowserChunk(rate);
-          return;
-        }
-        console.error('[tts] remote chunk failed, stopping', r.status);
+        const detail = await r.text().catch(() => '');
+        console.error('[tts] live chunk failed', r.status, detail);
+        setTtsError(`live TTS 호출 실패 (${r.status})`);
         setSpeakState('idle');
         return;
       }
@@ -393,16 +424,11 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
       const url = URL.createObjectURL(blob);
       blobUrlRef.current = url;
       audio.src = url;
-      audio.playbackRate = rate;
+      audio.playbackRate = speakRate;
       await audio.play();
     } catch (e) {
-      if (i === 0 && ttsMode !== 'browser') {
-        console.warn('[tts] remote network error, falling back to browser', e);
-        setTtsMode('browser');
-        speakBrowserChunk(rate);
-        return;
-      }
-      console.error('[tts] remote network error', e);
+      console.error('[tts] live chunk network error', e);
+      setTtsError('네트워크 오류로 live TTS 호출 실패.');
       setSpeakState('idle');
     }
   };
@@ -411,77 +437,55 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
     if (typeof window === 'undefined') return;
     // paused → resume
     if (speakState === 'paused') {
-      if (ttsMode === 'browser') {
-        window.speechSynthesis.resume();
-      } else if (audioRef.current) {
-        audioRef.current.play().catch(() => {});
-      }
+      if (audioRef.current) audioRef.current.play().catch(() => {});
       setSpeakState('playing');
       return;
     }
     // fresh start
-    try { window.speechSynthesis?.cancel(); } catch {}
     try { audioRef.current?.pause(); } catch {}
-    const chunks = buildSpeakChunks();
-    if (chunks.length === 0) return;
-    speakQueueRef.current = chunks;
-    speakIdxRef.current = 0;
+    setTtsError(null);
+    const urls = buildChapterUrls();
+    if (urls.length === 0) return;
+    chapterUrlsRef.current = urls;
+    chapterIdxRef.current = 0;
+    liveChunksRef.current = [];
+    liveIdxRef.current = 0;
     setSpeakState('playing');
-    // 첫 시도는 remote. 실패 시 내부에서 fallback.
-    if (ttsMode === 'browser') speakBrowserChunk(speakRate);
-    else { setTtsMode('remote'); void speakRemoteChunk(speakRate); }
+    void playPrerecordedAt(0);
   };
 
   const handleSpeakPause = () => {
     if (typeof window === 'undefined') return;
-    if (ttsMode === 'browser') {
-      window.speechSynthesis.pause();
-    } else if (audioRef.current) {
-      audioRef.current.pause();
-    }
+    if (audioRef.current) audioRef.current.pause();
     setSpeakState('paused');
   };
 
   const handleSpeakStop = () => {
     if (typeof window === 'undefined') return;
-    try { window.speechSynthesis?.cancel(); } catch {}
     try { audioRef.current?.pause(); } catch {}
     if (audioRef.current) audioRef.current.src = '';
     if (blobUrlRef.current) { URL.revokeObjectURL(blobUrlRef.current); blobUrlRef.current = null; }
-    speakQueueRef.current = [];
-    speakIdxRef.current = 0;
+    chapterUrlsRef.current = [];
+    chapterIdxRef.current = 0;
+    liveChunksRef.current = [];
+    liveIdxRef.current = 0;
     setSpeakState('idle');
   };
 
   const handleSpeakRate = (r: number) => {
     setSpeakRate(r);
-    if (speakState === 'idle') return;
-    if (ttsMode === 'browser') {
-      // SpeechSynthesis 는 mid-utterance rate 변경 불가 → 현재 idx 부터 재시작
-      try { window.speechSynthesis?.cancel(); } catch {}
-      setTimeout(() => {
-        if (speakQueueRef.current.length > 0 && speakIdxRef.current < speakQueueRef.current.length) {
-          setSpeakState('playing');
-          speakBrowserChunk(r);
-        }
-      }, 60);
-    } else if (audioRef.current) {
-      // <audio> 는 playbackRate 즉시 반영 (재생 유지)
-      audioRef.current.playbackRate = r;
-    }
+    // <audio> 는 playbackRate 즉시 반영 (재생 유지). live·prerecorded 모두 동일.
+    if (audioRef.current) audioRef.current.playbackRate = r;
   };
 
-  // <audio> 재생 끝 → (필요 시 pause 후) 다음 chunk
+  // <audio> 재생 끝 → 다음 chapter 로 이동 (live chunk 모드면 다음 chunk)
   const handleAudioEnded = () => {
-    const justFinished = speakQueueRef.current[speakIdxRef.current] || '';
-    speakIdxRef.current += 1;
-    if (speakIdxRef.current >= speakQueueRef.current.length) {
-      setSpeakState('idle');
-      return;
+    if (liveChunksRef.current.length > 0) {
+      liveIdxRef.current += 1;
+      void playLiveChunk();
+    } else {
+      void playPrerecordedAt(chapterIdxRef.current + 1);
     }
-    const pause = needsVersePause(justFinished) ? VERSE_PAUSE_MS : 0;
-    if (pause > 0) setTimeout(() => { void speakRemoteChunk(speakRate); }, pause);
-    else void speakRemoteChunk(speakRate);
   };
 
   return (
@@ -498,37 +502,6 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.5rem' }}>
             <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-ink)' }}>{t('menu.reading')}</h2>
           </div>
-
-          {/* 최초 진입 soft 배너 — 플랜 미지정 사용자만 노출. 한 번 선택하면 사라짐. 설정에서 언제든 변경. */}
-          {showPlanBanner && (
-            <div style={{ padding: isMobile ? '0.7rem 0.8rem' : '0.85rem 1rem', borderRadius: 12, background: '#EFF6FF', border: '1px solid #BFDBFE', display: 'grid', gap: '0.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
-                <span aria-hidden style={{ fontSize: '1.05rem' }}>📖</span>
-                <strong style={{ fontSize: '0.88rem', color: '#1E40AF' }}>어떤 속도로 통독하시겠어요?</strong>
-              </div>
-              <p style={{ margin: 0, fontSize: '0.78rem', color: '#1E3A8A', lineHeight: 1.55 }}>
-                한 번만 선택하면 됩니다. 나중에 설정(⚙️)에서 변경 가능해요. 선택하지 않으면 기본 1독으로 시작합니다.
-              </p>
-              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={() => pickPlan(1)}
-                  style={{ flex: 1, minHeight: 44, padding: '0.55rem 0.8rem', borderRadius: 8, border: '1px solid #2563EB', background: '#fff', color: '#1E40AF', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', display: 'grid', gap: '0.15rem' }}
-                >
-                  <span>1독</span>
-                  <span style={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.8 }}>하루 3-4장</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => pickPlan(2)}
-                  style={{ flex: 1, minHeight: 44, padding: '0.55rem 0.8rem', borderRadius: 8, border: '1px solid #2563EB', background: '#fff', color: '#1E40AF', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', display: 'grid', gap: '0.15rem' }}
-                >
-                  <span>2독</span>
-                  <span style={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.8 }}>하루 6-7장 · 도전적</span>
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* 7일 캘린더 — QT와 동일한 디자인 */}
           <div style={{ display: 'flex', alignItems: 'stretch', gap: isMobile ? '0.2rem' : '0.3rem' }}>
@@ -615,7 +588,7 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                   {selectedDate.getFullYear()}.{String(selectedDate.getMonth() + 1).padStart(2, '0')}.{String(selectedDate.getDate()).padStart(2, '0')} ({DAY_LABELS[selectedDate.getDay()]})
                 </span>
                 <span style={{ padding: '0.1rem 0.5rem', borderRadius: 999, background: '#fff', color: '#65A30D', fontSize: '0.68rem', fontWeight: 800, border: '1px solid #65A30D' }}>
-                  {(readingPlanChoice || 1) === 2 ? '1년에 2독 목표' : '1년에 1독 목표'}
+                  1년에 1독 목표
                 </span>
                 {isCompleted && (
                   <span style={{ padding: '0.15rem 0.55rem', borderRadius: 999, background: '#20CD8D', color: '#fff', fontSize: '0.72rem', fontWeight: 800 }}>✓ 완료</span>
@@ -683,16 +656,16 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                 )}
               </div>
             </div>
-            {/* 🔊 간단 오디오 컨트롤 — 연라임 카드 안에 내장 */}
+            {/* 🔊 간단 오디오 컨트롤 — 연라임 카드 안에 내장. 사전녹음 MP3 재생 + live TTS fallback. */}
             {reading.length > 0 && !passageLoading && speakSupported && (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', flexWrap: 'wrap', paddingTop: '0.1rem' }}>
-                <audio ref={audioRef} onEnded={handleAudioEnded} preload="auto" style={{ display: 'none' }} />
+                <audio ref={audioRef} onEnded={handleAudioEnded} onError={handleAudioError} preload="auto" style={{ display: 'none' }} />
                 <button
                   type="button"
                   onClick={speakState === 'playing' ? handleSpeakPause : handleSpeakPlay}
                   aria-label={speakState === 'playing' ? '일시정지' : '듣기'}
-                  style={{ padding: '0.35rem 0.75rem', borderRadius: 999, border: '1px solid #65A30D', background: '#fff', color: '#65A30D', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', minHeight: 36 }}
-                >{speakState === 'playing' ? '⏸' : '▶'} {speakState === 'playing' ? '일시정지' : speakState === 'paused' ? '이어서' : '오디오 듣기'}</button>
+                  style={{ padding: '0.35rem 0.85rem', borderRadius: 999, border: '1px solid #65A30D', background: '#fff', color: '#65A30D', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', minHeight: 36 }}
+                >{speakState === 'playing' ? '⏸ 일시정지' : speakState === 'paused' ? '▶ 이어서' : '▶ 오디오 듣기'}</button>
                 {speakState !== 'idle' && (
                   <button
                     type="button"
@@ -703,11 +676,7 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                 )}
                 <span aria-hidden style={{ display: 'inline-block', width: 1, height: 22, background: '#65A30D', opacity: 0.35, margin: '0 0.4rem' }} />
                 <div style={{ display: 'flex', gap: '0.25rem', padding: '0.2rem 0.35rem', borderRadius: 8, background: 'rgba(255,255,255,0.55)', border: '1px dashed rgba(101, 163, 13, 0.35)' }}>
-                  {([
-                    { value: 1.25, label: '1x' },
-                    { value: 1.5,  label: '1.25x' },
-                    { value: 2,    label: '1.5x' },
-                  ] as const).map(({ value, label }) => {
+                  {([1, 1.5, 2, 2.5] as const).map((value) => {
                     const active = Math.abs(speakRate - value) < 0.01;
                     return (
                       <button
@@ -726,10 +695,17 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                           minHeight: 30,
                           minWidth: 36,
                         }}
-                      >{label}</button>
+                      >{value}x</button>
                     );
                   })}
                 </div>
+              </div>
+            )}
+            {ttsError && (
+              <div style={{ padding: '0.4rem 0.6rem', borderRadius: 8, background: '#FEF2F2', border: '1px solid #FCA5A5', fontSize: '0.78rem', color: '#B91C1C', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span aria-hidden>⚠</span>
+                <span>{ttsError}</span>
+                <button type="button" onClick={() => setTtsError(null)} aria-label="닫기" style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: '#B91C1C', cursor: 'pointer', fontWeight: 800 }}>✕</button>
               </div>
             )}
             {reading.length === 0 && (
