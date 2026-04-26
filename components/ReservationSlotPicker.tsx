@@ -876,7 +876,11 @@ const ReservationSlotPicker = ({
               }}>
               <span style={{ fontSize: '0.88rem', fontWeight: 800, color: selection ? 'var(--color-primary-deep)' : 'var(--color-ink-2)', lineHeight: 1.4 }}>
                 {selection
-                  ? `✓ ${selection.venue.floor} ${selection.venue.name} · ${selection.startLabel}~${selection.endLabel} (${selection.totalLabel})`
+                  ? (() => {
+                      const [y, mo, d] = selectedDate.split('-').map(Number);
+                      const dateLabel = `${y}년 ${mo}월${d}일`;
+                      return `✓ ${selection.venue.floor} ${selection.venue.name} · ${dateLabel} ${selection.startLabel}~${selection.endLabel} (${selection.totalLabel})`;
+                    })()
                   : '시간 블럭을 선택하세요'}
               </span>
               <div style={{ display: 'flex', gap: '0.35rem', marginLeft: isMobile ? 0 : 'auto' }}>
