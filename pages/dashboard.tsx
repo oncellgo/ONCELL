@@ -1398,7 +1398,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, ad
 
           <section style={cardBase}>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-start', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <h2 style={{ ...sectionTitle, fontSize: '1.05rem', margin: 0 }}>📅 {monthlySchedule?.month || (new Date().getMonth() + 1)}월 교회일정</h2>
+              <h2 style={{ ...sectionTitle, fontSize: '1.05rem', margin: 0 }}>📅 교회일정</h2>
             </div>
             {!monthlySchedule ? (
               <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>목회일정 불러오는 중…</p>
