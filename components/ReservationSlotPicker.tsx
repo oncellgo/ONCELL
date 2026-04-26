@@ -151,6 +151,17 @@ const ReservationSlotPicker = ({
   });
   const [venueOpen, setVenueOpen] = useState(false);
 
+  // 단계별 가이드 — create 모드: ① 페이지 진입 시 날짜박스 강조 → ② 날짜 확인/변경 후 장소 강조 → ③ 장소 클릭 후 예약 영역 강조.
+  // 사용자가 단계를 건너뛰어 클릭해도 그 이후 단계로 진행하도록 venueInteracted 우선 검사.
+  const [dateInteracted, setDateInteracted] = useState(false);
+  const [venueInteracted, setVenueInteracted] = useState(mode === 'edit');
+  const guideStep: 'date' | 'venue' | 'reserve' | null =
+    mode !== 'create' ? null
+      : venueInteracted ? 'reserve'
+      : dateInteracted ? 'venue'
+      : 'date';
+  const pulseAnimation = 'kcis-today-pulse 1.6s ease-in-out infinite';
+
   // 선택 상태 — 단일 장소 + 연속된 시간 슬롯만 허용
   const [activeVenueId, setActiveVenueId] = useState<string | null>(
     editReservation ? editReservation.venueId : null,
@@ -644,10 +655,10 @@ const ReservationSlotPicker = ({
         </div>
       )}
       {/* 상단: 날짜 + 장소 */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? '0.5rem' : '0.75rem' }}>
-        <div style={{ display: 'grid', gap: '0.35rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? '0.5rem' : '0.75rem', alignItems: 'stretch' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
           <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-primary-deep)', letterSpacing: '0.02em' }}>
-            📅 날짜 <span style={{ fontSize: '0.66rem', fontWeight: 600, color: 'var(--color-ink-2)' }}>(오늘부터 {bookingWindowMonths}개월 이내)</span>
+            📅 1. 예약날짜 선택
           </span>
           {(() => {
             // 날짜 선택 범위: 오늘 ~ 오늘 + bookingWindowMonths 개월. 과거/범위초과 날짜 비활성.
@@ -657,44 +668,56 @@ const ReservationSlotPicker = ({
             const maxD = new Date(today.getFullYear(), today.getMonth() + bookingWindowMonths, today.getDate());
             const maxDate = `${maxD.getFullYear()}-${pad(maxD.getMonth() + 1)}-${pad(maxD.getDate())}`;
             return (
-              <DateTimePicker
-                dateOnly
-                value={`${selectedDate}T00:00`}
-                onChange={(v) => setSelectedDate(v.slice(0, 10))}
-                placeholder="날짜 선택"
-                minDate={minDate}
-                maxDate={maxDate}
-                buttonStyle={{
-                  width: '100%',
-                  padding: isMobile ? '0.7rem 0.8rem' : '0.8rem 0.95rem',
-                  minHeight: 48,
-                  borderRadius: 12,
+              <div
+                className={guideStep === 'date' ? 'kcis-today-pulse' : undefined}
+                onClick={() => { if (!dateInteracted) setDateInteracted(true); }}
+                style={{
                   border: '1.5px solid var(--color-primary)',
-                  fontWeight: 800,
-                  fontSize: isMobile ? '0.95rem' : '1rem',
-                  textAlign: 'center',
-                  color: 'var(--color-ink)',
+                  borderRadius: 12,
                   background: '#fff',
-                }}
-              />
+                  overflow: 'hidden',
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  animation: guideStep === 'date' ? pulseAnimation : undefined,
+                }}>
+                <DateTimePicker
+                  dateOnly
+                  value={`${selectedDate}T00:00`}
+                  onChange={(v) => { setSelectedDate(v.slice(0, 10)); setDateInteracted(true); }}
+                  placeholder="날짜 선택"
+                  minDate={minDate}
+                  maxDate={maxDate}
+                  buttonStyle={{
+                    width: '100%',
+                    padding: isMobile ? '0.55rem 0.8rem 0.2rem' : '0.65rem 0.95rem 0.25rem',
+                    minHeight: 0,
+                    borderRadius: 0,
+                    border: 'none',
+                    fontWeight: 800,
+                    fontSize: isMobile ? '0.95rem' : '1rem',
+                    textAlign: 'center',
+                    color: 'var(--color-ink)',
+                    background: 'transparent',
+                  }}
+                />
+                <div style={{
+                  fontSize: '0.62rem',
+                  fontWeight: 600,
+                  color: 'var(--color-ink-2)',
+                  textAlign: 'center',
+                  padding: isMobile ? '0 0.5rem 0.45rem' : '0 0.6rem 0.5rem',
+                  lineHeight: 1,
+                }}>(오늘 기준 {bookingWindowMonths}개월까지)</div>
+              </div>
             );
           })()}
-          <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              width: 24, height: 24, borderRadius: 999,
-              background: dowBg, color: dowColor,
-              fontSize: '0.76rem', fontWeight: 800,
-            }}>{WEEK_LABELS[selDow]}</span>
-            {isToday && (
-              <span style={{ padding: '0.15rem 0.55rem', borderRadius: 999, background: '#ECFDF5', border: '1px solid #20CD8D', color: 'var(--color-primary-deep)', fontSize: '0.7rem', fontWeight: 800 }}>오늘</span>
-            )}
-          </div>
         </div>
 
-        <div style={{ display: 'grid', gap: '0.35rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
           <span style={{ fontSize: '0.72rem', fontWeight: 800, color: venueSummary ? 'var(--color-primary-deep)' : '#6B7280', letterSpacing: '0.02em' }}>
-            📍 장소 {mode === 'edit' ? '(클릭하여 변경)' : venueSummary ? `(${selectedVenueIds.size})` : '(미선택)'}
+            📍 2. 예약장소 조회
           </span>
           {mode === 'edit' && editCurrentVenue ? (
             <button
@@ -702,6 +725,7 @@ const ReservationSlotPicker = ({
               onClick={() => setVenueOpen(true)}
               style={{
                 width: '100%',
+                flex: 1,
                 padding: isMobile ? '0.7rem 0.8rem' : '0.8rem 0.95rem',
                 minHeight: 48,
                 borderRadius: 12,
@@ -721,13 +745,16 @@ const ReservationSlotPicker = ({
           ) : (
             <button
               type="button"
+              className={guideStep === 'venue' ? 'kcis-today-pulse' : undefined}
               onClick={() => {
                 if (selectedVenueIds.size === 0) setSelectedVenueIds(new Set(venues.map((v) => v.id)));
                 setVenueOpen(true);
+                setVenueInteracted(true);
               }}
               style={{
                 width: '100%',
-                padding: isMobile ? '0.7rem 0.8rem' : '0.8rem 0.95rem',
+                flex: 1,
+                padding: isMobile ? '0.55rem 0.8rem' : '0.65rem 0.95rem',
                 minHeight: 48,
                 borderRadius: 12,
                 border: venueSummary ? '1.5px solid var(--color-primary)' : '1.5px dashed #9CA3AF',
@@ -737,128 +764,131 @@ const ReservationSlotPicker = ({
                 fontWeight: venueSummary ? 800 : 600,
                 fontSize: isMobile ? '0.95rem' : '1rem',
                 textAlign: 'center',
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.15rem',
+                animation: guideStep === 'venue' ? pulseAnimation : undefined,
               }}
             >
-              {venueSummary || '선택하기'}
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', display: 'block' }}>
+                {venueSummary || '선택하기'}
+              </span>
+              {venueSummary && (
+                <span style={{ fontSize: '0.62rem', fontWeight: 600, color: 'var(--color-ink-2)', lineHeight: 1 }}>
+                  예약상황을 조회합니다.
+                </span>
+              )}
             </button>
           )}
-          <div style={{ minHeight: 24 }} />
         </div>
       </div>
 
       {hasBoth ? (
         <>
-          <div style={{ display: 'flex', gap: isMobile ? '0.5rem' : '0.85rem', fontSize: '0.76rem', color: 'var(--color-ink-2)', flexWrap: 'wrap', alignItems: 'center', rowGap: '0.4rem' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-              <span style={{ width: 14, height: 14, borderRadius: 3, background: '#F7FEE7', border: '1px solid #D9F09E' }} /> {t('page.reservation.availableSlot')}
+          {/* 단계 안내 — 1·2 라벨과 동일한 톤으로 step 3 노출. create 모드에서만. */}
+          {mode === 'create' && (
+            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-primary-deep)', letterSpacing: '0.02em', marginTop: '0.9rem' }}>
+              ⏰ 3. 원하는 시간 블럭 선택 후, ✓ 예약하기
+            </span>
+          )}
+
+          <div style={{ display: 'flex', gap: isMobile ? '0.4rem' : '0.65rem', fontSize: '0.62rem', color: 'var(--color-ink-2)', flexWrap: 'wrap', alignItems: 'center', rowGap: '0.3rem' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+              <span style={{ width: 11, height: 11, borderRadius: 3, background: '#F7FEE7', border: '1px solid #D9F09E' }} /> {t('page.reservation.availableSlot')}
             </span>
             {mode === 'edit' && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                <span style={{ width: 14, height: 14, borderRadius: 3, background: 'rgba(167, 243, 208, 0.45)', border: '1.5px dashed #20CD8D' }} />
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                <span style={{ width: 11, height: 11, borderRadius: 3, background: 'rgba(167, 243, 208, 0.45)', border: '1.5px dashed #20CD8D' }} />
                 {t('page.reservation.ghostSlot')}
               </span>
             )}
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-              <span style={{ width: 14, height: 14, borderRadius: 3, background: '#A7F3D0', outline: '2px solid #20CD8D', outlineOffset: -1 }} />
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+              <span style={{ width: 11, height: 11, borderRadius: 3, background: '#A7F3D0', outline: '2px solid #20CD8D', outlineOffset: -1 }} />
               {t('page.reservation.mySlot')}
             </span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-              <span style={{ width: 14, height: 14, borderRadius: 3, background: '#DBEAFE', border: '1px solid #93C5FD' }} /> {t('page.reservation.othersSlot')}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+              <span style={{ width: 11, height: 11, borderRadius: 3, background: '#BFDBFE', border: '1px solid #60A5FA' }} /> {t('page.reservation.othersSlot')}
             </span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-              <span style={{ width: 14, height: 14, borderRadius: 3, background: '#4A4E3A' }} /> {t('page.reservation.blockedSlot')}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+              <span style={{ width: 11, height: 11, borderRadius: 3, background: '#4A4E3A' }} /> {t('page.reservation.blockedSlot')}
               {isAdmin && (
-                <span style={{ marginLeft: '0.3rem', color: '#DC2626', fontWeight: 700 }}>{t('page.reservation.adminOnlyContactNote')}</span>
+                <span style={{ marginLeft: '0.25rem', color: '#DC2626', fontWeight: 700 }}>{t('page.reservation.adminOnlyContactNote')}</span>
               )}
             </span>
           </div>
 
-          {/* 인라인 힌트 — 블럭 클릭→예약하기 버튼 흐름 안내. create 모드에서만 (편집은 별도 안내 띠). */}
-          {mode === 'create' && (
+          <div
+            className={guideStep === 'reserve' && !selection ? 'kcis-today-pulse' : undefined}
+            style={{
+              borderRadius: 12,
+              animation: guideStep === 'reserve' && !selection ? pulseAnimation : undefined,
+            }}
+          >
+            <VenueGrid
+              venues={selectedVenues}
+              blocks={visibleBlocks}
+              groups={groups}
+              selectedDate={selectedDate}
+              slotMin={slotMin}
+              availableStart={availableStart}
+              availableEnd={availableEnd}
+              selectedSlots={selectedSlotsMap}
+              ghostSlots={ghostSlotsMap}
+              onSlotClick={handleSlotClick}
+              onSlotPointerDown={handleSlotPointerDown}
+              onSlotPointerEnter={handleSlotPointerEnter}
+            />
+          </div>
+
+          <div style={{ display: 'grid', gap: '0.4rem' }}>
+            {/* 편집 모드 변경 요약 — 원본 vs 새 선택 */}
+            {selection && mode === 'edit' && originalEditSummary && (
+              <div
+                role="note"
+                style={{
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: 10,
+                  background: '#FFFBEB',
+                  border: '1px solid #FDE68A',
+                  color: '#78350F',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  lineHeight: 1.5,
+                  wordBreak: 'keep-all',
+                  display: 'grid',
+                  gap: '0.15rem',
+                }}
+              >
+                <span style={{ fontSize: '0.72rem', color: '#92400E', fontWeight: 800, letterSpacing: '0.02em' }}>변경 요약</span>
+                <span>
+                  {originalEditSummary.venueLabel} · {originalEditSummary.dateLabel} {originalEditSummary.range}
+                  <span style={{ margin: '0 0.35rem', color: '#A16207' }}>→</span>
+                  {selection.venue.floor} {selection.venue.name} · {selection.startLabel}~{selection.endLabel}
+                </span>
+              </div>
+            )}
             <div
-              role="note"
+              className={guideStep === 'reserve' && selection ? 'kcis-today-pulse' : undefined}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                padding: '0.5rem 0.75rem',
-                borderRadius: 10,
-                background: '#F9FAFB',
-                border: '1px solid var(--color-surface-border)',
-                color: 'var(--color-ink-2)',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                lineHeight: 1.45,
-                wordBreak: 'keep-all',
-              }}
-            >
-              <span aria-hidden style={{ flexShrink: 0 }}>💡</span>
-              <span dangerouslySetInnerHTML={{ __html: t('page.reservation.selectionHint') }} />
-            </div>
-          )}
-
-          <VenueGrid
-            venues={selectedVenues}
-            blocks={visibleBlocks}
-            groups={groups}
-            selectedDate={selectedDate}
-            slotMin={slotMin}
-            availableStart={availableStart}
-            availableEnd={availableEnd}
-            selectedSlots={selectedSlotsMap}
-            ghostSlots={ghostSlotsMap}
-            onSlotClick={handleSlotClick}
-            onSlotPointerDown={handleSlotPointerDown}
-            onSlotPointerEnter={handleSlotPointerEnter}
-          />
-
-          {selection ? (
-            <div style={{ display: 'grid', gap: '0.4rem' }}>
-              {/* 편집 모드 변경 요약 — 원본 vs 새 선택 */}
-              {mode === 'edit' && originalEditSummary && (
-                <div
-                  role="note"
-                  style={{
-                    padding: '0.5rem 0.75rem',
-                    borderRadius: 10,
-                    background: '#FFFBEB',
-                    border: '1px solid #FDE68A',
-                    color: '#78350F',
-                    fontSize: '0.8rem',
-                    fontWeight: 700,
-                    lineHeight: 1.5,
-                    wordBreak: 'keep-all',
-                    display: 'grid',
-                    gap: '0.15rem',
-                  }}
-                >
-                  <span style={{ fontSize: '0.72rem', color: '#92400E', fontWeight: 800, letterSpacing: '0.02em' }}>변경 요약</span>
-                  <span>
-                    {originalEditSummary.venueLabel} · {originalEditSummary.dateLabel} {originalEditSummary.range}
-                    <span style={{ margin: '0 0.35rem', color: '#A16207' }}>→</span>
-                    {selection.venue.floor} {selection.venue.name} · {selection.startLabel}~{selection.endLabel}
-                  </span>
-                </div>
-              )}
-              <div style={{
                 display: 'flex', alignItems: isMobile ? 'stretch' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '0.55rem',
                 padding: '0.7rem 0.9rem', borderRadius: 12,
-                background: '#ECFDF5', border: '1px solid #20CD8D',
+                background: selection ? '#ECFDF5' : '#F9FAFB',
+                border: selection ? '1px solid #20CD8D' : '1px dashed var(--color-gray)',
+                animation: guideStep === 'reserve' && selection ? pulseAnimation : undefined,
               }}>
-                <span style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-primary-deep)', lineHeight: 1.4 }}>
-                  ✓ {selection.venue.floor} {selection.venue.name} · {selection.startLabel}~{selection.endLabel} ({selection.totalLabel})
-                </span>
-                <div style={{ display: 'flex', gap: '0.35rem', marginLeft: isMobile ? 0 : 'auto' }}>
-                  <button
-                    type="button"
-                    onClick={openConfirmModal}
-                    style={{ flex: isMobile ? 1 : undefined, padding: '0.45rem 0.95rem', minHeight: 40, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: 'none', background: 'var(--color-primary)', color: '#fff', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer' }}
-                  >{mode === 'edit' ? '✓ 수정하기' : '✓ 예약하기'}</button>
-                </div>
+              <span style={{ fontSize: '0.88rem', fontWeight: 800, color: selection ? 'var(--color-primary-deep)' : 'var(--color-ink-2)', lineHeight: 1.4 }}>
+                {selection
+                  ? `✓ ${selection.venue.floor} ${selection.venue.name} · ${selection.startLabel}~${selection.endLabel} (${selection.totalLabel})`
+                  : '시간 블럭을 선택하세요'}
+              </span>
+              <div style={{ display: 'flex', gap: '0.35rem', marginLeft: isMobile ? 0 : 'auto' }}>
+                <button
+                  type="button"
+                  onClick={openConfirmModal}
+                  disabled={!selection}
+                  style={{ flex: isMobile ? 1 : undefined, padding: '0.45rem 0.95rem', minHeight: 40, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: 'none', background: selection ? 'var(--color-primary)' : '#CBD5E1', color: '#fff', fontSize: '0.82rem', fontWeight: 800, cursor: selection ? 'pointer' : 'not-allowed', opacity: selection ? 1 : 0.85 }}
+                >{mode === 'edit' ? '✓ 수정하기' : '✓ 예약하기'}</button>
               </div>
             </div>
-          ) : null}
+          </div>
           <p style={{ margin: 0, fontSize: '0.76rem', color: 'var(--color-ink-2)' }}>
             {dateSummary} · {selectedVenueIds.size}곳 현황
           </p>

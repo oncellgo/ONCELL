@@ -647,8 +647,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, ad
             <section style={{ padding: isMobile ? '0.9rem 1rem' : '1rem 1.2rem', borderRadius: 16, background: 'linear-gradient(135deg, rgba(32, 205, 141, 0.14) 0%, rgba(190, 242, 100, 0.22) 100%)', border: '1px solid var(--color-primary)', boxShadow: '0 4px 14px rgba(32, 205, 141, 0.18)', display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
               <span aria-hidden style={{ fontSize: '1.6rem', lineHeight: 1, flexShrink: 0 }}>🎉</span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <strong style={{ fontSize: isMobile ? '0.98rem' : '1.02rem', color: 'var(--color-primary-deep)', fontWeight: 800, display: 'block' }}>KCIS 에 가입완료!</strong>
-                <span style={{ fontSize: isMobile ? '0.85rem' : '0.88rem', color: 'var(--color-ink)', fontWeight: 600 }}>환영합니다!</span>
+                <strong style={{ fontSize: isMobile ? '0.98rem' : '1.02rem', color: 'var(--color-primary-deep)', fontWeight: 800, display: 'block' }}>KCIS 에 가입되셨습니다.</strong>
               </div>
               <button
                 type="button"
@@ -1155,7 +1154,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, ad
 
             // 오늘 통독 범위 — 사용자 선택 플랜(1독/2독) 반영. DB 일치 안 할 수 있어 fallback 성격.
             const todayRangeText = formatPlan(planForDate(new Date(), 1));
-            const planBadge = '1독';
+            const planBadge = '1년1독목표';
             const today0ReadingMsg = new Date(); today0ReadingMsg.setHours(0, 0, 0, 0);
             const todayKeyReadingMsg = `${today0ReadingMsg.getFullYear()}-${String(today0ReadingMsg.getMonth() + 1).padStart(2, '0')}-${String(today0ReadingMsg.getDate()).padStart(2, '0')}`;
             const readingDoneToday = weekReadingDates.has(todayKeyReadingMsg);
