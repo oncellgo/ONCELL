@@ -227,22 +227,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const misbaUrl = await findMisbaUrl(bulletin.idx);
     if (!misbaUrl) return res.status(200).json({ month, year, items: [], source: { bulletinIdx: bulletin.idx, misbaUrl: null }, reason: 'no-misba' });
 
-    // PDF 다운로드
+    // PDF 다운로드 — 미스바는 1·2페이지에 목회일정, 3페이지부터 설교문이라 앞 2페이지만 파싱.
+    // 파일 크기 30MB+ 라서 첫 2페이지만 추출하면 메모리/시간 부담 크게 감소.
     let pdfText = '';
     try {
       const buf = await fetchPdfBuffer(misbaUrl);
       const parser = new PDFParse({ data: buf });
-      const parsed = await parser.getText();
+      const parsed = await parser.getText({ first: 2 });
       pdfText = parsed.text || '';
     } catch (e: any) {
       console.error('[monthly-schedule] pdf fetch/parse failed', e?.message || e);
       return res.status(200).json({ month, year, items: [], source: { bulletinIdx: bulletin.idx, misbaUrl }, reason: `pdf-failed: ${e?.message || ''}` });
     }
 
-    const items = parseSchedule(pdfText, month, year);
-    const fresh: Cached = { at: Date.now(), month, year, items, bulletinIdx: bulletin.idx, misbaUrl };
+    // 미스바는 발행 시점에 따라 이번달 또는 다음달 목회일정을 담음.
+    // (예: 월말 발행 미스바엔 다음달 일정이 들어있음). 요청 월(=현재달) 헤더가 없으면
+    // PDF 안에서 가장 첫 번째로 나오는 'M월 목회일정' 헤더의 월을 자동 채택.
+    const requestedHeaderRe = new RegExp(`${month}\\s*월\\s*목\\s*회\\s*일\\s*정`);
+    let effectiveMonth = month;
+    if (!requestedHeaderRe.test(pdfText)) {
+      const anyHeader = pdfText.match(/(\d{1,2})\s*월\s*목\s*회\s*일\s*정/);
+      if (anyHeader) {
+        const detected = Number(anyHeader[1]);
+        if (detected >= 1 && detected <= 12) effectiveMonth = detected;
+      }
+    }
+
+    const items = parseSchedule(pdfText, effectiveMonth, year);
+    const fresh: Cached = { at: Date.now(), month: effectiveMonth, year, items, bulletinIdx: bulletin.idx, misbaUrl };
     memoryCache.set(ckey, fresh);
-    // 파싱 성공시에만 영구 캐시에 저장 (빈 결과를 고정시키지 않음)
+    // 파싱 성공시에만 영구 캐시에 저장 (빈 결과를 고정시키지 않음). 캐시 키는 요청 월 기준 유지.
     if (items.length > 0) await writePersistedCache(year, month, fresh);
 
     // 디버그: ?debug=1 → 헤더 전후 raw text + 블록 파싱 결과 반환
@@ -266,7 +280,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(200).json({ month, year, items, source: { bulletinIdx: bulletin.idx, misbaUrl } });
+    return res.status(200).json({ month: effectiveMonth, year, items, source: { bulletinIdx: bulletin.idx, misbaUrl } });
   } catch (e: any) {
     console.error('[monthly-schedule]', e);
     return res.status(500).json({ error: e?.message || 'failed' });

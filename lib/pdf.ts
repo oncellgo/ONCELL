@@ -26,8 +26,9 @@ const injectCanvasGlobals = () => {
 
 injectCanvasGlobals();
 
+type PDFParseOptions = { first?: number; last?: number; partial?: number[] };
 type PDFParseModule = {
-  PDFParse: new (opts: { data: Buffer }) => { getText: () => Promise<{ text: string }> };
+  PDFParse: new (opts: { data: Buffer }) => { getText: (opts?: PDFParseOptions) => Promise<{ text: string }> };
 };
 
 const { PDFParse } = require('pdf-parse') as PDFParseModule;
