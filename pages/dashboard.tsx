@@ -1399,9 +1399,6 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, ad
           <section style={cardBase}>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-start', gap: '0.5rem', flexWrap: 'wrap' }}>
               <h2 style={{ ...sectionTitle, fontSize: '1.05rem', margin: 0 }}>📅 {monthlySchedule?.month || (new Date().getMonth() + 1)}월 교회일정</h2>
-              <span style={{ fontSize: '0.68rem', color: '#DC2626', fontWeight: 600, lineHeight: 1.4 }}>
-                (현재 일정은 홈피의 미스바 2page 일정을 불러옴. 관리자가 등록한 일정으로 출력시 코드 변경필요)
-              </span>
             </div>
             {!monthlySchedule ? (
               <p style={{ ...helperText, marginTop: '0.55rem', color: 'var(--color-ink-2)', fontSize: '0.88rem' }}>목회일정 불러오는 중…</p>
