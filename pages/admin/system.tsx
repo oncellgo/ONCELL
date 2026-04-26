@@ -42,6 +42,20 @@ type AdminUser = {
   isCommunityAdmin: boolean;
 };
 
+const providerIdPill = (provider: string | undefined, id: string) => {
+  const p = provider || '';
+  const bg = p === 'kakao' ? '#FEE500' : p === 'google' ? '#fff' : '#E5E7EB';
+  const color = p === 'kakao' ? '#181600' : p === 'google' ? '#1F2937' : '#374151';
+  const border = p === 'google' ? '1px solid #D1D5DB' : '1px solid transparent';
+  const prefix = p === 'kakao' ? 'K' : p === 'google' ? 'G' : (p ? p.charAt(0).toUpperCase() : '?');
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.15rem 0.55rem', borderRadius: 999, background: bg, color, fontSize: '0.76rem', fontWeight: 700, border, whiteSpace: 'nowrap', maxWidth: '100%' }}>
+      <span style={{ width: 14, height: 14, borderRadius: 999, background: p === 'kakao' ? '#181600' : p === 'google' ? '#F3F4F6' : '#6B7280', color: p === 'kakao' ? '#FEE500' : '#1F2937', fontSize: '0.62rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto' }}>{prefix}</span>
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{id}</span>
+    </span>
+  );
+};
+
 const cardStyle: React.CSSProperties = {
   padding: '1.25rem',
   borderRadius: 16,
@@ -390,14 +404,11 @@ const addAdmin = async () => {
                   {(usersShowAll ? filteredUsers : filteredUsers.slice(0, INITIAL_ROWS)).map((u, i) => (
                     <tr key={u.profileId} style={{ borderTop: '1px solid var(--color-surface-border)' }}>
                       <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)' }}>{i + 1}</td>
-                      <td style={{ padding: '0.55rem 0.6rem', fontWeight: 700, color: '#182527', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                      <td style={{ padding: '0.55rem 0.6rem', fontWeight: 700, color: '#182527' }}>
                         {u.realName || u.nickname || '(이름없음)'}
-                        {u.isCommunityAdmin && (
-                          <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#182527', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>{t('admin.communityAdmin')}</span>
-                        )}
                       </td>
                       <td style={{ padding: '0.55rem 0.6rem', color: '#2D4048' }} title={u.email || '(이메일 없음)'}>
-                        {u.nickname || u.email?.split('@')[0] || u.profileId}
+                        {providerIdPill(u.provider, u.nickname || u.email?.split('@')[0] || u.profileId)}
                       </td>
                       <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)', whiteSpace: 'nowrap' }}>
                         {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString('ko-KR') : '-'}
@@ -473,7 +484,7 @@ const addAdmin = async () => {
                           {name}
                           {isMe && <span style={{ padding: '0.1rem 0.45rem', borderRadius: 999, background: '#F59E0B', color: '#fff', fontSize: '0.66rem', fontWeight: 800 }}>나</span>}
                         </td>
-                        <td style={{ padding: '0.55rem 0.6rem', color: '#2D4048' }} title={u?.email || '(이메일 없음)'}>{idDisplay}</td>
+                        <td style={{ padding: '0.55rem 0.6rem', color: '#2D4048' }} title={u?.email || '(이메일 없음)'}>{providerIdPill(u?.provider, idDisplay)}</td>
                         <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono, monospace)' }}>{u?.contact || '-'}</td>
                         <td style={{ padding: '0.55rem 0.6rem', color: 'var(--color-ink-2)', whiteSpace: 'nowrap' }}>{u?.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString('ko-KR') : '-'}</td>
                         <td style={{ padding: '0.55rem 0.6rem', textAlign: 'right' }}>
