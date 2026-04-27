@@ -580,30 +580,8 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
             >›</button>
           </div>
 
-          {/* 말씀 본문 카드 — 통독 완료 토글 위에 위치. 본문 → 완료 토글 순서로 자연스러운 독서 흐름. */}
-          {reading.length > 0 && (
-            passageLoading ? (
-              <div style={{ padding: '0.9rem 1rem', borderRadius: 16, background: '#fff', border: '1px solid #D9F09E', fontSize: '0.88rem', color: 'var(--color-ink-2)' }}>{t('page.reading.loadingPassage')}</div>
-            ) : (
-              <div style={{ display: 'grid', gap: '0.75rem' }}>
-                {reading.map((r, i) => {
-                  const ref = r.startCh === r.endCh ? `${r.book} ${r.startCh}장` : `${r.book} ${r.startCh}-${r.endCh}장`;
-                  const texts = passageTexts[ref];
-                  const noText = !texts || (!texts.ko && !texts.en);
-                  if (noText) return (
-                    <div key={i} style={{ padding: '0.9rem 1rem', borderRadius: 16, background: '#fff', border: '1px solid #D9F09E', display: 'grid', gap: '0.4rem' }}>
-                      <strong style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--color-ink)' }}>{ref}</strong>
-                      <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>{t('page.reading.passageNotFound')}</span>
-                    </div>
-                  );
-                  return <BiblePassageCard key={i} reference={ref} koText={texts.ko || null} enText={texts.en || null} source="KCIS 통독 일정표 · 본문: 개역한글/KJV 공공영역" />;
-                })}
-              </div>
-            )
-          )}
-
-          {/* 통독 범위 + 완료 토글 — 말씀 본문 아래로 이동. 본문을 다 읽고 자연스럽게 완료 처리. */}
-          <div style={{ padding: isMobile ? '0.9rem' : '1.1rem', borderRadius: 12, background: '#ECFCCB', border: '1px solid #D9F09E', display: 'grid', gap: '0.6rem', boxShadow: '0 6px 16px rgba(15, 23, 42, 0.08)' }}>
+          {/* 선택된 날짜의 통독 범위 — 본문 스크롤 중에도 완료 토글·오디오 접근 가능하도록 sticky */}
+          <div style={{ padding: isMobile ? '0.9rem' : '1.1rem', borderRadius: 12, background: '#ECFCCB', border: '1px solid #D9F09E', display: 'grid', gap: '0.6rem', position: 'sticky', top: isMobile ? 88 : 100, zIndex: 10, boxShadow: '0 6px 16px rgba(15, 23, 42, 0.08)' }}>
             <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#65A30D', textTransform: 'uppercase' }}>
@@ -679,6 +657,28 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
               <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.9rem' }}>{t('page.reading.noAssignment')}</p>
             )}
           </div>
+
+          {/* 말씀 본문 카드 — 오디오바 위에 위치. 스크롤 시 본문이 위로 올라가고 하단 오디오바는 sticky 유지. */}
+          {reading.length > 0 && (
+            passageLoading ? (
+              <div style={{ padding: '0.9rem 1rem', borderRadius: 16, background: '#fff', border: '1px solid #D9F09E', fontSize: '0.88rem', color: 'var(--color-ink-2)' }}>{t('page.reading.loadingPassage')}</div>
+            ) : (
+              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                {reading.map((r, i) => {
+                  const ref = r.startCh === r.endCh ? `${r.book} ${r.startCh}장` : `${r.book} ${r.startCh}-${r.endCh}장`;
+                  const texts = passageTexts[ref];
+                  const noText = !texts || (!texts.ko && !texts.en);
+                  if (noText) return (
+                    <div key={i} style={{ padding: '0.9rem 1rem', borderRadius: 16, background: '#fff', border: '1px solid #D9F09E', display: 'grid', gap: '0.4rem' }}>
+                      <strong style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--color-ink)' }}>{ref}</strong>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>{t('page.reading.passageNotFound')}</span>
+                    </div>
+                  );
+                  return <BiblePassageCard key={i} reference={ref} koText={texts.ko || null} enText={texts.en || null} source="KCIS 통독 일정표 · 본문: 개역한글/KJV 공공영역" />;
+                })}
+              </div>
+            )
+          )}
 
           {/* 🔊 오디오 컨트롤 — 하단 sticky 한 줄. 본문을 스크롤해도 항상 노출. */}
           {reading.length > 0 && !passageLoading && speakSupported && (
