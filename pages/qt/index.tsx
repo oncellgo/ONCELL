@@ -622,7 +622,7 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
                 })()}
 
                 {(qtPassageText || qtPassageTextEn) && qtRef && (
-                  <BiblePassageCard reference={qtRef} koText={qtPassageText} enText={qtPassageTextEn} source="매일성경 (sumanbible.com) · 본문: 개역한글/KJV 공공영역" />
+                  <BiblePassageCard reference={qtRef} koText={qtPassageText} enText={qtPassageTextEn} />
                 )}
                 {!qtPassageText && !qtPassageTextEn && qtPassage && (
                   <div style={{ padding: '0.9rem 1.1rem', borderRadius: 10, background: '#fff', border: '1px solid #D9F09E', fontSize: '0.9rem', color: 'var(--color-ink)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>

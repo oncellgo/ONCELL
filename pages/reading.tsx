@@ -590,9 +590,6 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                 <span style={{ padding: '0.1rem 0.5rem', borderRadius: 999, background: '#fff', color: '#65A30D', fontSize: '0.68rem', fontWeight: 800, border: '1px solid #65A30D' }}>
                   1년에 1독 목표
                 </span>
-                {isCompleted && (
-                  <span style={{ padding: '0.15rem 0.55rem', borderRadius: 999, background: '#20CD8D', color: '#fff', fontSize: '0.72rem', fontWeight: 800 }}>✓ 완료</span>
-                )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: isMobile ? 'stretch' : 'flex-end', gap: '0.25rem', marginLeft: isMobile ? 0 : 'auto' }}>
                 <button
@@ -656,64 +653,12 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                 )}
               </div>
             </div>
-            {/* 🔊 간단 오디오 컨트롤 — 연라임 카드 안에 내장. 사전녹음 MP3 재생 + live TTS fallback. */}
-            {reading.length > 0 && !passageLoading && speakSupported && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', flexWrap: 'wrap', paddingTop: '0.1rem' }}>
-                <audio ref={audioRef} onEnded={handleAudioEnded} onError={handleAudioError} preload="auto" style={{ display: 'none' }} />
-                <button
-                  type="button"
-                  onClick={speakState === 'playing' ? handleSpeakPause : handleSpeakPlay}
-                  aria-label={speakState === 'playing' ? '일시정지' : '듣기'}
-                  style={{ padding: '0.35rem 0.85rem', borderRadius: 999, border: '1px solid #65A30D', background: '#fff', color: '#65A30D', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', minHeight: 36 }}
-                >{speakState === 'playing' ? '⏸ 일시정지' : speakState === 'paused' ? '▶ 이어서' : '▶ 오디오 듣기'}</button>
-                {speakState !== 'idle' && (
-                  <button
-                    type="button"
-                    onClick={handleSpeakStop}
-                    aria-label="정지"
-                    style={{ padding: '0.35rem 0.6rem', borderRadius: 999, border: '1px solid #D9F09E', background: '#fff', color: '#65A30D', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', minHeight: 36 }}
-                  >⏹</button>
-                )}
-                <span aria-hidden style={{ display: 'inline-block', width: 1, height: 22, background: '#65A30D', opacity: 0.35, margin: '0 0.4rem' }} />
-                <div style={{ display: 'flex', gap: '0.25rem', padding: '0.2rem 0.35rem', borderRadius: 8, background: 'rgba(255,255,255,0.55)', border: '1px dashed rgba(101, 163, 13, 0.35)' }}>
-                  {([1, 1.25, 1.5, 1.75, 2, 2.5] as const).map((value) => {
-                    const active = Math.abs(speakRate - value) < 0.01;
-                    return (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => handleSpeakRate(value)}
-                        style={{
-                          padding: '0.25rem 0.45rem',
-                          borderRadius: 6,
-                          border: `${active ? 2 : 1}px solid ${active ? '#65A30D' : '#D9F09E'}`,
-                          background: '#fff',
-                          color: '#65A30D',
-                          fontWeight: active ? 900 : 800,
-                          fontSize: '0.7rem',
-                          cursor: 'pointer',
-                          minHeight: 30,
-                          minWidth: 36,
-                        }}
-                      >{value}x</button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            {ttsError && (
-              <div style={{ padding: '0.4rem 0.6rem', borderRadius: 8, background: '#FEF2F2', border: '1px solid #FCA5A5', fontSize: '0.78rem', color: '#B91C1C', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <span aria-hidden>⚠</span>
-                <span>{ttsError}</span>
-                <button type="button" onClick={() => setTtsError(null)} aria-label="닫기" style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: '#B91C1C', cursor: 'pointer', fontWeight: 800 }}>✕</button>
-              </div>
-            )}
             {reading.length === 0 && (
               <p style={{ margin: 0, color: 'var(--color-ink-2)', fontSize: '0.9rem' }}>{t('page.reading.noAssignment')}</p>
             )}
           </div>
 
-          {/* 말씀 본문 카드 — design.md §2.3 Bible passage rule 준수 (BiblePassageCard 사용) */}
+          {/* 말씀 본문 카드 — 오디오바 위에 위치. 스크롤 시 본문이 위로 올라가고 하단 오디오바는 sticky 유지. */}
           {reading.length > 0 && (
             passageLoading ? (
               <div style={{ padding: '0.9rem 1rem', borderRadius: 16, background: '#fff', border: '1px solid #D9F09E', fontSize: '0.88rem', color: 'var(--color-ink-2)' }}>{t('page.reading.loadingPassage')}</div>
@@ -733,6 +678,69 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                 })}
               </div>
             )
+          )}
+
+          {/* 🔊 오디오 컨트롤 — 하단 sticky 한 줄. 본문을 스크롤해도 항상 노출. */}
+          {reading.length > 0 && !passageLoading && speakSupported && (
+            <div style={{
+              position: 'sticky', bottom: 0, zIndex: 10,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: '0.35rem', flexWrap: 'nowrap', overflowX: 'auto',
+              padding: '0.55rem 0.75rem',
+              borderRadius: 12,
+              background: '#ECFCCB',
+              border: '1px solid #D9F09E',
+              boxShadow: '0 -6px 16px rgba(15, 23, 42, 0.08)',
+            }}>
+              <audio ref={audioRef} onEnded={handleAudioEnded} onError={handleAudioError} preload="auto" style={{ display: 'none' }} />
+              <button
+                type="button"
+                onClick={speakState === 'playing' ? handleSpeakPause : handleSpeakPlay}
+                aria-label={speakState === 'playing' ? '일시정지' : '듣기'}
+                style={{ padding: '0.35rem 0.7rem', borderRadius: 999, border: '1px solid #65A30D', background: '#fff', color: '#65A30D', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', minHeight: 34, whiteSpace: 'nowrap', flexShrink: 0 }}
+              >{speakState === 'playing' ? '⏸ 일시정지' : speakState === 'paused' ? '▶ 이어서' : '▶ 오디오 듣기'}</button>
+              {speakState !== 'idle' && (
+                <button
+                  type="button"
+                  onClick={handleSpeakStop}
+                  aria-label="정지"
+                  style={{ padding: '0.35rem 0.55rem', borderRadius: 999, border: '1px solid #D9F09E', background: '#fff', color: '#65A30D', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', minHeight: 34, flexShrink: 0 }}
+                >⏹</button>
+              )}
+              <span aria-hidden style={{ display: 'inline-block', width: 1, height: 20, background: '#65A30D', opacity: 0.35, margin: '0 0.25rem', flexShrink: 0 }} />
+              <div style={{ display: 'flex', gap: '0.2rem', padding: '0.15rem 0.3rem', borderRadius: 8, background: 'rgba(255,255,255,0.55)', border: '1px dashed rgba(101, 163, 13, 0.35)', flexShrink: 0 }}>
+                {([1, 1.25, 1.5, 1.75, 2, 2.5] as const).map((value) => {
+                  const active = Math.abs(speakRate - value) < 0.01;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => handleSpeakRate(value)}
+                      style={{
+                        padding: '0.2rem 0.35rem',
+                        borderRadius: 6,
+                        border: `${active ? 2 : 1}px solid ${active ? '#65A30D' : '#D9F09E'}`,
+                        background: '#fff',
+                        color: '#65A30D',
+                        fontWeight: active ? 900 : 800,
+                        fontSize: '0.66rem',
+                        cursor: 'pointer',
+                        minHeight: 28,
+                        minWidth: 32,
+                        flexShrink: 0,
+                      }}
+                    >{value}x</button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {ttsError && (
+            <div style={{ padding: '0.4rem 0.6rem', borderRadius: 8, background: '#FEF2F2', border: '1px solid #FCA5A5', fontSize: '0.78rem', color: '#B91C1C', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span aria-hidden>⚠</span>
+              <span>{ttsError}</span>
+              <button type="button" onClick={() => setTtsError(null)} aria-label="닫기" style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: '#B91C1C', cursor: 'pointer', fontWeight: 800 }}>✕</button>
+            </div>
           )}
 
           <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--color-ink-2)', lineHeight: 1.6 }}>
