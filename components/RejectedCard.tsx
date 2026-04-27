@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useIsMobile } from '../lib/useIsMobile';
+import { providerIdPill } from './providerPill';
 
 type Approval = {
   profileId: string;
@@ -26,19 +27,6 @@ const formatDate = (iso: string) => {
   } catch {
     return iso;
   }
-};
-
-const providerIdPill = (provider: string, id: string) => {
-  const bg = provider === 'kakao' ? '#FEE500' : provider === 'google' ? '#fff' : '#E5E7EB';
-  const color = provider === 'kakao' ? '#181600' : provider === 'google' ? '#1F2937' : '#374151';
-  const border = provider === 'google' ? '1px solid #D1D5DB' : '1px solid transparent';
-  const prefix = provider === 'kakao' ? 'K' : provider === 'google' ? 'G' : provider.charAt(0).toUpperCase();
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.15rem 0.55rem', borderRadius: 999, background: bg, color, fontSize: '0.76rem', fontWeight: 700, border, whiteSpace: 'nowrap', maxWidth: '100%' }}>
-      <span style={{ width: 14, height: 14, borderRadius: 999, background: provider === 'kakao' ? '#181600' : provider === 'google' ? '#F3F4F6' : '#6B7280', color: provider === 'kakao' ? '#FEE500' : '#1F2937', fontSize: '0.62rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto' }}>{prefix}</span>
-      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{id}</span>
-    </span>
-  );
 };
 
 const RejectedCard = ({ profileId, k }: Props) => {

@@ -92,6 +92,12 @@ const DateTimePicker = ({ value, onChange, placeholder, style, buttonStyle, date
     : '';
   const todayKey = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
 
+  // minDate/maxDate 가 정해지면 그 월 이전/이후로의 이동을 막아 과거 달력 노출 차단.
+  const minYM = minDate ? { y: Number(minDate.slice(0, 4)), m: Number(minDate.slice(5, 7)) - 1 } : null;
+  const maxYM = maxDate ? { y: Number(maxDate.slice(0, 4)), m: Number(maxDate.slice(5, 7)) - 1 } : null;
+  const canPrev = !minYM || viewYear > minYM.y || (viewYear === minYM.y && viewMonth > minYM.m);
+  const canNext = !maxYM || viewYear < maxYM.y || (viewYear === maxYM.y && viewMonth < maxYM.m);
+
   return (
     <div ref={ref} style={{ position: 'relative', flex: 1, minWidth: 160, ...style }}>
       <button
@@ -109,9 +115,17 @@ const DateTimePicker = ({ value, onChange, placeholder, style, buttonStyle, date
           <div style={{ width: '100%', maxWidth: 420, margin: '0', padding: '1.1rem 1rem 2rem', background: '#fff', borderRadius: '18px 18px 0 0', boxShadow: '0 -8px 24px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div style={{ display: 'grid', gap: '0.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <button type="button" aria-label="이전 달" onClick={() => { if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); } else { setViewMonth(viewMonth - 1); } }} style={{ background: '#F7FEE7', border: '1px solid #D9F09E', borderRadius: 10, cursor: 'pointer', color: '#3F6212', fontSize: '1.6rem', fontWeight: 800, lineHeight: 1, padding: '0.45rem 0.95rem', minWidth: 48, minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+                {canPrev ? (
+                  <button type="button" aria-label="이전 달" onClick={() => { if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); } else { setViewMonth(viewMonth - 1); } }} style={{ background: '#F7FEE7', border: '1px solid #D9F09E', borderRadius: 10, cursor: 'pointer', color: '#3F6212', fontSize: '1.6rem', fontWeight: 800, lineHeight: 1, padding: '0.45rem 0.95rem', minWidth: 48, minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+                ) : (
+                  <span aria-hidden style={{ minWidth: 48, minHeight: 44, display: 'inline-block' }} />
+                )}
                 <strong style={{ fontSize: '0.95rem', color: 'var(--color-ink)' }}>{viewYear}년 {viewMonth + 1}월</strong>
-                <button type="button" aria-label="다음 달" onClick={() => { if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1); } else { setViewMonth(viewMonth + 1); } }} style={{ background: '#F7FEE7', border: '1px solid #D9F09E', borderRadius: 10, cursor: 'pointer', color: '#3F6212', fontSize: '1.6rem', fontWeight: 800, lineHeight: 1, padding: '0.45rem 0.95rem', minWidth: 48, minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
+                {canNext ? (
+                  <button type="button" aria-label="다음 달" onClick={() => { if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1); } else { setViewMonth(viewMonth + 1); } }} style={{ background: '#F7FEE7', border: '1px solid #D9F09E', borderRadius: 10, cursor: 'pointer', color: '#3F6212', fontSize: '1.6rem', fontWeight: 800, lineHeight: 1, padding: '0.45rem 0.95rem', minWidth: 48, minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
+                ) : (
+                  <span aria-hidden style={{ minWidth: 48, minHeight: 44, display: 'inline-block' }} />
+                )}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.2rem' }}>
                 {['일', '월', '화', '수', '목', '금', '토'].map((w, i) => (
@@ -178,9 +192,17 @@ const DateTimePicker = ({ value, onChange, placeholder, style, buttonStyle, date
         <div style={{ position: 'absolute', top: 'calc(100% + 4px)', ...(alignRight ? { right: 0 } : { left: 0 }), zIndex: 50, padding: '0.65rem 0.75rem', background: '#fff', border: '1px solid var(--color-gray)', borderRadius: 12, boxShadow: 'var(--shadow-card)', display: 'flex', gap: '0.75rem', minWidth: 340 }}>
           <div style={{ display: 'grid', gap: '0.5rem', minWidth: 240 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <button type="button" aria-label="이전 달" onClick={() => { if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); } else { setViewMonth(viewMonth - 1); } }} style={{ background: '#F7FEE7', border: '1px solid #D9F09E', borderRadius: 8, cursor: 'pointer', color: '#3F6212', fontSize: '1.3rem', fontWeight: 800, lineHeight: 1, padding: '0.35rem 0.7rem', minWidth: 38, minHeight: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+              {canPrev ? (
+                <button type="button" aria-label="이전 달" onClick={() => { if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); } else { setViewMonth(viewMonth - 1); } }} style={{ background: '#F7FEE7', border: '1px solid #D9F09E', borderRadius: 8, cursor: 'pointer', color: '#3F6212', fontSize: '1.3rem', fontWeight: 800, lineHeight: 1, padding: '0.35rem 0.7rem', minWidth: 38, minHeight: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+              ) : (
+                <span aria-hidden style={{ minWidth: 38, minHeight: 36, display: 'inline-block' }} />
+              )}
               <strong style={{ fontSize: '0.88rem', color: 'var(--color-ink)' }}>{viewYear}년 {viewMonth + 1}월</strong>
-              <button type="button" aria-label="다음 달" onClick={() => { if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1); } else { setViewMonth(viewMonth + 1); } }} style={{ background: '#F7FEE7', border: '1px solid #D9F09E', borderRadius: 8, cursor: 'pointer', color: '#3F6212', fontSize: '1.3rem', fontWeight: 800, lineHeight: 1, padding: '0.35rem 0.7rem', minWidth: 38, minHeight: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
+              {canNext ? (
+                <button type="button" aria-label="다음 달" onClick={() => { if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1); } else { setViewMonth(viewMonth + 1); } }} style={{ background: '#F7FEE7', border: '1px solid #D9F09E', borderRadius: 8, cursor: 'pointer', color: '#3F6212', fontSize: '1.3rem', fontWeight: 800, lineHeight: 1, padding: '0.35rem 0.7rem', minWidth: 38, minHeight: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
+              ) : (
+                <span aria-hidden style={{ minWidth: 38, minHeight: 36, display: 'inline-block' }} />
+              )}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.15rem' }}>
               {['일', '월', '화', '수', '목', '금', '토'].map((w, i) => (

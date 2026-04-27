@@ -14,6 +14,7 @@ import SignupApprovalsCard from '../../components/SignupApprovalsCard';
 import MembersCard from '../../components/MembersCard';
 import AdminTabBar from '../../components/AdminTabBar';
 import StatsPanel from '../../components/StatsPanel';
+import { providerIdPill } from '../../components/providerPill';
 import { expandOccurrences, EventRow as RawEventRow } from '../../lib/recurrence';
 import { getCommunities, getEvents, getWorshipServices, getProfiles, getUsers } from '../../lib/dataStore';
 import { useIsMobile } from '../../lib/useIsMobile';
@@ -40,20 +41,6 @@ type AdminUser = {
   registeredAt: string | null;
   lastLoginAt: string | null;
   isCommunityAdmin: boolean;
-};
-
-const providerIdPill = (provider: string | undefined, id: string) => {
-  const p = provider || '';
-  const bg = p === 'kakao' ? '#FEE500' : p === 'google' ? '#fff' : '#E5E7EB';
-  const color = p === 'kakao' ? '#181600' : p === 'google' ? '#1F2937' : '#374151';
-  const border = p === 'google' ? '1px solid #D1D5DB' : '1px solid transparent';
-  const prefix = p === 'kakao' ? 'K' : p === 'google' ? 'G' : (p ? p.charAt(0).toUpperCase() : '?');
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.15rem 0.55rem', borderRadius: 999, background: bg, color, fontSize: '0.76rem', fontWeight: 700, border, whiteSpace: 'nowrap', maxWidth: '100%' }}>
-      <span style={{ width: 14, height: 14, borderRadius: 999, background: p === 'kakao' ? '#181600' : p === 'google' ? '#F3F4F6' : '#6B7280', color: p === 'kakao' ? '#FEE500' : '#1F2937', fontSize: '0.62rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto' }}>{prefix}</span>
-      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{id}</span>
-    </span>
-  );
 };
 
 const cardStyle: React.CSSProperties = {

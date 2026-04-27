@@ -227,8 +227,8 @@ const EtcSettings = ({ profileId, k }: Props) => {
           <div style={{ display: 'grid', gap: '0.85rem', padding: isMobile ? '0.7rem 0.75rem' : '0.85rem 1rem', borderRadius: 12, background: '#F7FEE7', border: '1px solid #D9F09E' }}>
             <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: '0.6rem', flexWrap: 'wrap' }}>
               <div>
-                <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#3F6212' }}>가입시 필수정보</div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--color-ink-2)', marginTop: '0.2rem' }}>가입 시 사용자가 반드시 입력해야 하는 항목 선택</div>
+                <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#3F6212' }}>예약시 필수정보</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-ink-2)', marginTop: '0.2rem' }}>예약 시 사용자가 추가입력해야 하는 필수항목 선택</div>
               </div>
               <div style={{ display: 'inline-flex', gap: '0.3rem', flexWrap: 'wrap' }}>
                 {([
