@@ -709,7 +709,7 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
               )}
               <span aria-hidden style={{ display: 'inline-block', width: 1, height: 20, background: '#65A30D', opacity: 0.35, margin: '0 0.25rem', flexShrink: 0 }} />
               <div style={{ display: 'flex', gap: '0.2rem', padding: '0.15rem 0.3rem', borderRadius: 8, background: 'rgba(255,255,255,0.55)', border: '1px dashed rgba(101, 163, 13, 0.35)', flexShrink: 0 }}>
-                {([1, 1.25, 1.5, 1.75, 2, 2.5] as const).map((value) => {
+                {([1, 1.5, 1.75, 2, 2.5] as const).map((value) => {
                   const active = Math.abs(speakRate - value) < 0.01;
                   return (
                     <button
