@@ -144,11 +144,6 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
               글도 댓글도 DM도 없이, 운동 앱이 매일 뛰게 했던 것처럼<br />
               당신을 매일 5분 묵상하게 합니다.
             </p>
-            <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <a href="/signup?type=waitlist" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 48, padding: '0.85rem 1.6rem', borderRadius: 12, background: '#fff', color: '#2D3850', fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}>
-                베타 대기 등록
-              </a>
-            </div>
           </section>
 
           {/* 4축 — 이렇게 작동해요 */}

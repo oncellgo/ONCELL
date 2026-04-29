@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = new Set(['/', '/privacy', '/terms', '/signup']);
-const PUBLIC_PREFIXES = ['/api/signup'];
+const PUBLIC_PATHS = new Set(['/', '/privacy', '/terms']);
+const PUBLIC_PREFIXES: string[] = [];
 
 export function proxy(req: NextRequest) {
   if (process.env.NEXT_PUBLIC_BETA_GATE !== 'true') return NextResponse.next();
