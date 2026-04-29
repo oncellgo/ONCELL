@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { kvGet, kvSet } from '../../lib/db';
 
 type Entry = {
-  type: 'interview' | 'waitlist';
+  type: 'waitlist';
   name: string;
   email: string;
   time?: string;
@@ -19,7 +19,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { type, name, email, time, note, phone } = (req.body || {}) as Partial<Entry>;
 
-  if (type !== 'interview' && type !== 'waitlist') {
+  if (type !== 'waitlist') {
     return res.status(400).json({ error: 'invalid type' });
   }
   if (!name?.trim() || !email?.trim()) {

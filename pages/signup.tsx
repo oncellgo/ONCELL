@@ -3,17 +3,9 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { useIsMobile } from '../lib/useIsMobile';
 
-type Mode = 'interview' | 'waitlist';
+type Mode = 'waitlist';
 
 const COPY: Record<Mode, { title: string; sub: string; cta: string; thanks: string; showTime: boolean; showNote: boolean }> = {
-  interview: {
-    title: '30분 인터뷰 참여',
-    sub: '제품을 만들기 전에 당신의 일상을 듣고 싶어요. 줌 또는 카페에서 30분, 사례비 안내드립니다.',
-    cta: '인터뷰 신청',
-    thanks: '신청 감사합니다. 운영자가 1-2일 안에 이메일로 연락드릴게요.',
-    showTime: true,
-    showNote: true,
-  },
   waitlist: {
     title: '베타 대기 등록',
     sub: 'ONCELL 베타가 열리면 가장 먼저 알려드립니다. 이메일 외엔 마케팅 용도로 사용하지 않습니다.',
@@ -27,11 +19,10 @@ const COPY: Record<Mode, { title: string; sub: string; cta: string; thanks: stri
 export default function SignupPage() {
   const router = useRouter();
   const isMobile = useIsMobile();
-  const [mode, setMode] = useState<Mode>('interview');
+  const mode: Mode = 'waitlist';
 
   useEffect(() => {
-    const t = router.query.type;
-    if (t === 'waitlist' || t === 'interview') setMode(t);
+    if (router.query.type === 'interview') router.replace('/signup?type=waitlist');
   }, [router.query.type]);
 
   const [name, setName] = useState('');
@@ -148,11 +139,6 @@ export default function SignupPage() {
               이메일은 본 신청 응대 외 용도로 사용되지 않습니다.
             </p>
 
-            {mode === 'interview' && (
-              <a href="/signup?type=waitlist" style={{ textAlign: 'center', marginTop: '0.5rem', color: 'rgba(255,255,255,0.55)', fontSize: '0.82rem', textDecoration: 'underline' }}>
-                인터뷰는 부담돼요 → 베타 대기만 등록할래요
-              </a>
-            )}
           </form>
         )}
       </main>

@@ -145,10 +145,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
               당신을 매일 5분 묵상하게 합니다.
             </p>
             <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <a href="/signup?type=interview" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 48, padding: '0.85rem 1.4rem', borderRadius: 12, background: '#fff', color: '#2D3850', fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}>
-                30분 인터뷰 참여
-              </a>
-              <a href="/signup?type=waitlist" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 48, padding: '0.85rem 1.4rem', borderRadius: 12, background: 'transparent', color: '#fff', fontWeight: 600, fontSize: '0.95rem', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.28)' }}>
+              <a href="/signup?type=waitlist" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 48, padding: '0.85rem 1.6rem', borderRadius: 12, background: '#fff', color: '#2D3850', fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}>
                 베타 대기 등록
               </a>
             </div>
