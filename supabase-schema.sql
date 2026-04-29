@@ -155,6 +155,22 @@ create table if not exists oncell_event_categories (
   ord  integer default 0
 );
 
+-- 13b. QT 연간 계획 (날짜별 매일성경 본문 범위)
+--   매일성경(sum.su.or.kr) AJAX API에서 연초에 시드.
+--   scripts/seed-qt-plan.mjs 참고.
+create table if not exists oncell_qt_plan (
+  date          date primary key,
+  book_code     smallint not null,           -- 1-66 (창세기-요한계시록)
+  book_name     text not null,
+  start_chapter smallint not null,
+  start_verse   smallint not null,
+  end_chapter   smallint not null,
+  end_verse     smallint not null,
+  reference     text not null,               -- 표시용: "마태복음 5:3-12"
+  created_at    timestamptz default now()
+);
+create index if not exists idx_oncell_qt_plan_book on oncell_qt_plan(book_code);
+
 -- 14. 싱글톤/KV 저장소
 --   - settings (settings.json 통째로)
 --   - system_admins (system-admins.json: {profileIds:[]})
