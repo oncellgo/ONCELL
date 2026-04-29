@@ -170,7 +170,7 @@ export const WorshipBulletinPreview = ({ value: rawValue, onClose }: { value: Bu
             ))}
           </div>
           <div style={{ marginTop: '1.25rem', paddingTop: '0.75rem', borderTop: '1px solid #cbd5d0', textAlign: 'center', fontSize: '0.78rem' }}>
-            <div style={{ color: '#475569', fontSize: '0.7rem', fontWeight: 700 }}>KCIS · 싱가폴한인교회</div>
+            <div style={{ color: '#475569', fontSize: '0.7rem', fontWeight: 700 }}>ONCELL</div>
           </div>
         </div>
       </div>
@@ -469,7 +469,7 @@ const WorshipBulletinEditor = ({ value: rawValue, onChange, initialEditMode = fa
                 ))}
               </div>
               <div style={{ marginTop: '1.25rem', paddingTop: '0.75rem', borderTop: '1px solid #cbd5d0', textAlign: 'center', fontSize: '0.78rem' }}>
-                <div style={{ color: '#475569', fontSize: '0.7rem', fontWeight: 700 }}>KCIS · 싱가폴한인교회</div>
+                <div style={{ color: '#475569', fontSize: '0.7rem', fontWeight: 700 }}>ONCELL</div>
               </div>
             </div>
           </div>

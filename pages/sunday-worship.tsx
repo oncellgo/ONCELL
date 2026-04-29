@@ -80,7 +80,7 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
   // 선택된 주일의 영상 — SSR에서 이미 dateKey당 1개(2부 우선)로 정리됨
   const selectedVideo = useMemo(() => videos.find((v) => v.dateKey === selectedKey) || null, [videos, selectedKey]);
 
-  // 주일 주보 (싱가폴한인교회 공지 게시판의 "YYYY년 M월 D일 주보" 게시글)
+  // 주일 주보 (교회 공지 게시판의 "YYYY년 M월 D일 주보" 게시글)
   // 서버에서 첨부 파일 목록과 misbaUrl 까지 함께 내려 주므로 추가 fetch 불필요.
   type BulletinFile = { n: number; name: string | null; mime: string };
   type SundayBulletin = {
@@ -152,7 +152,7 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
   const selected = new Date(selectedKey);
   const selectedLabel = `${selected.getFullYear()}.${pad(selected.getMonth() + 1)}.${pad(selected.getDate())} (주일)`;
   // 영상 제목에서 설교제목 + 설교자 추출
-  // 예: '싱가폴한인교회 - 주일2부예배 - "왜 울고 있습니까?" - 고형석 목사 - 2026.04.05.'
+  // 예: '주일2부예배 - "왜 울고 있습니까?" - 고형석 목사 - 2026.04.05.'
   const { sermonTitle, preacher } = (() => {
     const t = selectedVideo?.title || '';
     if (!t) return { sermonTitle: '', preacher: '' };
@@ -168,7 +168,7 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
   return (
     <>
       <Head>
-        <title>KCIS | 주보</title>
+        <title>ONCELL | 주보</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
@@ -315,7 +315,7 @@ const SundayWorshipPage = ({ videos, todayISO, profileId, displayName, nickname,
   );
 };
 
-// "주일예배 - 싱가폴한인교회" 플레이리스트 — 최근 주일1부/2부/3부예배 모음
+// "주일예배" 플레이리스트 — 최근 주일1부/2부/3부예배 모음
 // 채널 기본 업로드는 50개 제한에 새벽기도회 매일 업로드로 주일예배가 밀려나므로 전용 플레이리스트를 사용
 const SUNDAY_SERVICE_PLAYLIST_ID = 'PLSCiGfh6aK3T0eD4sx5mGkSlg1MZ-Egcn';
 

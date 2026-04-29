@@ -873,7 +873,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
   return (
     <>
       <Head>
-        <title>KCIS | 관리 메뉴</title>
+        <title>ONCELL | 관리 메뉴</title>
         <meta name="description" content="관리 메뉴에서 큐티, 일정, 소모임, 기타 설정을 할 수 있습니다." />
       </Head>
 
@@ -2159,7 +2159,7 @@ const ManagementPage = ({ profileId, joinedCommunities, adminCommunities, userEn
                     </label>
                     <label style={{ display: 'grid', gap: '0.25rem' }}>
                       <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>푸터 문구</span>
-                      <input type="text" value={communityDesign.footer || ''} onChange={(e) => setCommunityDesign({ ...communityDesign, footer: e.target.value })} placeholder="KCIS · 싱가폴한인교회" style={{ padding: '0.55rem 0.75rem', borderRadius: 10, border: '1px solid var(--color-gray)', fontSize: '0.9rem' }} />
+                      <input type="text" value={communityDesign.footer || ''} onChange={(e) => setCommunityDesign({ ...communityDesign, footer: e.target.value })} placeholder="ONCELL" style={{ padding: '0.55rem 0.75rem', borderRadius: 10, border: '1px solid var(--color-gray)', fontSize: '0.9rem' }} />
                     </label>
                   </div>
                   {designMsg && <p style={{ margin: 0, fontSize: '0.82rem', color: designMsg.includes('실패') ? 'var(--color-danger)' : 'var(--color-primary-deep)' }}>{designMsg}</p>}

@@ -72,7 +72,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
   // 선택된 주일의 영상 — SSR에서 이미 dateKey당 1개(2부 우선)로 정리됨
   const selectedVideo = useMemo(() => videos.find((v) => v.dateKey === selectedKey) || null, [videos, selectedKey]);
 
-  // 구역예배지 (싱가폴한인교회 공지 게시판에서 매칭)
+  // 구역예배지 (교회 공지 게시판에서 매칭)
   type CellGuide = {
     found: boolean;
     title?: string;
@@ -135,7 +135,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
   const selected = new Date(selectedKey);
   const selectedLabel = `${selected.getFullYear()}.${pad(selected.getMonth() + 1)}.${pad(selected.getDate())} (주일)`;
   // 영상 제목에서 설교제목 + 설교자 추출
-  // 예: '싱가폴한인교회 - 주일2부예배 - "왜 울고 있습니까?" - 고형석 목사 - 2026.04.05.'
+  // 예: '주일2부예배 - "왜 울고 있습니까?" - 고형석 목사 - 2026.04.05.'
   const { sermonTitle, preacher } = (() => {
     const t = selectedVideo?.title || '';
     if (!t) return { sermonTitle: '', preacher: '' };
@@ -151,7 +151,7 @@ const CellTeachingPage = ({ videos, todayISO, profileId, displayName, nickname, 
   return (
     <>
       <Head>
-        <title>KCIS | 구역모임교안</title>
+        <title>ONCELL | 구역모임교안</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 

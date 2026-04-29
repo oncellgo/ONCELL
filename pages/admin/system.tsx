@@ -1201,7 +1201,7 @@ const addAdmin = async () => {
 
                 {/* 푸터 */}
                 <div style={{ marginTop: '1.25rem', paddingTop: '0.75rem', borderTop: '1px solid #cbd5d0', textAlign: 'center', fontSize: '0.78rem', color: '#475569' }}>
-                  <div style={{ color: '#475569', fontSize: '0.7rem', fontWeight: 700 }}>KCIS · 싱가폴한인교회</div>
+                  <div style={{ color: '#475569', fontSize: '0.7rem', fontWeight: 700 }}>ONCELL</div>
                 </div>
               </div>
             </div>

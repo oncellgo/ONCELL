@@ -1,6 +1,6 @@
 ---
 name: church-events
-description: 싱가폴한인교회(KCIS) 연간 교회일정을 이미지/표에서 추출해 `kcis_events` 테이블로 일괄 시드할 때 반드시 확인. 타임존 사고·중복 삽입·다음날 표시 등 과거 실수를 재발 방지한다. "일정 입력할게", "1-12월 이미지 올려줄게", "교회일정 시드", "scripts/seed-church-events-*.mjs" 관련 요청 시 호출.
+description: ONCELL 연간 교회일정을 이미지/표에서 추출해 `oncell_events` 테이블로 일괄 시드할 때 반드시 확인. 타임존 사고·중복 삽입·다음날 표시 등 과거 실수를 재발 방지한다. "일정 입력할게", "1-12월 이미지 올려줄게", "교회일정 시드", "scripts/seed-church-events-*.mjs" 관련 요청 시 호출.
 ---
 
 # church-events — 교회일정 일괄 시드 프로토콜
@@ -67,7 +67,7 @@ end_at:   `${date}T23:59:00+08:00`   (= UTC 당일 15:59)
 | **행사** | 일반 행사(당회·제직회·수련회·세미나 등). 기간/반복 구분해 §3 적용 |
 
 **완전히 무시할 컬럼** (다른 시스템/정책):
-- `주일예배` — `kcis_worship_services` 테이블 소관. 이미지에 적혀 있어도 `kcis_events`에 절대 넣지 않는다
+- `주일예배` — `oncell_worship_services` 테이블 소관. 이미지에 적혀 있어도 `oncell_events`에 절대 넣지 않는다
 - `새벽담당` — 교역자 순번. 사용자 일정이 아님
 - 계절/학기 구분선·요람 범례·페이지 번호 등 메타 텍스트
 
@@ -115,7 +115,7 @@ plan{YEAR}-{YYYY-MM-DD}-{NN}-{title-공백제거}
 node scripts/wipe-2026-events.mjs             # dry-run
 node scripts/wipe-2026-events.mjs --execute   # 확정 후
 ```
-- `kcis_events` type='event' 2026 전체 + `kcis_worship_services` 전체 삭제.
+- `oncell_events` type='event' 2026 전체 + `oncell_worship_services` 전체 삭제.
 - 예약(type='reservation')·사용자·장소는 보존.
 
 ## 연관
@@ -158,7 +158,7 @@ node scripts/wipe-2026-events.mjs --execute   # 확정 후
 
 ## 부록 B. 대시보드 "N월 교회일정" 월간 목회일정 추출 (미스바 PDF)
 
-대시보드의 "N월 교회일정" 카드는 **`kcis_events` DB가 아니라 미스바 PDF에서 추출**한 월간 목회일정을 보여준다. `/api/monthly-schedule` 엔드포인트가 담당.
+대시보드의 "N월 교회일정" 카드는 **`oncell_events` DB가 아니라 미스바 PDF에서 추출**한 월간 목회일정을 보여준다. `/api/monthly-schedule` 엔드포인트가 담당.
 
 ### B.1 파이프라인
 1. `koreanchurch.sg/noticeandnews` 목록에서 **가장 최근 "주보" 게시물**(`YYYY년 M월 D일 주보`) 선택.
@@ -171,7 +171,7 @@ node scripts/wipe-2026-events.mjs --execute   # 확정 후
 
 ### B.2 캐싱 전략 (**반드시 양쪽 적용**)
 - **메모리 캐시** (warm invocation용): `Map<cacheKey, Cached>`, TTL 1시간. 같은 Lambda 인스턴스 재호출 시 PDF 파싱 생략.
-- **영구 캐시** (Supabase `kcis_app_kv`, key=`monthly_schedule_YYYY_MM`): cold start 에도 유지. 파싱 성공(`items.length > 0`)시에만 쓰기 — 빈 결과를 고정시키지 않음.
+- **영구 캐시** (Supabase `oncell_app_kv`, key=`monthly_schedule_YYYY_MM`): cold start 에도 유지. 파싱 성공(`items.length > 0`)시에만 쓰기 — 빈 결과를 고정시키지 않음.
 - 읽기 순서: memory → KV → upstream. 응답에 `cached: 'memory'|'kv'` 힌트 포함.
 - `koreanchurch.sg`·미스바 PDF 다운로드는 비용 있는 외부 호출이므로 **항상 캐시 우선**.
 

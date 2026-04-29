@@ -1,4 +1,4 @@
-# KCIS 계획서
+# ONCELL 계획서
 
 > 코드 기준 현행화. 지금까지 합의된 모든 룰을 한 곳에 모은다. 구현된 것과 설계만 된 것을 분리.
 
@@ -6,7 +6,7 @@
 
 ## 0. 제품 정체성
 
-- **브랜드명**: `KCIS` (싱가폴한인교회, Korean Church In Singapore)
+- **브랜드명**: `ONCELL` 
 - **본문 색상 팔레트**: 민트 계열 primary + 라임 계열 accent
   - Primary: `#20CD8D` (민트)
   - Admin accent: `#65A30D` (라임) / `#ECFCCB`(배경) / `#D9F09E`(테두리)
@@ -19,7 +19,7 @@
 ## 1. 기본 UX 룰
 
 ### 1.1 공통 네비게이션
-- **TopNav**: 루트 페이지(`/`)에 사용. KCIS 로고 + 브랜드, 로그인/로그아웃, 언어 전환
+- **TopNav**: 루트 페이지(`/`)에 사용. ONCELL 로고 + 브랜드, 로그인/로그아웃, 언어 전환
 - **SubHeader**: 루트 외 모든 페이지에 사용. 좌측 브랜드, 중앙 메뉴 (홈 · 주보 · 예배영상 · 장소예약 · 일정 · 큐티), 우측 사용자 칩
 - 두 네비 모두 `profileId`/`nickname`/`email`가 쿼리에 없으면 `localStorage`(`kcisProfileId`/`kcisNickname`/`kcisEmail`)에서 복구
 - 로그아웃 시 위 localStorage 키 제거
@@ -205,7 +205,7 @@
 - **상단 7일 캘린더**: 영상 유무와 무관하게 항상 일~토 표시. ‹ › 좌우 버튼으로 주 단위 이동
 - **영상 영역**: 선택 날짜에 새벽 영상 있으면 iframe, 없으면 "영상 없음" 박스
 - **오늘의 큐티말씀 박스**: 매일성경(`sum.su.or.kr`) 구절·본문을 항상 표시
-  - 1차: 메모리 캐시(30분 TTL) → 2차: Supabase `kcis_app_kv` 영구 캐시 (`qt_YYYY-MM-DD`) → 3차: upstream fetch
+  - 1차: 메모리 캐시(30분 TTL) → 2차: Supabase `oncell_app_kv` 영구 캐시 (`qt_YYYY-MM-DD`) → 3차: upstream fetch
 - 썸네일: `default.jpg` (120×90, ≤10KB), `loading="lazy"`
 - **오늘 영상**: 2칸 강조(녹색 테두리 + "오늘" 뱃지), 디폴트 선택
 - 클릭 → 하단 iframe 플레이어
@@ -259,7 +259,7 @@ data/
 
 ## 10. 진행 상태
 
-- [x] KCIS 리브랜드 / 민트·라임 팔레트
+- [x] ONCELL 리브랜드 / 민트·라임 팔레트
 - [x] SubHeader / TopNav / AdminTabBar 공통 네비
 - [x] 시스템 관리자 5탭
 - [x] 장소관리: 자동 코드, 주간 블럭, 반복 블럭 그룹(on-demand)

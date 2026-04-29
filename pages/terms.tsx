@@ -30,7 +30,7 @@ const TermsPage = ({ profileId, displayName, nickname, email, systemAdminHref }:
   return (
     <>
       <Head>
-        <title>KCIS | 이용약관</title>
+        <title>ONCELL | 이용약관</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
@@ -41,7 +41,7 @@ const TermsPage = ({ profileId, displayName, nickname, email, systemAdminHref }:
           <div>
             <h2 style={{ margin: 0, fontSize: isMobile ? '1.15rem' : '1.3rem', color: 'var(--color-ink)' }}>이용약관</h2>
             <p style={{ margin: '0.4rem 0 0', color: 'var(--color-ink-2)', fontSize: '0.85rem', lineHeight: 1.75, wordBreak: 'keep-all' }}>
-              본 약관은 싱가폴 한인교회(이하 "교회")가 운영하는 KCIS 장소신청 시스템(이하 "서비스")의 이용 조건과 절차, 교회와 이용자 간의 권리·의무 및 책임사항을 규정합니다.
+              본 약관은 싱가폴 한인교회(이하 "교회")가 운영하는 ONCELL 장소신청 시스템(이하 "서비스")의 이용 조건과 절차, 교회와 이용자 간의 권리·의무 및 책임사항을 규정합니다.
             </p>
           </div>
 
@@ -53,7 +53,7 @@ const TermsPage = ({ profileId, displayName, nickname, email, systemAdminHref }:
             <ul style={{ margin: 0, paddingLeft: '1.2rem' }}>
               <Item><strong>이용자</strong> — 본 약관에 따라 서비스를 이용하는 교회 성도 및 방문자</Item>
               <Item><strong>회원</strong> — 카카오 또는 구글 계정으로 로그인하여 서비스에 가입한 이용자</Item>
-              <Item><strong>서비스</strong> — 교회 공간 예약, 큐티, 성경통독, 공지 등 KCIS 가 제공하는 모든 기능</Item>
+              <Item><strong>서비스</strong> — 교회 공간 예약, 큐티, 성경통독, 공지 등 ONCELL 가 제공하는 모든 기능</Item>
               <Item><strong>관리자</strong> — 교회에서 정한 시스템관리자</Item>
             </ul>
           </Section>
@@ -127,7 +127,7 @@ const TermsPage = ({ profileId, displayName, nickname, email, systemAdminHref }:
 
           <Section title="제11조 (문의)">
             <div style={{ padding: isMobile ? '0.85rem' : '0.7rem 0.9rem', borderRadius: 10, background: '#EFF6FF', border: '1px solid #BFDBFE', display: 'grid', gap: '0.35rem' }}>
-              <strong style={{ fontSize: '0.98rem' }}>싱가폴한인교회</strong>
+              <strong style={{ fontSize: '0.98rem' }}>ONCELL</strong>
               <div style={{ fontSize: '0.88rem', lineHeight: 1.6 }}>21 Gangsa Road Singapore 678973</div>
               <div style={{ fontSize: '0.88rem' }}>📞 <a href="tel:+6564686694" style={{ color: '#1E40AF', textDecoration: 'none', fontWeight: 700, display: 'inline-block', minHeight: 32, lineHeight: '32px' }}>+65-6468-6694</a></div>
               <div style={{ fontSize: '0.88rem' }}>✉️ <a href="mailto:koreanchurch@live.com" style={{ color: '#1E40AF', textDecoration: 'none', fontWeight: 700, display: 'inline-block', minHeight: 32, lineHeight: '32px' }}>koreanchurch@live.com</a></div>
