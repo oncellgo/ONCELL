@@ -122,81 +122,112 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
           <TopNav profileId={profileId} displayName={displayName} nickname={nickname} email={email} systemAdminHref={systemAdminHref || undefined} />
         </div>
 
-        <section className={styles.hero}>
-          <div>
-            <h1 className={styles.title}>
-              {t('landing.tagline1')} {t('landing.tagline2')}<br />
-              <span className={styles.titleAccent}>{t('landing.brand')}</span>
+        <main style={{ maxWidth: 1040, margin: '0 auto', padding: isMobile ? '1.25rem 1rem 2rem' : '3rem 1.5rem 4rem', color: '#fff' }}>
+
+          {router.query.beta === '1' && (
+            <div style={{ margin: '0 auto 1.5rem', maxWidth: 720, padding: '0.85rem 1rem', borderRadius: 12, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)', textAlign: 'center', fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)' }}>
+              현재 베타 준비 중입니다. 아래에서 인터뷰 또는 대기 등록을 신청해주세요.
+            </div>
+          )}
+
+          {/* HERO */}
+          <section style={{ textAlign: 'center', padding: isMobile ? '1.5rem 0 2.5rem' : '3rem 0 4rem' }}>
+            <div style={{ display: 'inline-block', padding: '0.4rem 0.95rem', borderRadius: 999, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.78rem', fontWeight: 600, marginBottom: '1.5rem', letterSpacing: '0.04em', color: 'rgba(255,255,255,0.92)' }}>
+              매일 5분, 친구와 함께
+            </div>
+            <h1 style={{ fontSize: isMobile ? '1.85rem' : '3rem', fontWeight: 800, lineHeight: 1.25, margin: '0 0 1.1rem', color: '#fff', letterSpacing: '-0.02em' }}>
+              혼자선 안 되는 묵상·통독,<br />
+              친구와 함께 <span style={{ color: '#A5F3FC' }}>✓ 로 동행</span>
             </h1>
-            <p className={styles.description}>
-              {t('landing.description')}
+            <p style={{ fontSize: isMobile ? '0.98rem' : '1.12rem', color: 'rgba(255,255,255,0.78)', maxWidth: 620, margin: '0 auto 2rem', lineHeight: 1.75 }}>
+              ONCELL은 카톡 단톡방이 못 담는 영적 셀입니다.<br />
+              글도 댓글도 DM도 없이, 운동 앱이 매일 뛰게 했던 것처럼<br />
+              당신을 매일 5분 묵상하게 합니다.
             </p>
-
-            <div className={styles.menuGrid}>
-              <a className={styles.menuCard} style={{ gridColumn: '1 / -1' }} href="/reservations/grid" onClick={handleReservationClick}>
-                <span className={styles.menuIcon} aria-hidden>
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 21s-7-7.5-7-12a7 7 0 1 1 14 0c0 4.5-7 12-7 12z" />
-                    <circle cx="12" cy="9" r="2.6" />
-                  </svg>
-                </span>
-                <span className={styles.menuLabel}>{t('landing.menuReservation')}</span>
+            <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <a href="mailto:pinegirl2000@gmail.com?subject=ONCELL%2030%EB%B6%84%20%EC%9D%B8%ED%84%B0%EB%B7%B0%20%EC%B0%B8%EC%97%AC&body=%EC%95%88%EB%85%95%ED%95%98%EC%84%B8%EC%9A%94%2C%20ONCELL%20%EC%9D%B8%ED%84%B0%EB%B7%B0%EC%97%90%20%EC%B0%B8%EC%97%AC%ED%95%98%EA%B3%A0%20%EC%8B%B6%EC%96%B4%EC%9A%94.%20%EA%B0%80%EB%8A%A5%ED%95%9C%20%EC%8B%9C%EA%B0%84%EB%8C%80%3A%20" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 48, padding: '0.85rem 1.4rem', borderRadius: 12, background: '#fff', color: '#2D3850', fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}>
+                30분 인터뷰 참여
               </a>
-              <a className={styles.menuCard} href="/qt" onClick={handleProtectedClick('/qt')}>
-                <span className={styles.menuIcon} aria-hidden>
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15H5.5A1.5 1.5 0 0 1 4 17.5z" />
-                    <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5A1.5 1.5 0 0 0 20 17.5z" />
-                  </svg>
-                </span>
-                <span className={styles.menuLabel}>{t('landing.menuQT')}</span>
-              </a>
-              <a className={styles.menuCard} href="/reading" onClick={handleProtectedClick('/reading')}>
-                <span className={styles.menuIcon} aria-hidden>
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 19.5V6a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2" />
-                    <path d="M8 7h8M8 11h8M8 15h5" />
-                  </svg>
-                </span>
-                <span className={styles.menuLabel}>{t('landing.menuReading')}</span>
-              </a>
-              <a className={styles.menuCard} href="/sunday-worship" onClick={handleProtectedClick('/sunday-worship')}>
-                <span className={styles.menuIcon} aria-hidden>
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 3l2.5 5 5.5.8-4 3.9 1 5.5L12 15.8 7 18.2l1-5.5-4-3.9L9.5 8z" />
-                  </svg>
-                </span>
-                <span className={styles.menuLabel}>{t('landing.menuBulletin')}</span>
-              </a>
-              <a className={styles.menuCard} href="/cell-teaching" onClick={handleProtectedClick('/cell-teaching')}>
-                <span className={styles.menuIcon} aria-hidden>
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="5" width="18" height="14" rx="2.5" />
-                    <path d="M10 9.5v5l4.5-2.5z" fill="currentColor" stroke="none" />
-                  </svg>
-                </span>
-                <span className={styles.menuLabel}>{t('landing.menuCellTeaching')}</span>
+              <a href="mailto:pinegirl2000@gmail.com?subject=ONCELL%20%EB%B2%A0%ED%83%80%20%EB%8C%80%EA%B8%B0%20%EB%93%B1%EB%A1%9D&body=ONCELL%20%EB%B2%A0%ED%83%80%20%EC%98%A4%ED%94%88%20%EC%8B%9C%20%EC%95%8C%EB%A0%A4%EC%A3%BC%EC%84%B8%EC%9A%94." style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 48, padding: '0.85rem 1.4rem', borderRadius: 12, background: 'transparent', color: '#fff', fontWeight: 600, fontSize: '0.95rem', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.28)' }}>
+                베타 대기 등록
               </a>
             </div>
+          </section>
 
-            <div className={styles.trustRow}>
-              <div className={styles.trustItem}>
-                <span className={styles.trustNumber}>{t('landing.trustLangs')}</span>
-                <span className={styles.trustLabel}>{t('landing.trustLangsSub')}</span>
-              </div>
-              <div className={styles.trustItem}>
-                <span className={styles.trustNumber}>{t('landing.trustMobile')}</span>
-                <span className={styles.trustLabel}>{t('landing.trustMobileSub')}</span>
-              </div>
-              <div className={styles.trustItem}>
-                <span className={styles.trustNumber}>{t('landing.trustSso')}</span>
-                <span className={styles.trustLabel}>{t('landing.trustSsoSub')}</span>
-              </div>
+          {/* 4축 — 이렇게 작동해요 */}
+          <section style={{ marginTop: isMobile ? '1.5rem' : '2.5rem' }}>
+            <h2 style={{ fontSize: isMobile ? '1.15rem' : '1.4rem', fontWeight: 700, color: 'rgba(255,255,255,0.92)', textAlign: 'center', margin: '0 0 1.5rem' }}>이렇게 작동해요</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '0.9rem' }}>
+              {[
+                { ico: '📖', title: '비공개 묵상 노트', desc: '본인만 보이는 매일 한 줄 묵상. 체크 한 번으로 streak 누적.' },
+                { ico: '✓', title: '셀 친구 인증', desc: '카톡으로 초대한 친구 3-5명과 매일 ✓ 공유. 글·댓글·DM 0.' },
+                { ico: '🌍', title: '글로벌 익명 동행', desc: '"오늘 1,237명이 같은 본문 읽었어요" — 새벽에 혼자가 아닌 감각.' },
+                { ico: '✨', title: '오늘의 묵상 10', desc: 'AI가 가린 익명 묵상 중 매일 큐레이션. 같은 본문자에게만, 24시간 휘발.' },
+              ].map((it) => (
+                <div key={it.title} style={{ padding: isMobile ? '1rem 1rem' : '1.25rem 1.35rem', borderRadius: 16, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                  <div style={{ fontSize: '1.4rem', marginBottom: '0.5rem' }}>{it.ico}</div>
+                  <div style={{ fontWeight: 700, color: '#fff', marginBottom: '0.35rem', fontSize: '1rem' }}>{it.title}</div>
+                  <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.88rem', lineHeight: 1.65 }}>{it.desc}</div>
+                </div>
+              ))}
             </div>
+          </section>
 
-          </div>
+          {/* 비교 — 왜 ONCELL인가 */}
+          <section style={{ marginTop: isMobile ? '2.25rem' : '3rem' }}>
+            <h2 style={{ fontSize: isMobile ? '1.15rem' : '1.4rem', fontWeight: 700, color: 'rgba(255,255,255,0.92)', textAlign: 'center', margin: '0 0 1.5rem' }}>왜 ONCELL인가</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '0.9rem' }}>
+              {[
+                { tag: '카톡 단톡방', miss: '묵상·기도제목이 식당 메뉴에 묻힘. 답해야 할 사회적 압력. 휘발.' },
+                { tag: 'YouVersion', miss: '솔로 모드라 "혼자 아님" 신호가 없음. 친구가 오늘 했는지 모름.' },
+                { tag: 'ONCELL', miss: '구조화된 영적 그릇 + 친구 ✓ 동행 + 콘텐츠 0의 안전. 매일 5분에 최적화.', highlight: true },
+              ].map((it) => (
+                <div key={it.tag} style={{ padding: isMobile ? '1rem' : '1.25rem 1.35rem', borderRadius: 16, background: it.highlight ? 'rgba(165,243,252,0.1)' : 'rgba(255,255,255,0.04)', border: `1px solid ${it.highlight ? 'rgba(165,243,252,0.32)' : 'rgba(255,255,255,0.1)'}` }}>
+                  <div style={{ fontWeight: 700, color: it.highlight ? '#A5F3FC' : '#fff', fontSize: '0.95rem', marginBottom: '0.5rem' }}>{it.tag}</div>
+                  <div style={{ color: 'rgba(255,255,255,0.72)', fontSize: '0.88rem', lineHeight: 1.65 }}>{it.miss}</div>
+                </div>
+              ))}
+            </div>
+          </section>
 
-        </section>
+          {/* 안전 신호 */}
+          <section style={{ marginTop: isMobile ? '2.25rem' : '3rem' }}>
+            <h2 style={{ fontSize: isMobile ? '1.15rem' : '1.4rem', fontWeight: 700, color: 'rgba(255,255,255,0.92)', textAlign: 'center', margin: '0 0 0.5rem' }}>우리가 만들지 않는 것</h2>
+            <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.6)', fontSize: '0.88rem', margin: '0 0 1.5rem' }}>안전을 위해 의도적으로 빼는 기능들</p>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '0.7rem' }}>
+              {[
+                { l: 'DM 없음', s: '사적 메시지 채널 0' },
+                { l: '콘텐츠 노출 없음', s: '인증 신호만 공유' },
+                { l: '친구 초대 기반', s: '모르는 사람 안 섞임' },
+                { l: '24시간 휘발', s: '아카이브·랭킹 없음' },
+              ].map((it) => (
+                <div key={it.l} style={{ padding: '0.85rem', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
+                  <div style={{ fontWeight: 700, color: '#fff', fontSize: '0.88rem', marginBottom: '0.25rem' }}>{it.l}</div>
+                  <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.76rem', lineHeight: 1.5 }}>{it.s}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* 기존 메뉴 — 작은 한 줄 카드 */}
+          <section style={{ marginTop: isMobile ? '2.25rem' : '3rem' }}>
+            <h3 style={{ fontSize: '0.92rem', fontWeight: 600, color: 'rgba(255,255,255,0.65)', textAlign: 'center', margin: '0 0 1rem', letterSpacing: '0.02em' }}>지금 사용 가능한 기능</h3>
+            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', WebkitOverflowScrolling: 'touch', justifyContent: isMobile ? 'flex-start' : 'center' }}>
+              {[
+                { href: '/reservations/grid', label: t('landing.menuReservation'), onClick: handleReservationClick },
+                { href: '/qt', label: t('landing.menuQT'), onClick: handleProtectedClick('/qt') },
+                { href: '/reading', label: t('landing.menuReading'), onClick: handleProtectedClick('/reading') },
+                { href: '/sunday-worship', label: t('landing.menuBulletin'), onClick: handleProtectedClick('/sunday-worship') },
+                { href: '/cell-teaching', label: t('landing.menuCellTeaching'), onClick: handleProtectedClick('/cell-teaching') },
+              ].map((m) => (
+                <a key={m.href} href={m.href} onClick={m.onClick} style={{ flexShrink: 0, padding: '0.55rem 1rem', minHeight: 40, display: 'inline-flex', alignItems: 'center', borderRadius: 999, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)', color: 'rgba(255,255,255,0.88)', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none' }}>
+                  {m.label}
+                </a>
+              ))}
+            </div>
+          </section>
+
+        </main>
 
         <footer style={{ margin: '1.5rem 0 0', padding: isMobile ? '1rem 0.75rem 2rem' : '1rem 1.25rem 1.5rem', textAlign: 'center', fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.8, borderTop: '1px solid rgba(255,255,255,0.12)' }}>
           <div style={{ marginBottom: '0.35rem' }}>
