@@ -135,9 +135,11 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
             <div style={{ display: 'inline-block', padding: '0.4rem 0.95rem', borderRadius: 999, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.78rem', fontWeight: 600, marginBottom: '1.5rem', letterSpacing: '0.04em', color: 'rgba(255,255,255,0.92)' }}>
               매일 5분, 친구와 함께
             </div>
-            <h1 style={{ fontSize: isMobile ? '1.85rem' : '3rem', fontWeight: 800, lineHeight: 1.25, margin: '0 0 1.1rem', color: '#fff', letterSpacing: '-0.02em' }}>
-              혼자선 안 되는 묵상·통독,<br />
-              친구와 함께 <span style={{ color: '#A5F3FC' }}>✓ 로 동행</span>
+            <h1 style={{ fontSize: isMobile ? '1.7rem' : '2.6rem', fontWeight: 800, lineHeight: 1.3, margin: '0 0 1.1rem', color: '#fff', letterSpacing: '-0.02em' }}>
+              매일 지인들과 함께하는<br />
+              <span style={{ color: '#A5F3FC' }}>큐티셀·통독셀</span>로<br />
+              우리의 영적세포를 깨워볼까요?<br />
+              <span style={{ color: '#A5F3FC' }}>✓ ONCELL</span>로 함께 해요!
             </h1>
             <p style={{ fontSize: isMobile ? '0.98rem' : '1.12rem', color: 'rgba(255,255,255,0.78)', maxWidth: 620, margin: '0 auto 2rem', lineHeight: 1.75 }}>
               ONCELL은 카톡 단톡방이 못 담는 영적 셀입니다.<br />
