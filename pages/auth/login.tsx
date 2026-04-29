@@ -57,7 +57,7 @@ const LoginPage = () => {
   return (
     <>
       <Head>
-        <title>KCIS | 로그인</title>
+        <title>ONCELL | 로그인</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 

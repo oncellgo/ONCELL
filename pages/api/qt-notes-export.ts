@@ -63,7 +63,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const today = new Date().toISOString().slice(0, 10);
 
     const headerLines = [
-      '=== 나의 묵상 기록 (KCIS) ===',
+      '=== 나의 묵상 기록 (ONCELL) ===',
       nickname ? `작성자: ${nickname}` : '',
       `총 ${mine.length}편`,
       `내보낸 날짜: ${today}`,

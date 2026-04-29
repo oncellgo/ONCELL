@@ -85,7 +85,7 @@ const QtNotesPage = () => {
   return (
     <>
       <Head>
-        <title>KCIS | 큐티 묵상노트</title>
+        <title>ONCELL | 큐티 묵상노트</title>
       </Head>
       <AppShell profileId={profileId} badge="큐티 묵상노트" displayName={nickname || (email ? email.split('@')[0] : null)} nickname={nickname} email={email}>
         <section style={{ width: '100%', maxWidth: 360, margin: '0 auto', padding: '0.7rem 0.85rem', borderRadius: 12, background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', boxShadow: 'var(--shadow-card)', display: 'grid', gap: '0.4rem' }}>

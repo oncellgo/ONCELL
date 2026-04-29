@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { db } from '../../lib/db';
 
 /**
- * 성경통독 계획 조회 — kcis_reading_plans 에서 날짜별 범위 반환.
+ * 성경통독 계획 조회 — oncell_reading_plans 에서 날짜별 범위 반환.
  *
  * 단일 날짜:    GET /api/reading-plan?plan=1&date=2026-04-23
  *                 → { plan, date, ranges: [{book,startCh,endCh}, ...] }
@@ -35,7 +35,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (date) {
     if (!DATE_RX.test(date)) return res.status(400).json({ error: 'date 형식 YYYY-MM-DD' });
     const { data, error } = await db
-      .from('kcis_reading_plans')
+      .from('oncell_reading_plans')
       .select('date, ranges')
       .eq('plan', plan)
       .eq('date', date)
@@ -63,7 +63,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       return res.status(400).json({ error: 'range too large (max 400 days)' });
     }
     const { data, error } = await db
-      .from('kcis_reading_plans')
+      .from('oncell_reading_plans')
       .select('date, ranges')
       .eq('plan', plan)
       .gte('date', from)

@@ -6,7 +6,7 @@
 //   실제실행:         node scripts/restore-supabase.mjs backups/2026-04-23T12-00-00 --execute
 //
 // 선택 옵션:
-//   --tables events,profiles        # 특정 테이블만 복원 (prefix kcis_ 생략 가능)
+//   --tables events,profiles        # 특정 테이블만 복원 (prefix oncell_ 생략 가능)
 //   --mode upsert   (기본)          # 충돌 시 덮어쓰기, 백업에 없는 기존 행은 유지
 //   --mode replace                  # 백업에 없는 기존 행도 삭제 (dataStore.replaceAll 과 동일)
 //
@@ -54,7 +54,7 @@ const TABLE_FILTER = (getArg('--tables') || '')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean)
-  .map((t) => (t.startsWith('kcis_') ? t : `kcis_${t}`));
+  .map((t) => (t.startsWith('oncell_') ? t : `oncell_${t}`));
 
 const backupDir = argv.find((a) => !a.startsWith('--') && argv[argv.indexOf(a) - 1] !== '--tables' && argv[argv.indexOf(a) - 1] !== '--mode');
 if (!backupDir) {
@@ -69,20 +69,20 @@ if (!existsSync(absBackup) || !statSync(absBackup).isDirectory()) {
 
 // --- 테이블별 PK (lib/dataStore.ts 와 동기화) ---
 const TABLE_PK = {
-  kcis_communities:                   'id',
-  kcis_profiles:                      'profile_id',
-  kcis_users:                         'provider_profile_id',
-  kcis_events:                        'id',
-  kcis_worship_services:              'id',
-  kcis_venues:                        'id',
-  kcis_floors:                        'name',
-  kcis_venue_blocks:                  'id',
-  kcis_venue_block_groups:            'id',
-  kcis_community_bulletin_templates:  'community_id',
-  kcis_signup_approvals:              'profile_id',
-  kcis_qt_notes:                      ['profile_id', 'date'],
-  kcis_event_categories:              'name',
-  kcis_app_kv:                        'key',
+  oncell_communities:                   'id',
+  oncell_profiles:                      'profile_id',
+  oncell_users:                         'provider_profile_id',
+  oncell_events:                        'id',
+  oncell_worship_services:              'id',
+  oncell_venues:                        'id',
+  oncell_floors:                        'name',
+  oncell_venue_blocks:                  'id',
+  oncell_venue_block_groups:            'id',
+  oncell_community_bulletin_templates:  'community_id',
+  oncell_signup_approvals:              'profile_id',
+  oncell_qt_notes:                      ['profile_id', 'date'],
+  oncell_event_categories:              'name',
+  oncell_app_kv:                        'key',
 };
 
 // --- 유틸 ---
@@ -120,7 +120,7 @@ const deleteByKeys = async (table, keys, pk) => {
       removed += c.length;
     }
   } else {
-    // composite PK — 한 행씩 (kcis_qt_notes 만 해당)
+    // composite PK — 한 행씩 (oncell_qt_notes 만 해당)
     for (const k of keys) {
       let q = db.from(table).delete();
       for (const c of cols) q = q.eq(c, k[c]);
@@ -190,7 +190,7 @@ const main = async () => {
       backupDir,
       '--execute',
       `--mode ${MODE}`,
-      TABLE_FILTER.length ? `--tables ${TABLE_FILTER.map((t) => t.replace(/^kcis_/, '')).join(',')}` : '',
+      TABLE_FILTER.length ? `--tables ${TABLE_FILTER.map((t) => t.replace(/^oncell_/, '')).join(',')}` : '',
     ].filter(Boolean).join(' ');
     console.log(`  ${cmd}`);
     return;

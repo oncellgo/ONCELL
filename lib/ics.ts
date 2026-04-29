@@ -62,7 +62,7 @@ export const buildIcs = (opts: {
   const lines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//KCIS//KO',
+    'PRODID:-//ONCELL//KO',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     fold(`X-WR-CALNAME:${escapeText(opts.calendarName)}`),

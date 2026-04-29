@@ -199,7 +199,7 @@ const channelIdFromHandleHtml = async (handle: string): Promise<string | null> =
   try {
     const h = handle.replace(/^@/, '');
     const res = await fetch(`https://www.youtube.com/@${encodeURIComponent(h)}`, {
-      headers: { 'User-Agent': 'KCIS-app/1.0 (+https://kcis.app)' },
+      headers: { 'User-Agent': 'ONCELL-app/1.0 (+https://kcis.app)' },
     });
     if (!res.ok) return null;
     const html = await res.text();
@@ -244,7 +244,7 @@ const fetchChannelUploadsByRSS = async (handle: string): Promise<YTResult> => {
   if (!channelId) return { items: [], status: 'network' };
   try {
     const rssRes = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(channelId)}`, {
-      headers: { 'User-Agent': 'KCIS-app/1.0 (+https://kcis.app)' },
+      headers: { 'User-Agent': 'ONCELL-app/1.0 (+https://kcis.app)' },
     });
     if (!rssRes.ok) return { items: [], status: 'network' };
     const xml = await rssRes.text();
@@ -259,7 +259,7 @@ const fetchChannelUploadsByRSS = async (handle: string): Promise<YTResult> => {
 const fetchPlaylistItemsByRSS = async (playlistId: string): Promise<YTResult> => {
   try {
     const res = await fetch(`https://www.youtube.com/feeds/videos.xml?playlist_id=${encodeURIComponent(playlistId)}`, {
-      headers: { 'User-Agent': 'KCIS-app/1.0 (+https://kcis.app)' },
+      headers: { 'User-Agent': 'ONCELL-app/1.0 (+https://kcis.app)' },
     });
     if (!res.ok) return { items: [], status: 'network' };
     const xml = await res.text();

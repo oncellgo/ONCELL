@@ -26,7 +26,7 @@ const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!SUPABASE_URL || !SERVICE_KEY) { console.error('env 필요'); process.exit(1); }
 
 const db = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-const T = (n) => `kcis_${n}`;
+const T = (n) => `oncell_${n}`;
 const EXECUTE = process.argv.includes('--execute');
 
 const main = async () => {

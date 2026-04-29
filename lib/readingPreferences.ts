@@ -2,15 +2,15 @@
  * 성경통독 계획 선호도 — 클라이언트 측 영속화.
  *
  * 값: 1 (1년 1독, 하루 3-4장) | 2 (1년 2독, 하루 6-7장)
- * 저장소: localStorage `kcis_reading_plan`
+ * 저장소: localStorage `oncell_reading_plan`
  *
- * 미래 확장: DB (kcis_profiles.reading_plan) 동기화 시 본 파일에서 fetch/PUT 추가.
+ * 미래 확장: DB (oncell_profiles.reading_plan) 동기화 시 본 파일에서 fetch/PUT 추가.
  * 현재는 클라이언트-only. SSR 안전(ReturnType 에 undefined 허용).
  */
 
 export type ReadingPlan = 1 | 2;
 
-const STORAGE_KEY = 'kcis_reading_plan';
+const STORAGE_KEY = 'oncell_reading_plan';
 const CHANGE_EVENT = 'kcis:reading-plan-changed';
 
 /** 저장된 플랜 반환. 미지정 시 null — 호출부에서 기본값(1) 적용 여부 결정. */

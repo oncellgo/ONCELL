@@ -3,7 +3,7 @@ import { requireSystemAdminApi } from '../../../lib/adminGuard';
 import { db } from '../../../lib/db';
 
 /**
- * 관리자 통계: kcis_user_completions 기준 월별 일자별 완료자 수 집계.
+ * 관리자 통계: oncell_user_completions 기준 월별 일자별 완료자 수 집계.
  * GET /api/admin/stats?year=YYYY&month=M   (1-12)
  *   → { days: { [YYYY-MM-DD]: { qt: number; reading: number } } }
  */
@@ -24,7 +24,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   try {
     const { data, error } = await db
-      .from('kcis_user_completions')
+      .from('oncell_user_completions')
       .select('date, type, profile_id')
       .gte('date', from)
       .lte('date', to);

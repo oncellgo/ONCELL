@@ -172,7 +172,7 @@ export const getSystemAdminHref = async (
  *
  * 호출자의 `getServerSideProps` 에서 맨 앞에 호출하고, `'redirect' in guard` 일 때 `return guard` 로 종료.
  *
- * 주의: 관리자 판별은 `kcis_communities.adminProfileId` 와 `kcis_system_admins` 를 모두 확인.
+ * 주의: 관리자 판별은 `oncell_communities.adminProfileId` 와 `oncell_system_admins` 를 모두 확인.
  * email / nickname fallback 경로도 포함 (dashboard/management 기존 로직과 동일).
  */
 export const requireAdminAccessSSR = async (

@@ -297,7 +297,7 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
   return (
     <>
       <Head>
-        <title>KCIS | 오늘의 큐티말씀</title>
+        <title>ONCELL | 오늘의 큐티말씀</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 

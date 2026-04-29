@@ -13,7 +13,7 @@ import { db, T } from '../../lib/db';
  * type=qt는 묵상노트 저장 핸들러에서 서버 내부로 호출될 수 있음 (과거 허용).
  */
 
-const TABLE = 'kcis_user_completions';
+const TABLE = 'oncell_user_completions';
 const VALID_TYPES = new Set(['qt', 'reading']);
 
 // UTC+8 기준 오늘 YYYY-MM-DD

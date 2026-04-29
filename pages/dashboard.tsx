@@ -647,7 +647,7 @@ const Dashboard = ({ profileId, provider, nickname, email, joinedCommunities, ad
             <section style={{ padding: isMobile ? '0.9rem 1rem' : '1rem 1.2rem', borderRadius: 16, background: 'linear-gradient(135deg, rgba(32, 205, 141, 0.14) 0%, rgba(190, 242, 100, 0.22) 100%)', border: '1px solid var(--color-primary)', boxShadow: '0 4px 14px rgba(32, 205, 141, 0.18)', display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
               <span aria-hidden style={{ fontSize: '1.6rem', lineHeight: 1, flexShrink: 0 }}>🎉</span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <strong style={{ fontSize: isMobile ? '0.98rem' : '1.02rem', color: 'var(--color-primary-deep)', fontWeight: 800, display: 'block' }}>KCIS 에 가입되셨습니다.</strong>
+                <strong style={{ fontSize: isMobile ? '0.98rem' : '1.02rem', color: 'var(--color-primary-deep)', fontWeight: 800, display: 'block' }}>ONCELL 에 가입되셨습니다.</strong>
               </div>
               <button
                 type="button"
@@ -1630,7 +1630,7 @@ export const getServerSideProps: GetServerSideProps<DashboardProps> = async (con
     .filter((community) => joinedCommunityIds.includes(community.id))
     .map((community) => ({ ...community, isAdmin: isUserAdminOf(community) }));
 
-  // 관리 대상 커뮤니티 — kcis_users 가입 기록과 무관하게 adminProfileId 기준으로 직접 산출.
+  // 관리 대상 커뮤니티 — oncell_users 가입 기록과 무관하게 adminProfileId 기준으로 직접 산출.
   const adminCommunities = communities.filter(isUserAdminOf);
 
   const systemAdminHref = await getSystemAdminHref(profileId, { nickname: myNickname, email: myEmail });

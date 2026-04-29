@@ -18,7 +18,8 @@ const providerConfig = {
 const handler = (req: NextApiRequest, res: NextApiResponse) => {
   const { provider } = req.query;
   if (typeof provider !== 'string' || !(provider in providerConfig)) {
-    return res.status(400).json({ error: 'Unsupported provider' });
+    res.status(400).json({ error: 'Unsupported provider' });
+    return;
   }
 
   const config = providerConfig[provider as 'kakao' | 'google'];
@@ -26,7 +27,8 @@ const handler = (req: NextApiRequest, res: NextApiResponse) => {
   const redirectUri = config.redirectUri;
 
   if (!clientId || !redirectUri) {
-    return res.status(500).json({ error: `${provider} OAuth configuration is missing.` });
+    res.status(500).json({ error: `${provider} OAuth configuration is missing.` });
+    return;
   }
 
   const params = new URLSearchParams({
@@ -41,7 +43,7 @@ const handler = (req: NextApiRequest, res: NextApiResponse) => {
     params.set('prompt', 'consent');
   }
 
-  return res.redirect(`${config.authorizeUrl}?${params.toString()}`);
+  res.redirect(`${config.authorizeUrl}?${params.toString()}`);
 };
 
 export default handler;

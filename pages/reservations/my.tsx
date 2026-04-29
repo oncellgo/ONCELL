@@ -161,7 +161,7 @@ const MyReservationsPage = ({ profileId, displayName, nickname, email, systemAdm
   return (
     <>
       <Head>
-        <title>KCIS | 장소예약</title>
+        <title>ONCELL | 장소예약</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 

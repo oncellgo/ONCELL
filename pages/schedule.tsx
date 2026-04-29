@@ -26,7 +26,7 @@ const SchedulePage = ({ communities, events, worshipServices, defaultCommunityId
   return (
     <>
       <Head>
-        <title>KCIS | 교회일정</title>
+        <title>ONCELL | 교회일정</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 

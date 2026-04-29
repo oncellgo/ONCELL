@@ -1,4 +1,4 @@
-# KCIS
+# ONCELL
 
 Next.js 기반 교회관리시스템 랜딩 페이지와 Kakao/Google SSO 연결 샘플입니다.
 

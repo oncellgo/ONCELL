@@ -64,7 +64,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     if (cached) {
       res.setHeader('Content-Type', 'audio/mpeg');
       res.setHeader('Cache-Control', 'private, max-age=86400');
-      res.setHeader('X-KCIS-TTS-Cache', 'hit');
+      res.setHeader('X-ONCELL-TTS-Cache', 'hit');
       return res.status(200).send(cached);
     }
 
@@ -91,7 +91,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     memPut(key, audio);
     res.setHeader('Content-Type', 'audio/mpeg');
     res.setHeader('Cache-Control', 'private, max-age=86400');
-    res.setHeader('X-KCIS-TTS-Cache', 'miss');
+    res.setHeader('X-ONCELL-TTS-Cache', 'miss');
     return res.status(200).send(audio);
   } catch (e: any) {
     console.error('[tts] failed', e);

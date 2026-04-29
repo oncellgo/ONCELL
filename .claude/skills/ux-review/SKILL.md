@@ -1,6 +1,6 @@
 ---
 name: ux-review
-description: KCIS 앱의 특정 화면·컴포넌트를 UX 관점에서 점검할 때 사용. 레이아웃, 정보위계, 타이포, 모바일 터치 영역, 색채 체계, 접근성을 7가지 체크리스트로 검토하고 개선 diff를 제시한다. 호출 예 "/ux-review /reservation 모달", "/ux-review components/VenueGrid.tsx".
+description: ONCELL 앱의 특정 화면·컴포넌트를 UX 관점에서 점검할 때 사용. 레이아웃, 정보위계, 타이포, 모바일 터치 영역, 색채 체계, 접근성을 7가지 체크리스트로 검토하고 개선 diff를 제시한다. 호출 예 "/ux-review /reservation 모달", "/ux-review components/VenueGrid.tsx".
 ---
 
 # ux-review — UX 점검 프로토콜

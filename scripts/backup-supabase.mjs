@@ -8,20 +8,20 @@
 //
 // 산출물 (backups/2026-04-23T12-00-00/):
 //   manifest.json                 # 메타정보 + 테이블별 행수
-//   kcis_communities.json
-//   kcis_profiles.json
-//   kcis_users.json
-//   kcis_events.json
-//   kcis_worship_services.json
-//   kcis_venues.json
-//   kcis_floors.json
-//   kcis_venue_blocks.json
-//   kcis_venue_block_groups.json
-//   kcis_community_bulletin_templates.json
-//   kcis_signup_approvals.json
-//   kcis_qt_notes.json
-//   kcis_event_categories.json
-//   kcis_app_kv.json              # settings / system_admins / worship_templates 전부 포함
+//   oncell_communities.json
+//   oncell_profiles.json
+//   oncell_users.json
+//   oncell_events.json
+//   oncell_worship_services.json
+//   oncell_venues.json
+//   oncell_floors.json
+//   oncell_venue_blocks.json
+//   oncell_venue_block_groups.json
+//   oncell_community_bulletin_templates.json
+//   oncell_signup_approvals.json
+//   oncell_qt_notes.json
+//   oncell_event_categories.json
+//   oncell_app_kv.json              # settings / system_admins / worship_templates 전부 포함
 //
 // 주의: 개인정보(프로필/이메일/연락처)가 들어있으므로 backups/ 는 .gitignore 에 등록됨.
 // ---------------------------------------------------------------
@@ -59,20 +59,20 @@ const OUT_BASE = getArg('--out') || 'backups';
 
 // --- 백업 대상 테이블 (lib/db.ts 의 T 와 동기화) ----------------------------
 const TABLES = [
-  'kcis_communities',
-  'kcis_profiles',
-  'kcis_users',
-  'kcis_events',
-  'kcis_worship_services',
-  'kcis_venues',
-  'kcis_floors',
-  'kcis_venue_blocks',
-  'kcis_venue_block_groups',
-  'kcis_community_bulletin_templates',
-  'kcis_signup_approvals',
-  'kcis_qt_notes',
-  'kcis_event_categories',
-  'kcis_app_kv',
+  'oncell_communities',
+  'oncell_profiles',
+  'oncell_users',
+  'oncell_events',
+  'oncell_worship_services',
+  'oncell_venues',
+  'oncell_floors',
+  'oncell_venue_blocks',
+  'oncell_venue_block_groups',
+  'oncell_community_bulletin_templates',
+  'oncell_signup_approvals',
+  'oncell_qt_notes',
+  'oncell_event_categories',
+  'oncell_app_kv',
 ];
 
 const PAGE = 1000; // Supabase select 기본 상한

@@ -1,12 +1,12 @@
 // ---------------------------------------------------------------
-// 2026년 교회일정(kcis_events type='event') + 예배일정(kcis_worship_services) 전체 삭제.
+// 2026년 교회일정(oncell_events type='event') + 예배일정(oncell_worship_services) 전체 삭제.
 //
 // 삭제 대상:
-//   - kcis_events  where type='event' AND start_at >= 2026-01-01 AND start_at < 2027-01-01
-//   - kcis_worship_services (전체)
+//   - oncell_events  where type='event' AND start_at >= 2026-01-01 AND start_at < 2027-01-01
+//   - oncell_worship_services (전체)
 //
 // 남기는 것:
-//   - kcis_events 의 type='reservation' (사용자 예약)
+//   - oncell_events 의 type='reservation' (사용자 예약)
 //   - venue_blocks, 사용자, 프로필 등 다른 테이블 전부
 //
 // 사용:
@@ -41,7 +41,7 @@ const YEAR_TO = '2027-01-01';
 const main = async () => {
   // 1) 2026 교회일정 조회
   const { data: events, error: evErr } = await db
-    .from('kcis_events')
+    .from('oncell_events')
     .select('id, title, start_at, type')
     .eq('type', 'event')
     .gte('start_at', YEAR_FROM)
@@ -51,7 +51,7 @@ const main = async () => {
 
   // 2) 모든 예배일정 조회
   const { data: worships, error: wsErr } = await db
-    .from('kcis_worship_services')
+    .from('oncell_worship_services')
     .select('id, name, community_id');
   if (wsErr) { console.error('예배일정 조회 실패:', wsErr); process.exit(1); }
 
@@ -89,7 +89,7 @@ const main = async () => {
 
   if (events.length > 0) {
     const { error, count } = await db
-      .from('kcis_events')
+      .from('oncell_events')
       .delete({ count: 'exact' })
       .eq('type', 'event')
       .gte('start_at', YEAR_FROM)
@@ -101,7 +101,7 @@ const main = async () => {
   if (worships.length > 0) {
     const ids = worships.map((w) => w.id);
     const { error, count } = await db
-      .from('kcis_worship_services')
+      .from('oncell_worship_services')
       .delete({ count: 'exact' })
       .in('id', ids);
     if (error) { console.error('예배일정 삭제 실패:', error); process.exit(1); }

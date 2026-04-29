@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 const PendingPage = () => (
   <>
-    <Head><title>KCIS | 가입 승인 대기</title></Head>
+    <Head><title>ONCELL | 가입 승인 대기</title></Head>
     <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', fontFamily: "var(--font-sans)" }}>
       <div style={{ width: '100%', maxWidth: 460, padding: '2rem 1.5rem', borderRadius: 16, background: '#fff', border: '1px solid #D9F09E', boxShadow: 'var(--shadow-card)', textAlign: 'center', display: 'grid', gap: '0.85rem' }}>
         <div style={{ fontSize: '2.8rem', lineHeight: 1 }}>⏳</div>

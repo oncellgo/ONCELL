@@ -50,23 +50,23 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     let completionsDeleted = 0;
     try {
       const { count: c1, error: e1 } = await db
-        .from('kcis_qt_notes')
+        .from('oncell_qt_notes')
         .delete({ count: 'exact' })
         .eq('profile_id', profileId);
-      if (e1) console.error('[admin/delete-user] kcis_qt_notes delete failed', e1);
+      if (e1) console.error('[admin/delete-user] oncell_qt_notes delete failed', e1);
       qtNotesDeleted = c1 || 0;
     } catch (e) {
-      console.error('[admin/delete-user] kcis_qt_notes exception', e);
+      console.error('[admin/delete-user] oncell_qt_notes exception', e);
     }
     try {
       const { count: c2, error: e2 } = await db
-        .from('kcis_user_completions')
+        .from('oncell_user_completions')
         .delete({ count: 'exact' })
         .eq('profile_id', profileId);
-      if (e2) console.error('[admin/delete-user] kcis_user_completions delete failed', e2);
+      if (e2) console.error('[admin/delete-user] oncell_user_completions delete failed', e2);
       completionsDeleted = c2 || 0;
     } catch (e) {
-      console.error('[admin/delete-user] kcis_user_completions exception', e);
+      console.error('[admin/delete-user] oncell_user_completions exception', e);
     }
 
     return res.status(200).json({

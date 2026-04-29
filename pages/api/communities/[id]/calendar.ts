@@ -31,7 +31,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const host = (req.headers.host || 'oncell.app').toString();
     const ics = buildIcs({
-      calendarName: `${community.name} · KCIS`,
+      calendarName: `${community.name} · ONCELL`,
       events,
       host,
     });

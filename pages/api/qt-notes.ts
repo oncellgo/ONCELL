@@ -69,12 +69,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       const hasAny = !!((next.feelings && next.feelings.trim()) || (next.decision && next.decision.trim()) || (next.prayer && next.prayer.trim()));
       try {
         if (hasAny) {
-          await db.from('kcis_user_completions').upsert(
+          await db.from('oncell_user_completions').upsert(
             { profile_id: profileId, type: 'qt', date, completed_at: new Date().toISOString() },
             { onConflict: 'profile_id,type,date' },
           );
         } else {
-          await db.from('kcis_user_completions').delete().eq('profile_id', profileId).eq('type', 'qt').eq('date', date);
+          await db.from('oncell_user_completions').delete().eq('profile_id', profileId).eq('type', 'qt').eq('date', date);
         }
       } catch (e) {
         console.error('[qt-notes] completion sync failed:', e);
@@ -90,7 +90,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       const filtered = notes.filter((n) => !(n.profileId === profileId && n.date === date));
       await setQtNotes(filtered);
       try {
-        await db.from('kcis_user_completions').delete().eq('profile_id', profileId).eq('type', 'qt').eq('date', date);
+        await db.from('oncell_user_completions').delete().eq('profile_id', profileId).eq('type', 'qt').eq('date', date);
       } catch {}
       return res.status(200).json({ ok: true });
     }

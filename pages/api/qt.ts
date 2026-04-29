@@ -178,7 +178,7 @@ const fetchDateSpecific = async (dateStr: string): Promise<QtResult> => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
-      'User-Agent': 'Mozilla/5.0 (compatible; KCIS/1.0)',
+      'User-Agent': 'Mozilla/5.0 (compatible; ONCELL/1.0)',
       Accept: 'application/json, text/javascript, */*',
     },
     body,
@@ -285,7 +285,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     const response = await fetch(SOURCE_URL, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; KCIS/1.0)',
+        'User-Agent': 'Mozilla/5.0 (compatible; ONCELL/1.0)',
         Accept: 'text/html,application/xhtml+xml',
       },
     });

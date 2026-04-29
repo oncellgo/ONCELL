@@ -1,6 +1,6 @@
 ---
 name: operation
-description: KCIS 운영 작업(DB 백업/복원, 대량 시드, wipe, 스키마 마이그레이션 등 scripts/ 실행)을 다룰 때 반드시 확인. Supabase 자격 증명·개인정보·복구 전략 관련 사고를 방지한다. "DB 백업", "백업 스크립트", "복원", "dump", "scripts/backup-*", "scripts/restore-*", "서비스 롤 키" 관련 요청 시 호출.
+description: ONCELL 운영 작업(DB 백업/복원, 대량 시드, wipe, 스키마 마이그레이션 등 scripts/ 실행)을 다룰 때 반드시 확인. Supabase 자격 증명·개인정보·복구 전략 관련 사고를 방지한다. "DB 백업", "백업 스크립트", "복원", "dump", "scripts/backup-*", "scripts/restore-*", "서비스 롤 키" 관련 요청 시 호출.
 ---
 
 # operation — 운영 스크립트 실행 규칙
@@ -26,7 +26,7 @@ description: KCIS 운영 작업(DB 백업/복원, 대량 시드, wipe, 스키마
 - CLAUDE.md "금지사항" 섹션 원본 규칙.
 
 ### 2. 백업 파일 — 개인정보 포함, 로컬 안전 위치에 보관
-- dump 안에 `kcis_profiles` / `kcis_users` / `kcis_signup_approvals` / `kcis_events` (예약자 이름·연락처) 등이 평문 JSON 으로 들어있음.
+- dump 안에 `oncell_profiles` / `oncell_users` / `oncell_signup_approvals` / `oncell_events` (예약자 이름·연락처) 등이 평문 JSON 으로 들어있음.
 - 저장 위치: **repo 안 `backups/` (gitignore 됨)** 또는 암호화된 로컬 경로만.
   - `Dropbox/Google Drive` 공유 폴더·팀 채팅·이메일 첨부로 보내지 말 것.
   - 오래된 백업은 `--keep N` 로 자동 정리.
@@ -69,7 +69,7 @@ node scripts/restore-supabase.mjs backups/<stamp> --execute --mode replace
 ```
 
 ### `restore --mode replace` 추가 경고
-- `kcis_app_kv` 포함 시 `system_admins` 키가 덮어써짐 → 백업 시점 이후 관리자 변경 내역이 증발, 로그인 불가 상태가 될 수 있음.
+- `oncell_app_kv` 포함 시 `system_admins` 키가 덮어써짐 → 백업 시점 이후 관리자 변경 내역이 증발, 로그인 불가 상태가 될 수 있음.
 - 기본값 `upsert` 로 충분한 경우가 대부분. `replace` 는 "완전 복제가 꼭 필요"하다고 확신할 때만.
 
 ## 정기 실행 (Windows Task Scheduler)

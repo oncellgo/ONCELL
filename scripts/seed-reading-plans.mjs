@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------
-// 성경통독 계획 시드 스크립트 — kcis_reading_plans 테이블에 날짜별 범위 적재
+// 성경통독 계획 시드 스크립트 — oncell_reading_plans 테이블에 날짜별 범위 적재
 //
 // 사용:
 //   dry-run:     node scripts/seed-reading-plans.mjs --year=2026 --plan=1
@@ -10,7 +10,7 @@
 //   1. BOOKS × plan 배수로 평면화 (1189장 × plan) — 총 읽을 장 수
 //   2. 연중 일수 (365 or 366) 로 균등 분배 (lib/readingPlan.ts planForDate 와 동일 로직)
 //   3. 같은 book 연속 장은 range 로 묶음
-//   4. upsert to kcis_reading_plans (plan, date) — 재실행 안전
+//   4. upsert to oncell_reading_plans (plan, date) — 재실행 안전
 // ---------------------------------------------------------------
 import { readFileSync, existsSync } from 'fs';
 import path from 'path';
@@ -153,7 +153,7 @@ const main = async () => {
     let upserted = 0;
     for (let i = 0; i < rows.length; i += BATCH) {
       const chunk = rows.slice(i, i + BATCH);
-      const { error } = await db.from('kcis_reading_plans').upsert(chunk, { onConflict: 'plan,date' });
+      const { error } = await db.from('oncell_reading_plans').upsert(chunk, { onConflict: 'plan,date' });
       if (error) {
         console.error(`  ✗ batch ${i}-${i + chunk.length} 실패:`, error.message);
         process.exit(1);

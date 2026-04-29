@@ -491,7 +491,7 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
   return (
     <>
       <Head>
-        <title>KCIS | 성경통독</title>
+        <title>ONCELL | 성경통독</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
@@ -674,7 +674,7 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
                       <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-2)' }}>{t('page.reading.passageNotFound')}</span>
                     </div>
                   );
-                  return <BiblePassageCard key={i} reference={ref} koText={texts.ko || null} enText={texts.en || null} source="KCIS 통독 일정표 · 본문: 개역한글/KJV 공공영역" />;
+                  return <BiblePassageCard key={i} reference={ref} koText={texts.ko || null} enText={texts.en || null} source="ONCELL 통독 일정표 · 본문: 개역한글/KJV 공공영역" />;
                 })}
               </div>
             )

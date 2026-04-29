@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------
 // 모든 캐시 성격의 KV 엔트리 삭제.
 //
-// 대상 (kcis_app_kv 테이블):
+// 대상 (oncell_app_kv 테이블):
 //   - key LIKE 'qt_%'                 — QT 일일 캐시
 //   - key LIKE 'monthly_schedule_%'   — 월간 목회일정 캐시
 //
@@ -35,7 +35,7 @@ if (!SUPABASE_URL || !SERVICE_KEY) {
 }
 
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
-const TABLE = 'kcis_app_kv';
+const TABLE = 'oncell_app_kv';
 const EXECUTE = process.argv.includes('--execute');
 
 const CACHE_PREFIXES = ['qt_', 'monthly_schedule_'];

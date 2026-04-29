@@ -5,10 +5,10 @@
 //   실제삭제: node scripts/wipe-non-admin-data.mjs --execute
 //
 // 삭제 대상 (관리자 profileId 에 속하지 않는 행):
-//   - kcis_profiles
-//   - kcis_users (매칭 키는 provider_profile_id)
-//   - kcis_signup_approvals
-//   - kcis_events WHERE type='reservation'
+//   - oncell_profiles
+//   - oncell_users (매칭 키는 provider_profile_id)
+//   - oncell_signup_approvals
+//   - oncell_events WHERE type='reservation'
 // 보존: communities, venues, floors, settings, venue_blocks, venue_block_groups,
 //       worship_services, community_bulletin_templates, qt_notes, event_categories,
 //       events WHERE type='event', app_kv (system_admins 포함)
@@ -33,7 +33,7 @@ if (!SUPABASE_URL || !SERVICE_KEY) {
 }
 
 const db = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-const T = (n) => `kcis_${n}`;
+const T = (n) => `oncell_${n}`;
 const EXECUTE = process.argv.includes('--execute');
 
 const chunk = (arr, size) => {

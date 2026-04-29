@@ -41,7 +41,7 @@ export const db = new Proxy({} as SupabaseClient, {
 // ---------------------------------------------------------------
 // 테이블명 한 곳에서 관리. prefix 변경 시 여기만 수정.
 // ---------------------------------------------------------------
-export const TABLE_PREFIX = 'kcis_';
+export const TABLE_PREFIX = 'oncell_';
 
 export const T = {
   communities: `${TABLE_PREFIX}communities`,

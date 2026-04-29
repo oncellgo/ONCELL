@@ -67,23 +67,23 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     let completionsDeleted = 0;
     try {
       const { count: c1, error: e1 } = await db
-        .from('kcis_qt_notes')
+        .from('oncell_qt_notes')
         .delete({ count: 'exact' })
         .eq('profile_id', profileId);
-      if (e1) console.error('[withdraw] kcis_qt_notes delete failed', e1);
+      if (e1) console.error('[withdraw] oncell_qt_notes delete failed', e1);
       qtNotesDeleted = c1 || 0;
     } catch (e) {
-      console.error('[withdraw] kcis_qt_notes exception', e);
+      console.error('[withdraw] oncell_qt_notes exception', e);
     }
     try {
       const { count: c2, error: e2 } = await db
-        .from('kcis_user_completions')
+        .from('oncell_user_completions')
         .delete({ count: 'exact' })
         .eq('profile_id', profileId);
-      if (e2) console.error('[withdraw] kcis_user_completions delete failed', e2);
+      if (e2) console.error('[withdraw] oncell_user_completions delete failed', e2);
       completionsDeleted = c2 || 0;
     } catch (e) {
-      console.error('[withdraw] kcis_user_completions exception', e);
+      console.error('[withdraw] oncell_user_completions exception', e);
     }
 
     // 최소 탈퇴 로그 — 식별정보 없이 profileId 만 (법령·관리자 감사 목적)

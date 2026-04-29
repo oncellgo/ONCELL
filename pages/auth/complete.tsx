@@ -90,13 +90,13 @@ const CompleteSignupPage = () => {
 
   return (
     <>
-      <Head><title>KCIS | 가입 마무리</title></Head>
+      <Head><title>ONCELL | 가입 마무리</title></Head>
       <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: '#FAFAFA', fontFamily: 'var(--font-sans)' }}>
         <div style={{ width: '100%', maxWidth: 480, background: '#fff', borderRadius: 20, boxShadow: '0 8px 32px rgba(0,0,0,0.08)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {/* provider 브랜드 톤 헤더 — 단계 배지 + 연결 확인 */}
           <div style={{ padding: '1.5rem 1.5rem 1.1rem', background: headerTheme.bg, borderBottom: headerTheme.border, textAlign: 'center', position: 'relative' }}>
             <span style={{ display: 'inline-block', padding: '0.2rem 0.7rem', borderRadius: 999, background: headerTheme.badgeBg, color: headerTheme.badgeColor, fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.02em', marginBottom: '0.5rem' }}>
-              KCIS 가입 마무리 단계
+              ONCELL 가입 마무리 단계
             </span>
             <h1 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: headerTheme.titleColor, lineHeight: 1.45, wordBreak: 'keep-all', display: 'inline-flex', alignItems: 'center', gap: '0.45rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               {provider === 'google' && (

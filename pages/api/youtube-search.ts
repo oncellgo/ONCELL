@@ -10,7 +10,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}&hl=ko&persist_hl=1`;
     const r = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; KCIS/1.0)',
+        'User-Agent': 'Mozilla/5.0 (compatible; ONCELL/1.0)',
         'Accept-Language': 'ko,en;q=0.8',
       },
     });
