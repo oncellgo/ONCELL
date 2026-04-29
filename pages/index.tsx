@@ -135,8 +135,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
             <div style={{ display: 'inline-block', padding: '0.4rem 0.95rem', borderRadius: 999, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.78rem', fontWeight: 600, marginBottom: '1.5rem', letterSpacing: '0.04em', color: 'rgba(255,255,255,0.92)' }}>
               매일 5분, 친구와 함께
             </div>
-            <h1 style={{ fontSize: isMobile ? '1.7rem' : '2.6rem', fontWeight: 800, lineHeight: 1.3, margin: '0 0 1.1rem', color: '#fff', letterSpacing: '-0.02em' }}>
-              매일 지인들과 함께하는<br />
+            <h1 style={{ fontSize: isMobile ? '1.8rem' : '2.8rem', fontWeight: 800, lineHeight: 1.3, margin: '0 0 1.1rem', color: '#fff', letterSpacing: '-0.02em' }}>
               <span style={{ color: '#A5F3FC' }}>큐티셀·통독셀</span>로<br />
               우리의 영적세포를 깨워볼까요?<br />
               <span style={{ color: '#A5F3FC' }}>✓ ONCELL</span>로 함께 해요!
