@@ -86,29 +86,29 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
   return (
     <>
       <Head>
-        <title>KCIS|장소관리시스템</title>
+        <title>ONCELL | 우리 공동체의 모든 기록</title>
         <meta
           name="description"
-          content="싱가폴한인교회(KCIS) 관리 시스템 — 장소예약·큐티·성경통독·주일예배·구역모임 교안을 한 곳에서."
+          content="ONCELL — 장소예약·큐티·성경통독·주일예배·구역모임 교안을 한 곳에서. 싱가폴한인교회 공동체 관리 플랫폼."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         {/* Open Graph / KakaoTalk·Facebook·Slack 링크 미리보기 */}
         <meta property="og:type" content="website" />
-        <meta property="og:site_name" content="KCIS" />
-        <meta property="og:title" content="KCIS|장소관리시스템" />
+        <meta property="og:site_name" content="ONCELL" />
+        <meta property="og:title" content="ONCELL | 우리 공동체의 모든 기록" />
         <meta
           property="og:description"
           content="장소예약·큐티·성경통독·주일예배·구역모임 교안을 한 곳에서."
         />
-        <meta property="og:url" content="https://kcis-ecru.vercel.app/" />
-        <meta property="og:image" content="https://kcis-ecru.vercel.app/images/kcis%20logo.png" />
-        <meta property="og:image:alt" content="KCIS 로고" />
+        <meta property="og:url" content="https://oncell.org/" />
+        <meta property="og:image" content="https://oncell.org/images/icon-512.png" />
+        <meta property="og:image:alt" content="ONCELL 로고" />
         <meta property="og:locale" content="ko_KR" />
         {/* Twitter Card (Twitter/X 미리보기) */}
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="KCIS|장소관리시스템" />
+        <meta name="twitter:title" content="ONCELL | 우리 공동체의 모든 기록" />
         <meta name="twitter:description" content="장소예약·큐티·성경통독·주일예배·구역모임 교안을 한 곳에서." />
-        <meta name="twitter:image" content="https://kcis-ecru.vercel.app/images/kcis%20logo.png" />
+        <meta name="twitter:image" content="https://oncell.org/images/icon-512.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
@@ -198,27 +198,26 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
 
         </section>
 
-        <footer style={{ margin: '1.5rem 0 0', padding: isMobile ? '1rem 0.75rem 2rem' : '1rem 1.25rem 1.5rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--color-ink-2)', lineHeight: 1.8, borderTop: '1px solid var(--color-surface-border)' }}>
+        <footer style={{ margin: '1.5rem 0 0', padding: isMobile ? '1rem 0.75rem 2rem' : '1rem 1.25rem 1.5rem', textAlign: 'center', fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.8, borderTop: '1px solid rgba(255,255,255,0.12)' }}>
           <div style={{ marginBottom: '0.35rem' }}>
-            <span style={{ fontWeight: 700, color: 'var(--color-ink)' }}>싱가폴한인교회</span>
-            <span style={{ margin: '0 0.5rem', color: 'var(--color-gray)' }}>|</span>
-            <a href="/privacy" style={{ color: 'var(--color-ink-2)', textDecoration: 'underline', display: 'inline-block', minHeight: 24 }}>개인정보처리방침</a>
-            <span style={{ margin: '0 0.5rem', color: 'var(--color-gray)' }}>|</span>
-            <a href="/terms" style={{ color: 'var(--color-ink-2)', textDecoration: 'underline', display: 'inline-block', minHeight: 24 }}>이용약관</a>
+            <span style={{ fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>싱가폴한인교회</span>
+            <span style={{ margin: '0 0.5rem', color: 'rgba(255,255,255,0.3)' }}>|</span>
+            <a href="/privacy" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'underline', display: 'inline-block', minHeight: 24 }}>개인정보처리방침</a>
+            <span style={{ margin: '0 0.5rem', color: 'rgba(255,255,255,0.3)' }}>|</span>
+            <a href="/terms" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'underline', display: 'inline-block', minHeight: 24 }}>이용약관</a>
           </div>
           <div>21 Gangsa Road Singapore 678973</div>
-          <div>TEL <a href="tel:+6564686694" style={{ color: 'var(--color-ink-2)', display: 'inline-block', minHeight: 28, lineHeight: '28px' }}>+65-6468-6694</a></div>
-          <div><a href="mailto:koreanchurch@live.com" style={{ color: 'var(--color-ink-2)', display: 'inline-block', minHeight: 28, lineHeight: '28px' }}>koreanchurch@live.com</a></div>
+          <div>TEL <a href="tel:+6564686694" style={{ color: 'rgba(255,255,255,0.6)', display: 'inline-block', minHeight: 28, lineHeight: '28px' }}>+65-6468-6694</a></div>
+          <div><a href="mailto:koreanchurch@live.com" style={{ color: 'rgba(255,255,255,0.6)', display: 'inline-block', minHeight: 28, lineHeight: '28px' }}>koreanchurch@live.com</a></div>
           <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center' }}>
             <span style={{
               padding: '0.3rem 0.75rem',
               borderRadius: 999,
-              background: 'rgba(32, 205, 141, 0.05)',
-              color: 'var(--color-primary-deep)',
+              background: 'rgba(255,255,255,0.07)',
+              color: 'rgba(255,255,255,0.45)',
               fontSize: '0.68rem',
               fontWeight: 500,
               letterSpacing: '0.02em',
-              opacity: 0.7,
             }}>
               © {new Date().getFullYear()} Steward+AI. All rights reserved.
             </span>

@@ -92,13 +92,13 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0, flex: 1 }}>
         <a href={homeHref} aria-label={t('brand.logoAlt')} title={t('brand.logoAlt')} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none' }}>
           <img
-            src="/images/kcis%20logo.png"
-            alt="KCIS 로고"
+            src="/images/icon-192.png"
+            alt="ONCELL 로고"
             className="kcis-logo"
-            style={{ width: isMobile ? 24 : 28, height: isMobile ? 24 : 28, objectFit: 'contain', display: 'inline-block' }}
+            style={{ width: isMobile ? 24 : 28, height: isMobile ? 24 : 28, objectFit: 'contain', display: 'inline-block', borderRadius: 6 }}
           />
           <strong style={{ fontWeight: 800, letterSpacing: '0.02em', fontSize: isMobile ? '0.82rem' : '0.9rem' }}>
-            <span className="kcis-brand">KCIS</span>
+            <span className="kcis-brand">ONCELL</span>
           </strong>
         </a>
       </div>

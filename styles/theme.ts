@@ -1,5 +1,5 @@
 /**
- * KCIS Design Tokens — Single Source of Truth
+ * ONCELL Design Tokens — Single Source of Truth
  *
  * 모든 페이지의 색상·폰트·배경·그림자·반경을 여기서 관리합니다.
  * 값 하나를 바꾸면 전체 서비스에 일괄 반영됩니다.
@@ -38,8 +38,8 @@ export const theme = {
 
   // 글로벌 격자 배경 (body에 고정 적용)
   background: {
-    base: '#5BD4A0',
-    gridLine: 'rgba(255, 255, 255, 0.35)',
+    base: '#2D3850',
+    gridLine: 'rgba(255, 255, 255, 0.18)',
     gridSize: '18px',
   },
 
