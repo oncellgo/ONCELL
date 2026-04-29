@@ -89,7 +89,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
         <title>ONCELL | 우리 공동체의 모든 기록</title>
         <meta
           name="description"
-          content="ONCELL — 장소예약·큐티·성경통독·주일예배·구역모임 교안을 한 곳에서. 싱가폴한인교회 공동체 관리 플랫폼."
+          content="ONCELL — 장소예약·큐티·성경통독·주일예배·구역모임 교안을 한 곳에서. 우리 공동체의 모든 기록."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         {/* Open Graph / KakaoTalk·Facebook·Slack 링크 미리보기 */}
@@ -200,8 +200,6 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
 
         <footer style={{ margin: '1.5rem 0 0', padding: isMobile ? '1rem 0.75rem 2rem' : '1rem 1.25rem 1.5rem', textAlign: 'center', fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.8, borderTop: '1px solid rgba(255,255,255,0.12)' }}>
           <div style={{ marginBottom: '0.35rem' }}>
-            <span style={{ fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>싱가폴한인교회</span>
-            <span style={{ margin: '0 0.5rem', color: 'rgba(255,255,255,0.3)' }}>|</span>
             <a href="/privacy" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'underline', display: 'inline-block', minHeight: 24 }}>개인정보처리방침</a>
             <span style={{ margin: '0 0.5rem', color: 'rgba(255,255,255,0.3)' }}>|</span>
             <a href="/terms" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'underline', display: 'inline-block', minHeight: 24 }}>이용약관</a>
