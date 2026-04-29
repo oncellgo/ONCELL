@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 const PUBLIC_PATHS = new Set(['/', '/privacy', '/terms']);
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   if (process.env.NEXT_PUBLIC_BETA_GATE !== 'true') return NextResponse.next();
 
   const { pathname } = req.nextUrl;
