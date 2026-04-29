@@ -145,10 +145,10 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
               당신을 매일 5분 묵상하게 합니다.
             </p>
             <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <a href="mailto:pinegirl2000@gmail.com?subject=ONCELL%2030%EB%B6%84%20%EC%9D%B8%ED%84%B0%EB%B7%B0%20%EC%B0%B8%EC%97%AC&body=%EC%95%88%EB%85%95%ED%95%98%EC%84%B8%EC%9A%94%2C%20ONCELL%20%EC%9D%B8%ED%84%B0%EB%B7%B0%EC%97%90%20%EC%B0%B8%EC%97%AC%ED%95%98%EA%B3%A0%20%EC%8B%B6%EC%96%B4%EC%9A%94.%20%EA%B0%80%EB%8A%A5%ED%95%9C%20%EC%8B%9C%EA%B0%84%EB%8C%80%3A%20" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 48, padding: '0.85rem 1.4rem', borderRadius: 12, background: '#fff', color: '#2D3850', fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}>
+              <a href="/signup?type=interview" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 48, padding: '0.85rem 1.4rem', borderRadius: 12, background: '#fff', color: '#2D3850', fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}>
                 30분 인터뷰 참여
               </a>
-              <a href="mailto:pinegirl2000@gmail.com?subject=ONCELL%20%EB%B2%A0%ED%83%80%20%EB%8C%80%EA%B8%B0%20%EB%93%B1%EB%A1%9D&body=ONCELL%20%EB%B2%A0%ED%83%80%20%EC%98%A4%ED%94%88%20%EC%8B%9C%20%EC%95%8C%EB%A0%A4%EC%A3%BC%EC%84%B8%EC%9A%94." style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 48, padding: '0.85rem 1.4rem', borderRadius: 12, background: 'transparent', color: '#fff', fontWeight: 600, fontSize: '0.95rem', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.28)' }}>
+              <a href="/signup?type=waitlist" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 48, padding: '0.85rem 1.4rem', borderRadius: 12, background: 'transparent', color: '#fff', fontWeight: 600, fontSize: '0.95rem', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.28)' }}>
                 베타 대기 등록
               </a>
             </div>
