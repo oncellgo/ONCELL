@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = new Set(['/', '/privacy', '/terms']);
+const PUBLIC_PATHS = new Set(['/', '/privacy', '/terms', '/feed-preview']);
 const PUBLIC_PREFIXES: string[] = [];
 
 export function proxy(req: NextRequest) {
