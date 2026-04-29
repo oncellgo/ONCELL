@@ -141,9 +141,8 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
               <span style={{ color: '#A5F3FC' }}>✓ ONCELL</span>로 함께 해요!
             </h1>
             <p style={{ fontSize: isMobile ? '0.98rem' : '1.12rem', color: 'rgba(255,255,255,0.78)', maxWidth: 620, margin: '0 auto 2rem', lineHeight: 1.75 }}>
-              ONCELL은 카톡 단톡방이 못 담는 영적 셀입니다.<br />
-              글도 댓글도 DM도 없이, 운동 앱이 매일 뛰게 했던 것처럼<br />
-              당신을 매일 5분 묵상하게 합니다.
+              운동습관처럼 영적근육을 매일 만들어 가는 즐거움을 ONCELL에서 느껴보세요.<br />
+              개인별 묵상노트와 성경통독 계획을 만들어 오늘부터 ONCELL 하세요.
             </p>
           </section>
 
