@@ -65,7 +65,7 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
       .kcis-brand span {
         display: inline-block;
         color: #06B6D4;
-        animation: kcisBrandLight 2s ease-in-out infinite;
+        animation: kcisBrandLight 5s ease-in-out infinite;
       }
       .kcis-brand span:nth-child(1) { animation-delay: 0s; }
       .kcis-brand span:nth-child(2) { animation-delay: 0.16s; }
