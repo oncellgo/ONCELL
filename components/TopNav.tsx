@@ -1,8 +1,19 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'next/router';
 import LanguageSwitcher from './LanguageSwitcher';
 import ProfileModal from './ProfileModal';
 import { useIsMobile } from '../lib/useIsMobile';
+
+// URL ?nav=1..6 으로 상단바 배경 비교
+const NAV_VARIANTS: Record<string, { bg: string; border: string; blur?: boolean; label: string }> = {
+  '1': { bg: 'rgba(255,255,255,0.08)',  border: '1px solid rgba(255,255,255,0.14)', blur: true,  label: 'glass-default' },
+  '2': { bg: 'rgba(255,255,255,0.14)',  border: '1px solid rgba(255,255,255,0.20)', blur: true,  label: 'glass-bright' },
+  '3': { bg: '#3D4A66',                 border: '1px solid rgba(255,255,255,0.12)',              label: 'solid-mid' },
+  '4': { bg: 'rgba(255,250,245,0.10)',  border: '1px solid rgba(255,200,180,0.18)', blur: true,  label: 'warm-glass' },
+  '5': { bg: 'rgba(165,243,252,0.08)',  border: '1px solid rgba(165,243,252,0.22)', blur: true,  label: 'cyan-tint' },
+  '6': { bg: 'rgba(20, 28, 48, 0.72)',  border: '1px solid rgba(255,255,255,0.10)', blur: true,  label: 'dark-glass' },
+};
 
 /**
  * 공통 상단 네비게이션. 모든 페이지(랜딩 포함)에서 동일한 디자인으로 사용됩니다.
@@ -23,6 +34,9 @@ export type TopNavProps = {
 const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdminHref, nickname, email, adminAccent }: TopNavProps) => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
+  const router = useRouter();
+  const navKey = typeof router.query.nav === 'string' ? router.query.nav : '1';
+  const variant = NAV_VARIANTS[navKey] || NAV_VARIANTS['1'];
   const [lsProfileId, setLsProfileId] = useState<string | null>(null);
   const [lsNickname, setLsNickname] = useState<string | null>(null);
   const [lsEmail, setLsEmail] = useState<string | null>(null);
@@ -104,10 +118,9 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
       flexWrap: 'nowrap',
       padding: isMobile ? '0.5rem 0.65rem' : '0.6rem 0.9rem',
       borderRadius: 14,
-      background: 'rgba(255,255,255,0.08)',
-      border: '1px solid rgba(255,255,255,0.14)',
-      backdropFilter: 'blur(14px)',
-      WebkitBackdropFilter: 'blur(14px)',
+      background: variant.bg,
+      border: variant.border,
+      ...(variant.blur ? { backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' } : {}),
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0, flex: 1 }}>
         <a href={homeHref} aria-label={t('brand.logoAlt')} title={t('brand.logoAlt')} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none' }}>
