@@ -138,7 +138,16 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
             <h1 style={{ fontSize: isMobile ? '1.8rem' : '2.8rem', fontWeight: 800, lineHeight: 1.3, margin: '0 0 1.1rem', color: '#fff', letterSpacing: '-0.02em' }}>
               <span style={{ color: '#A5F3FC' }}>큐티셀·통독셀·암송셀</span>로<br />
               우리의 영적세포를 깨워볼까요?<br />
-              <span style={{ color: '#A5F3FC' }}>✓ ONCELL</span>로 함께 해요!
+              <span style={{ color: '#A5F3FC' }}>✓ </span>
+              <span className="kcis-brand" aria-label="ONCELL">
+                <span aria-hidden>O</span>
+                <span aria-hidden>N</span>
+                <span aria-hidden>C</span>
+                <span aria-hidden>E</span>
+                <span aria-hidden>L</span>
+                <span aria-hidden>L</span>
+              </span>
+              <span style={{ color: '#fff' }}>로 함께 해요!</span>
             </h1>
             <p style={{ fontSize: isMobile ? '0.98rem' : '1.12rem', color: 'rgba(255,255,255,0.78)', maxWidth: 620, margin: '0 auto 2rem', lineHeight: 1.75 }}>
               운동습관처럼 영적근육을 매일 만들어 가는 즐거움을 ONCELL에서 느껴보세요.<br />
