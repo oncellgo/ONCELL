@@ -147,7 +147,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref, menusE
                 { ico: '📖', title: '큐티셀', desc: '매일 본문 + 묵상 노트. 매일성경·생명의삶·직접 입력 중 선택.' },
                 { ico: '📜', title: '통독셀', desc: '1년 1독·2독, 신약/구약/전체, 시작일 자유. 친구와 진도 동행.' },
                 { ico: '✨', title: '암송셀', desc: '시스템 추천 또는 직접 선택. 빈칸·음성 등 즐거운 테스트.' },
-                { ico: '✓', title: '셀 친구 동행', desc: '친구 3-5명 초대 → 매일 ✓ 인증. "혼자가 아니다"를 매일 확인.' },
+                { ico: '🙏', title: '기도 나눔셀', desc: '셀 멤버끼리만 보이는 기도제목·응답. 친구의 🙏 한 탭 반응.' },
               ].map((it) => (
                 <div key={it.title} style={{ padding: isMobile ? '1rem 1rem' : '1.25rem 1.35rem', borderRadius: 16, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}>
                   <div style={{ fontSize: '1.4rem', marginBottom: '0.5rem' }}>{it.ico}</div>
