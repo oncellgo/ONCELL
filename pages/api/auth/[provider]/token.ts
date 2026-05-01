@@ -7,7 +7,7 @@ const providerConfig = {
     clientId: process.env.KAKAO_CLIENT_ID,
     clientSecret: process.env.KAKAO_CLIENT_SECRET,
     redirectUri: process.env.KAKAO_REDIRECT_URI,
-    scope: 'profile_nickname,account_email',
+    scope: 'profile_nickname',
   },
   google: {
     tokenUrl: 'https://oauth2.googleapis.com/token',
