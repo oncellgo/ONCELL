@@ -7,7 +7,7 @@ import { useIsMobile } from '../lib/useIsMobile';
 
 // URL ?nav=1..6 으로 상단바 배경 비교
 const NAV_VARIANTS: Record<string, { bg: string; border: string; blur?: boolean; label: string }> = {
-  '1': { bg: 'rgba(255,255,255,0.08)',  border: '1px solid rgba(255,255,255,0.14)', blur: true,  label: 'glass-default' },
+  '1': { bg: '#A5F3FC',                 border: '1px solid rgba(165,243,252,0.5)',                label: 'cyan-solid (hero text 매칭)' },
   '2': { bg: 'rgba(255,255,255,0.14)',  border: '1px solid rgba(255,255,255,0.20)', blur: true,  label: 'glass-bright' },
   '3': { bg: '#3D4A66',                 border: '1px solid rgba(255,255,255,0.12)',              label: 'solid-mid' },
   '4': { bg: 'rgba(255,250,245,0.10)',  border: '1px solid rgba(255,200,180,0.18)', blur: true,  label: 'warm-glass' },

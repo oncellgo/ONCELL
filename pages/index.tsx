@@ -118,7 +118,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref, menusE
               매일 10분, 나의 시간의 우선순위
             </div>
             <h1 style={{ fontSize: isMobile ? '1.8rem' : '2.8rem', fontWeight: 800, lineHeight: 1.3, margin: '0 0 1.1rem', color: '#fff', letterSpacing: '-0.02em' }}>
-              <span style={{ color: '#3E485E' }}>큐티셀·통독셀·암송셀</span>로<br />
+              <span style={{ color: '#A5F3FC' }}>큐티셀·통독셀·암송셀</span>로<br />
               우리의 영적세포를 깨워볼까요?<br />
               <span style={{ color: '#A5F3FC' }}>✓ </span>
               <span className="kcis-brand" aria-label="ONCELL">
