@@ -45,7 +45,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (!profileId) return res.status(400).json({ error: 'profileId required.' });
 
   const settings = await readSettings();
-  const approvalMode: 'auto' | 'admin' = settings.signupApproval === 'admin' ? 'admin' : 'auto';
+  // ONCELL 셀 모델: SSO 즉시 일반회원. 사이트 가입 승인 단계 폐지.
+  const approvalMode: 'auto' | 'admin' = 'auto';
   // 실명·연락처는 예약 시점(RequiredInfoModal) 에 수집하므로 기본 required 에서 제외.
   // 관리자가 settings.signupRequiredFields 에 명시한 경우에만 가입 시 필수.
   const configured: SignupField[] = Array.isArray(settings.signupRequiredFields)
@@ -74,7 +75,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       firstLoginAt: now,
       lastLoginAt: now,
       loginCount: 1,
-      status: approvalMode === 'admin' ? 'pending' : 'approved',
+      status: 'approved',
     };
     // 로그인 페이지에서 사전 동의했으면 신규 approval 에 바로 반영
     if (privacyConsent === true) {
