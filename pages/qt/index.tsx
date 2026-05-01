@@ -426,44 +426,6 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
                 >›</button>
               </div>
 
-              {selectedVideoId ? (
-                <div style={{ position: 'relative', width: '75%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', background: '#000', margin: '0 auto' }}>
-                  <iframe
-                    src={`https://www.youtube.com/embed/${selectedVideoId}`}
-                    title={selectedVideo?.title || '새벽기도 영상'}
-                    allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
-                  />
-                </div>
-              ) : (
-                <div style={{
-                  position: 'relative', width: '75%', maxWidth: '100%', aspectRatio: '16/9', borderRadius: 12,
-                  background: '#F3F4F6', border: '1px dashed var(--color-gray)',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
-                  color: 'var(--color-ink-2)', fontSize: '1rem', fontWeight: 700,
-                  margin: '0 auto', padding: '1rem',
-                }}>
-                  {(() => {
-                    // videoFetchStatus 에 따라 안내 문구 분기 — 단순 '영상 없음' 대신 원인 노출.
-                    if (videos.length === 0 && videoFetchStatus !== 'ok' && videoFetchStatus !== 'empty') {
-                      const msg =
-                        videoFetchStatus === 'quota' ? t('page.qt.ytQuotaError') :
-                        videoFetchStatus === 'unauthorized' ? t('page.qt.ytAuthError') :
-                        videoFetchStatus === 'network' ? t('page.qt.ytNetworkError') :
-                        t('page.qt.ytGenericError');
-                      return (
-                        <>
-                          <span>{t('page.qt.noVideo')}</span>
-                          <span style={{ fontSize: '0.78rem', fontWeight: 500, color: '#B91C1C' }}>⚠ {msg}</span>
-                        </>
-                      );
-                    }
-                    return <span>{t('page.qt.noVideo')}</span>;
-                  })()}
-                </div>
-              )}
-
               <div style={{
                 display: 'grid', gap: isMobile ? '0.6rem' : '0.75rem',
                 padding: isMobile ? '0.75rem 0.75rem' : '1rem 1.1rem',
