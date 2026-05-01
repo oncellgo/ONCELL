@@ -104,8 +104,10 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
       flexWrap: 'nowrap',
       padding: isMobile ? '0.5rem 0.65rem' : '0.6rem 0.9rem',
       borderRadius: 14,
-      background: '#1A2236',
-      border: '1px solid rgba(255,255,255,0.08)',
+      background: 'rgba(255,255,255,0.08)',
+      border: '1px solid rgba(255,255,255,0.14)',
+      backdropFilter: 'blur(14px)',
+      WebkitBackdropFilter: 'blur(14px)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0, flex: 1 }}>
         <a href={homeHref} aria-label={t('brand.logoAlt')} title={t('brand.logoAlt')} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none' }}>
