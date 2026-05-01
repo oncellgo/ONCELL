@@ -126,6 +126,24 @@ export async function countIndependentCellsForUser(profileId: string): Promise<n
   return cells.filter((c) => !c.community_id).length;
 }
 
+export type CellMemberRow = {
+  cell_id: string;
+  profile_id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  joined_at: string;
+};
+
+export async function getCellMembers(cellId: string): Promise<CellMemberRow[]> {
+  const { data, error } = await db
+    .from('oncell_cell_members')
+    .select('*')
+    .eq('cell_id', cellId)
+    .eq('status', 'approved')
+    .order('joined_at', { ascending: true });
+  if (error) throw error;
+  return (data || []) as CellMemberRow[];
+}
+
 export async function isCellMember(cellId: string, profileId: string): Promise<boolean> {
   const { data, error } = await db
     .from('oncell_cell_members')
