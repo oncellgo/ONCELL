@@ -26,9 +26,23 @@ type Props = {
   systemAdminHref: string | null;
 };
 
-export default function CellDetail({ profileId, nickname, email, systemAdminHref }: Props) {
+export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickname, email: ssrEmail, systemAdminHref }: Props) {
   const router = useRouter();
   const isMobile = useIsMobile();
+  const [profileId, setProfileId] = useState<string | null>(ssrProfileId);
+  const [nickname, setNickname] = useState<string | null>(ssrNickname);
+  const [email, setEmail] = useState<string | null>(ssrEmail);
+  useEffect(() => {
+    if (profileId) return;
+    try {
+      const pid = window.localStorage.getItem('kcisProfileId');
+      const nick = window.localStorage.getItem('kcisNickname');
+      const em = window.localStorage.getItem('kcisEmail');
+      if (pid) setProfileId(pid);
+      if (nick) setNickname(nick);
+      if (em) setEmail(em);
+    } catch {}
+  }, [profileId]);
   const cellId = typeof router.query.id === 'string' ? router.query.id : '';
   const [cell, setCell] = useState<Cell | null>(null);
   const [loading, setLoading] = useState(true);

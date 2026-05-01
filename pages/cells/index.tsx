@@ -23,14 +23,28 @@ type Props = {
   systemAdminHref: string | null;
 };
 
-export default function CellsIndex({ profileId, nickname, email, systemAdminHref }: Props) {
+export default function CellsIndex({ profileId: ssrProfileId, nickname: ssrNickname, email: ssrEmail, systemAdminHref }: Props) {
   const isMobile = useIsMobile();
+  const [profileId, setProfileId] = useState<string | null>(ssrProfileId);
+  const [nickname, setNickname] = useState<string | null>(ssrNickname);
+  const [email, setEmail] = useState<string | null>(ssrEmail);
+  useEffect(() => {
+    if (profileId) return;
+    try {
+      const pid = window.localStorage.getItem('kcisProfileId');
+      const nick = window.localStorage.getItem('kcisNickname');
+      const em = window.localStorage.getItem('kcisEmail');
+      if (pid) setProfileId(pid);
+      if (nick) setNickname(nick);
+      if (em) setEmail(em);
+    } catch {}
+  }, [profileId]);
   const [cells, setCells] = useState<Cell[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!profileId) return;
+    if (!profileId) { setLoading(false); return; }
     (async () => {
       try {
         const r = await fetch(`/api/cells/my?profileId=${encodeURIComponent(profileId)}`);

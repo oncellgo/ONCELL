@@ -1,6 +1,6 @@
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import TopNav from '../../components/TopNav';
 import { useIsMobile } from '../../lib/useIsMobile';
@@ -20,9 +20,23 @@ const inputStyle: React.CSSProperties = {
   fontSize: '0.95rem', fontFamily: 'inherit', boxSizing: 'border-box',
 };
 
-export default function NewCell({ profileId, nickname, email, systemAdminHref }: Props) {
+export default function NewCell({ profileId: ssrProfileId, nickname: ssrNickname, email: ssrEmail, systemAdminHref }: Props) {
   const router = useRouter();
   const isMobile = useIsMobile();
+  const [profileId, setProfileId] = useState<string | null>(ssrProfileId);
+  const [nickname, setNickname] = useState<string | null>(ssrNickname);
+  const [email, setEmail] = useState<string | null>(ssrEmail);
+  useEffect(() => {
+    if (profileId) return;
+    try {
+      const pid = window.localStorage.getItem('kcisProfileId');
+      const nick = window.localStorage.getItem('kcisNickname');
+      const em = window.localStorage.getItem('kcisEmail');
+      if (pid) setProfileId(pid);
+      if (nick) setNickname(nick);
+      if (em) setEmail(em);
+    } catch {}
+  }, [profileId]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [enabledModes, setEnabledModes] = useState({ qt: true, reading: false, memorize: false });
