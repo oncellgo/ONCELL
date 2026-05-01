@@ -1,5 +1,6 @@
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import TopNav from '../components/TopNav';
 import { getProfiles, getUsers } from '../lib/dataStore';
@@ -14,10 +15,33 @@ type Props = {
   systemAdminHref: string | null;
 };
 
-const Dashboard = ({ profileId, displayName, nickname, email, systemAdminHref }: Props) => {
+const Dashboard = ({ profileId: ssrProfileId, displayName, nickname, email, systemAdminHref }: Props) => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
+  const [profileId, setProfileId] = useState<string | null>(ssrProfileId);
+  useEffect(() => {
+    if (profileId) return;
+    try {
+      const pid = window.localStorage.getItem('kcisProfileId');
+      if (pid) setProfileId(pid);
+    } catch {}
+  }, [profileId]);
+
+  const [cellCount, setCellCount] = useState<number | null>(null);
+  useEffect(() => {
+    if (!profileId) return;
+    (async () => {
+      try {
+        const r = await fetch(`/api/cells/my?profileId=${encodeURIComponent(profileId)}`);
+        if (!r.ok) return;
+        const d = await r.json();
+        setCellCount(Array.isArray(d.cells) ? d.cells.length : 0);
+      } catch {}
+    })();
+  }, [profileId]);
+
   const name = displayName || nickname || (email ? email.split('@')[0] : '');
+  const hasCells = cellCount !== null && cellCount > 0;
 
   return (
     <>
@@ -50,13 +74,26 @@ const Dashboard = ({ profileId, displayName, nickname, email, systemAdminHref }:
             </a>
           </div>
 
-          <a href="/cells" style={{ display: 'block', padding: '1.5rem', borderRadius: 16, background: 'rgba(165,243,252,0.08)', border: '1px solid rgba(165,243,252,0.32)', textDecoration: 'none', color: 'inherit' }}>
-            <div style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>✨</div>
-            <div style={{ fontWeight: 700, color: '#A5F3FC', marginBottom: '0.5rem' }}>내 셀</div>
-            <div style={{ color: 'rgba(255,255,255,0.78)', fontSize: '0.9rem', lineHeight: 1.65 }}>
-              친구들과 함께하는 큐티셀 · 통독셀 · 암송셀을 만들고 관리하세요.
+          {hasCells ? (
+            <a href="/cells" style={{ display: 'block', padding: '1.5rem', borderRadius: 16, background: 'rgba(165,243,252,0.08)', border: '1px solid rgba(165,243,252,0.32)', textDecoration: 'none', color: 'inherit' }}>
+              <div style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>✨</div>
+              <div style={{ fontWeight: 700, color: '#A5F3FC', marginBottom: '0.5rem' }}>내 셀 ({cellCount})</div>
+              <div style={{ color: 'rgba(255,255,255,0.78)', fontSize: '0.9rem', lineHeight: 1.65 }}>
+                가입한 셀로 이동해서 오늘의 인증을 남겨보세요.
+              </div>
+            </a>
+          ) : (
+            <div style={{ padding: '1.75rem 1.5rem', borderRadius: 16, background: 'rgba(165,243,252,0.08)', border: '1px solid rgba(165,243,252,0.32)', textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.6rem' }}>✨</div>
+              <div style={{ fontWeight: 700, color: '#A5F3FC', marginBottom: '0.5rem', fontSize: '1.05rem' }}>아직 가입한 셀이 없어요</div>
+              <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.9rem', lineHeight: 1.65, marginBottom: '1.25rem' }}>
+                친구들과 매일 5분 영적 동행을 시작해보세요.
+              </div>
+              <a href="/cells/new" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 46, padding: '0.7rem 1.4rem', borderRadius: 12, background: '#A5F3FC', color: '#2D3850', fontWeight: 700, fontSize: '0.92rem', textDecoration: 'none' }}>
+                + 내 셀 만들기
+              </a>
             </div>
-          </a>
+          )}
 
         </main>
       </div>
