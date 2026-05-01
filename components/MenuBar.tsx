@@ -27,11 +27,8 @@ const SCHEDULE_MENU_VISIBLE = false;
 // 메뉴 라벨은 t('menu.xxx') 로 i18n. ko/en/zh 전환에 자동 반응.
 const ITEMS: Array<{ labelKey: string; href: string; hidden?: boolean }> = [
   { labelKey: 'menu.schedule', href: '/schedule', hidden: !SCHEDULE_MENU_VISIBLE },
-  { labelKey: 'menu.reservation', href: '/reservations/grid' },
   { labelKey: 'menu.qt', href: '/qt' },
   { labelKey: 'menu.reading', href: '/reading' },
-  { labelKey: 'menu.bulletin', href: '/sunday-worship' },
-  { labelKey: 'menu.cellTeaching', href: '/cell-teaching' },
 ];
 
 const VISIBLE_ITEMS = ITEMS.filter((i) => !i.hidden);

@@ -58,20 +58,18 @@ const KEEP     = Number(getArg('--keep')) || 0;     // 0 = 보존 제한 없음
 const OUT_BASE = getArg('--out') || 'backups';
 
 // --- 백업 대상 테이블 (lib/db.ts 의 T 와 동기화) ----------------------------
+// 정리(2026-04) 이후 유지되는 테이블만 백업.
+// 삭제 예정 테이블 (worship/venues/floors/venue_blocks/venue_block_groups/
+// community_bulletin_templates/signup_approvals) 은 제외.
 const TABLES = [
   'oncell_communities',
   'oncell_profiles',
   'oncell_users',
   'oncell_events',
-  'oncell_worship_services',
-  'oncell_venues',
-  'oncell_floors',
-  'oncell_venue_blocks',
-  'oncell_venue_block_groups',
-  'oncell_community_bulletin_templates',
-  'oncell_signup_approvals',
-  'oncell_qt_notes',
   'oncell_event_categories',
+  'oncell_qt_notes',
+  'oncell_qt_plan',
+  'oncell_reading_plans',
   'oncell_app_kv',
 ];
 
