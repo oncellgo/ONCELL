@@ -171,6 +171,58 @@ create table if not exists oncell_qt_plan (
 );
 create index if not exists idx_oncell_qt_plan_book on oncell_qt_plan(book_code);
 
+-- 13c. 셀 (큐티/통독/암송 모드 다중 활성화 가능한 단위)
+--   community_id가 null이면 독립 셀, 아니면 공동체 산하 셀.
+--   공동체 산하 셀은 공동체관리자가 통제 (owner_profile_id는 생성자 기록용).
+create table if not exists oncell_cells (
+  id                     text primary key,
+  name                   text not null,
+  owner_profile_id       text not null,
+  community_id           text references oncell_communities(id) on delete set null,
+  approval_mode          text not null default 'auto',          -- 'auto' | 'manual'
+  invite_token           text not null unique,                  -- 32+ 자 URL-safe 랜덤
+  bundle_community_join  boolean default false,                 -- 공동체 셀일 때 가입 시 공동체 자동 동의 여부
+  enabled_modes          jsonb not null default '{"qt":false,"reading":false,"memorize":false}',
+  qt_settings            jsonb,
+  reading_settings       jsonb,
+  memorize_settings      jsonb,
+  description            text,
+  invite_message         text,
+  member_count           integer default 0,
+  created_at             timestamptz default now(),
+  archived_at            timestamptz
+);
+create index if not exists idx_oncell_cells_owner     on oncell_cells(owner_profile_id);
+create index if not exists idx_oncell_cells_community on oncell_cells(community_id);
+create index if not exists idx_oncell_cells_token     on oncell_cells(invite_token);
+
+-- 13d. 셀 멤버십
+create table if not exists oncell_cell_members (
+  cell_id    text not null references oncell_cells(id) on delete cascade,
+  profile_id text not null,
+  status     text not null default 'approved',                  -- 'pending' | 'approved' | 'rejected'
+  joined_at  timestamptz default now(),
+  primary key (cell_id, profile_id)
+);
+create index if not exists idx_oncell_cell_members_profile on oncell_cell_members(profile_id);
+create index if not exists idx_oncell_cell_members_status  on oncell_cell_members(status);
+
+-- 13e. 공동체 멤버십 (1인 1공동체 보장은 앱 로직 — 한도 시스템관리자 설정에서 제어)
+create table if not exists oncell_community_members (
+  community_id text not null references oncell_communities(id) on delete cascade,
+  profile_id   text not null,
+  status       text not null default 'approved',
+  joined_at    timestamptz default now(),
+  primary key (community_id, profile_id)
+);
+create index if not exists idx_oncell_community_members_profile on oncell_community_members(profile_id);
+
+-- 13f. 공동체 (cell_join_limit 컬럼 추가 — 공동체별 멤버 셀 가입 한도)
+-- 기존 oncell_communities 테이블에 컬럼 추가 (이미 있으면 무시)
+alter table oncell_communities add column if not exists cell_join_limit integer default 3;
+alter table oncell_communities add column if not exists approval_mode   text default 'auto';
+alter table oncell_communities add column if not exists description     text;
+
 -- 14. 싱글톤/KV 저장소
 --   - settings (settings.json 통째로)
 --   - system_admins (system-admins.json: {profileIds:[]})
