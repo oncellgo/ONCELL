@@ -76,7 +76,7 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
       @keyframes kcisBrandLight {
         0%, 100% { color: #06B6D4; text-shadow: 0 0 2px rgba(6,182,212,0.35); }
         40% { color: #67E8F9; text-shadow: 0 0 4px rgba(103,232,249,0.55); }
-        70% { color: #F472B6; text-shadow: 0 0 3px rgba(244,114,182,0.4); }
+        72%, 76% { color: #A78BFA; text-shadow: 0 0 3px rgba(167,139,250,0.45); }
         85% { color: #67E8F9; text-shadow: 0 0 3px rgba(103,232,249,0.4); }
       }
       .kcis-logo { will-change: opacity, filter; animation: kcisLogoPulse 4.5s ease-in-out infinite; }
