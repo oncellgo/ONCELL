@@ -122,25 +122,25 @@ const Dashboard = ({ profileId: ssrProfileId, displayName, nickname, email, syst
             const myCells = communityCellsByCid[cid];
             const events = communityEvents[cid] || [];
             return (
-              <section key={cid} style={{ marginBottom: '1.75rem', padding: isMobile ? '1.1rem' : '1.4rem', borderRadius: 16, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <section key={cid} style={{ marginBottom: '1.75rem', padding: isMobile ? '1.1rem' : '1.4rem', borderRadius: 16, background: '#fff', border: '1px solid rgba(0,0,0,0.06)', color: '#182527', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
                   <div>
-                    <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: '0.04em', marginBottom: '0.15rem' }}>공동체</div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, letterSpacing: '0.04em', marginBottom: '0.15rem' }}>공동체</div>
                     <div style={{ fontSize: '1.05rem', fontWeight: 700 }}>{cid}</div>
                   </div>
-                  <Link href="/schedule" style={{ fontSize: '0.78rem', color: '#A5F3FC', textDecoration: 'none' }}>일정 전체 →</Link>
+                  <Link href="/schedule" style={{ fontSize: '0.78rem', color: '#0891B2', textDecoration: 'none', fontWeight: 600 }}>일정 전체 →</Link>
                 </div>
 
                 {/* 다가오는 일정 */}
                 <div style={{ marginBottom: '1rem' }}>
-                  <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600, marginBottom: '0.5rem' }}>이번 주 일정</div>
+                  <div style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600, marginBottom: '0.5rem' }}>이번 주 일정</div>
                   {events.length === 0 ? (
-                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem' }}>예정된 일정이 없습니다</div>
+                    <div style={{ color: '#94A3B8', fontSize: '0.82rem' }}>예정된 일정이 없습니다</div>
                   ) : (
                     <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '0.4rem' }}>
                       {events.map((e) => (
-                        <li key={e.id} style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.82)', display: 'flex', gap: '0.6rem' }}>
-                          <span style={{ color: 'rgba(255,255,255,0.5)', minWidth: 60 }}>{new Date(e.startAt).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })}</span>
+                        <li key={e.id} style={{ fontSize: '0.85rem', color: '#334155', display: 'flex', gap: '0.6rem' }}>
+                          <span style={{ color: '#94A3B8', minWidth: 60 }}>{new Date(e.startAt).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })}</span>
                           <span style={{ flex: 1 }}>{e.title}</span>
                         </li>
                       ))}
@@ -150,7 +150,7 @@ const Dashboard = ({ profileId: ssrProfileId, displayName, nickname, email, syst
 
                 {/* 그 공동체 안의 내 셀 */}
                 <div>
-                  <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600, marginBottom: '0.5rem' }}>내 셀 ({myCells.length})</div>
+                  <div style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600, marginBottom: '0.5rem' }}>내 셀 ({myCells.length})</div>
                   <div style={{ display: 'grid', gap: '0.5rem' }}>
                     {myCells.map((c) => <CellRow key={c.id} cell={c} ownProfileId={profileId} />)}
                   </div>
@@ -174,10 +174,10 @@ const Dashboard = ({ profileId: ssrProfileId, displayName, nickname, email, syst
 
           {/* 셀 0개일 때 CTA */}
           {cells !== null && !hasCells && (
-            <section style={{ marginBottom: '1.75rem', padding: '1.75rem 1.5rem', borderRadius: 16, background: 'rgba(165,243,252,0.08)', border: '1px solid rgba(165,243,252,0.32)', textAlign: 'center' }}>
+            <section style={{ marginBottom: '1.75rem', padding: '1.75rem 1.5rem', borderRadius: 16, background: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', textAlign: 'center' }}>
               <div style={{ fontSize: '2rem', marginBottom: '0.6rem' }}>✨</div>
-              <div style={{ fontWeight: 700, color: '#A5F3FC', marginBottom: '0.5rem', fontSize: '1.05rem' }}>아직 가입한 셀이 없어요</div>
-              <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.9rem', lineHeight: 1.65, marginBottom: '1.25rem' }}>
+              <div style={{ fontWeight: 700, color: '#0891B2', marginBottom: '0.5rem', fontSize: '1.05rem' }}>아직 가입한 셀이 없어요</div>
+              <div style={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.65, marginBottom: '1.25rem' }}>
                 친구들과 매일 5분 영적 동행을 시작해보세요.
               </div>
               <Link href="/cells/new" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 46, padding: '0.7rem 1.4rem', borderRadius: 12, background: '#A5F3FC', color: '#2D3850', fontWeight: 700, fontSize: '0.92rem', textDecoration: 'none' }}>
@@ -190,15 +190,15 @@ const Dashboard = ({ profileId: ssrProfileId, displayName, nickname, email, syst
           <section>
             <h2 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'rgba(255,255,255,0.6)', margin: '0 0 0.85rem', letterSpacing: '0.02em' }}>개인 영적 기록</h2>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '0.85rem' }}>
-              <Link href="/qt" style={{ padding: '1.15rem', borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', textDecoration: 'none', color: '#fff' }}>
+              <Link href="/qt" style={{ padding: '1.15rem', borderRadius: 14, background: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', textDecoration: 'none', color: '#182527' }}>
                 <div style={{ fontSize: '1.3rem', marginBottom: '0.3rem' }}>📖</div>
                 <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>오늘의 큐티</div>
-                <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>매일 본문·묵상 노트</div>
+                <div style={{ fontSize: '0.82rem', color: '#64748B', lineHeight: 1.5 }}>매일 본문·묵상 노트</div>
               </Link>
-              <Link href="/reading" style={{ padding: '1.15rem', borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', textDecoration: 'none', color: '#fff' }}>
+              <Link href="/reading" style={{ padding: '1.15rem', borderRadius: 14, background: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', textDecoration: 'none', color: '#182527' }}>
                 <div style={{ fontSize: '1.3rem', marginBottom: '0.3rem' }}>📜</div>
                 <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>성경 통독</div>
-                <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>오늘의 분량 + 진도</div>
+                <div style={{ fontSize: '0.82rem', color: '#64748B', lineHeight: 1.5 }}>오늘의 분량 + 진도</div>
               </Link>
             </div>
           </section>
@@ -216,19 +216,19 @@ const CellRow = ({ cell, ownProfileId }: { cell: Cell; ownProfileId: string | nu
   if (cell.enabled_modes?.memorize) modes.push('암송');
   if (cell.enabled_modes?.prayer) modes.push('🙏 기도');
   return (
-    <Link href={`/cells/${cell.id}`} style={{ padding: '0.85rem 1rem', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', textDecoration: 'none', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem' }}>
+    <Link href={`/cells/${cell.id}`} style={{ padding: '0.85rem 1rem', borderRadius: 12, background: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', textDecoration: 'none', color: '#182527', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem' }}>
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontWeight: 600, fontSize: '0.92rem', marginBottom: '0.2rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cell.name}</div>
         <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
           {modes.map((m) => (
-            <span key={m} style={{ fontSize: '0.66rem', padding: '0.12rem 0.45rem', borderRadius: 999, background: 'rgba(165,243,252,0.15)', color: '#A5F3FC', fontWeight: 600 }}>{m}</span>
+            <span key={m} style={{ fontSize: '0.66rem', padding: '0.12rem 0.45rem', borderRadius: 999, background: 'rgba(8,145,178,0.1)', color: '#0891B2', fontWeight: 600 }}>{m}</span>
           ))}
           {cell.owner_profile_id === ownProfileId && (
-            <span style={{ fontSize: '0.66rem', padding: '0.12rem 0.45rem', borderRadius: 999, background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}>owner</span>
+            <span style={{ fontSize: '0.66rem', padding: '0.12rem 0.45rem', borderRadius: 999, background: 'rgba(0,0,0,0.06)', color: '#64748B' }}>owner</span>
           )}
         </div>
       </div>
-      <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)', flexShrink: 0 }}>{cell.member_count}명</span>
+      <span style={{ fontSize: '0.78rem', color: '#94A3B8', flexShrink: 0 }}>{cell.member_count}명</span>
     </Link>
   );
 };
