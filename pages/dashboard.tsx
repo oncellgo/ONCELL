@@ -186,6 +186,13 @@ const Dashboard = ({ profileId: ssrProfileId, displayName, nickname, email, syst
             </section>
           )}
 
+          {/* 공동체 찾기 (작은 진입점) */}
+          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+            <Link href="/communities" style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.55)', textDecoration: 'underline', textUnderlineOffset: 3 }}>
+              공동체 찾아보기 →
+            </Link>
+          </div>
+
           {/* 개인 도구 — 큐티 / 통독 */}
           <section>
             <h2 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'rgba(255,255,255,0.6)', margin: '0 0 0.85rem', letterSpacing: '0.02em' }}>개인 영적 기록</h2>

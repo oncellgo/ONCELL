@@ -55,10 +55,11 @@ export default function NewCell({ profileId: ssrProfileId, nickname: ssrNickname
 
     setSubmitting(true);
     try {
+      const communityId = typeof router.query.community === 'string' ? router.query.community : undefined;
       const r = await fetch('/api/cells', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ profileId, name, description, enabledModes, approvalMode }),
+        body: JSON.stringify({ profileId, name, description, enabledModes, approvalMode, communityId }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.errorReason || d.error || `${r.status}`);
@@ -85,6 +86,12 @@ export default function NewCell({ profileId: ssrProfileId, nickname: ssrNickname
           <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.92rem', lineHeight: 1.65, margin: '0 0 2rem' }}>
             친구 3-5명과 매일 5분 영적 동행을 시작하세요.
           </p>
+
+          {typeof router.query.community === 'string' && (
+            <div style={{ marginBottom: '1.25rem', padding: '0.85rem 1rem', borderRadius: 12, background: '#FFF7ED', border: '1px solid #FED7AA', color: '#9A3412', fontSize: '0.88rem', fontWeight: 600 }}>
+              ✓ 이 셀은 [{router.query.community}] 공동체 산하 셀로 만들어집니다
+            </div>
+          )}
 
           <form onSubmit={submit} style={{ display: 'grid', gap: '1rem' }}>
 
