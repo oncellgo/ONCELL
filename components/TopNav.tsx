@@ -97,7 +97,7 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
             className="kcis-logo"
             style={{ width: isMobile ? 24 : 28, height: isMobile ? 24 : 28, objectFit: 'contain', display: 'inline-block', borderRadius: 6 }}
           />
-          <strong style={{ fontWeight: 800, letterSpacing: '0.02em', fontSize: isMobile ? '0.82rem' : '0.9rem' }}>
+          <strong style={{ fontWeight: 800, letterSpacing: '0.02em', fontSize: isMobile ? '1rem' : '1.15rem' }}>
             <span className="kcis-brand">ONCELL</span>
           </strong>
         </a>
