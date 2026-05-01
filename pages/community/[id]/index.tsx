@@ -104,8 +104,13 @@ export default function CommunityDetail({ profileId: ssrProfileId, nickname: ssr
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.errorReason || d.error || `${r.status}`);
-      await reload();
+      // 낙관적 업데이트 — reload 결과 기다리지 말고 즉시 반영
+      if (d.status === 'approved') {
+        setIsMember(true);
+        setMemberCount((prev) => prev + 1);
+      }
       if (d.status === 'pending') alert('가입 신청 완료. 공동체관리자 승인이 필요합니다.');
+      await reload();
     } catch (e: any) {
       setErr(e?.message || '가입 실패');
     } finally { setJoining(false); }
@@ -138,15 +143,17 @@ export default function CommunityDetail({ profileId: ssrProfileId, nickname: ssr
                   {community.approval_mode === 'manual' && <span style={{ fontSize: '0.74rem', padding: '0.18rem 0.55rem', borderRadius: 999, background: '#FEF3C7', color: '#78350F', fontWeight: 600 }}>수동승인</span>}
                 </div>
 
-                {!isMember && !isAdmin && (
-                  <button onClick={join} disabled={joining} style={{ width: '100%', padding: '0.85rem', minHeight: 48, borderRadius: 12, background: joining ? '#94A3B8' : '#2D3850', color: '#fff', fontWeight: 700, fontSize: '0.95rem', border: 'none', cursor: joining ? 'wait' : 'pointer' }}>
-                    {joining ? '신청 중…' : '공동체 가입 신청'}
-                  </button>
-                )}
-                {(isMember || isAdmin) && (
-                  <div style={{ padding: '0.7rem', borderRadius: 10, background: '#ECFDF5', color: '#065F46', fontSize: '0.88rem', textAlign: 'center', fontWeight: 600 }}>
-                    ✓ {isAdmin ? '공동체 관리자' : '공동체 멤버'}
-                  </div>
+                {/* 멤버십 상태 — loading 중엔 둘 다 안 보이게 */}
+                {!loading && (
+                  isMember || isAdmin ? (
+                    <div style={{ padding: '0.7rem', borderRadius: 10, background: '#ECFDF5', color: '#065F46', fontSize: '0.88rem', textAlign: 'center', fontWeight: 600 }}>
+                      ✓ {isAdmin ? '공동체 관리자' : '공동체 멤버'}
+                    </div>
+                  ) : (
+                    <button onClick={join} disabled={joining} style={{ width: '100%', padding: '0.85rem', minHeight: 48, borderRadius: 12, background: joining ? '#94A3B8' : '#2D3850', color: '#fff', fontWeight: 700, fontSize: '0.95rem', border: 'none', cursor: joining ? 'wait' : 'pointer' }}>
+                      {joining ? '신청 중…' : '공동체 가입 신청'}
+                    </button>
+                  )
                 )}
               </section>
 
