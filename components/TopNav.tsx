@@ -153,7 +153,7 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
               borderRadius: 999,
               background: 'transparent',
               border: 'none',
-              color: 'var(--color-primary-deep)',
+              color: '#182527',
               fontWeight: 800,
               fontSize: isMobile ? '0.78rem' : '0.85rem',
               textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
