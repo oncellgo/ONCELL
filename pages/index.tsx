@@ -210,19 +210,19 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
             </div>
           </section>
 
-          {/* 기능 라벨 — 비활성 (베타 준비 중) */}
+          {/* 기능 메뉴 — 활성 링크 */}
           <section style={{ marginTop: isMobile ? '2.25rem' : '3rem' }}>
             <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', WebkitOverflowScrolling: 'touch', justifyContent: isMobile ? 'flex-start' : 'center' }}>
               {[
-                t('landing.menuReservation'),
-                t('landing.menuQT'),
-                t('landing.menuReading'),
-                t('landing.menuBulletin'),
-                t('landing.menuCellTeaching'),
-              ].map((label) => (
-                <span key={label} style={{ flexShrink: 0, padding: '0.55rem 1rem', minHeight: 40, display: 'inline-flex', alignItems: 'center', borderRadius: 999, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', fontWeight: 600 }}>
-                  {label}
-                </span>
+                { href: '/reservations/grid', label: t('landing.menuReservation'), onClick: handleReservationClick },
+                { href: '/qt', label: t('landing.menuQT'), onClick: handleProtectedClick('/qt') },
+                { href: '/reading', label: t('landing.menuReading'), onClick: handleProtectedClick('/reading') },
+                { href: '/sunday-worship', label: t('landing.menuBulletin'), onClick: handleProtectedClick('/sunday-worship') },
+                { href: '/cell-teaching', label: t('landing.menuCellTeaching'), onClick: handleProtectedClick('/cell-teaching') },
+              ].map((m) => (
+                <a key={m.href} href={m.href} onClick={m.onClick} style={{ flexShrink: 0, padding: '0.55rem 1rem', minHeight: 40, display: 'inline-flex', alignItems: 'center', borderRadius: 999, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)', color: 'rgba(255,255,255,0.88)', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none' }}>
+                  {m.label}
+                </a>
               ))}
             </div>
           </section>
