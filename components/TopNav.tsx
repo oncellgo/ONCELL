@@ -64,7 +64,7 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
       .kcis-brand { display: inline-flex; }
       .kcis-brand span {
         display: inline-block;
-        color: #2D3850;
+        color: #06B6D4;
         animation: kcisBrandLight 2s ease-in-out infinite;
       }
       .kcis-brand span:nth-child(1) { animation-delay: 0s; }
@@ -74,10 +74,8 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
       .kcis-brand span:nth-child(5) { animation-delay: 0.64s; }
       .kcis-brand span:nth-child(6) { animation-delay: 0.80s; }
       @keyframes kcisBrandLight {
-        0%, 100% { color: #2D3850; text-shadow: none; }
-        25% { color: #67E8F9; text-shadow: 0 0 3px rgba(103,232,249,0.45); }
-        50% { color: #06B6D4; text-shadow: 0 0 3px rgba(6,182,212,0.45); }
-        75% { color: #67E8F9; text-shadow: 0 0 3px rgba(103,232,249,0.45); }
+        0%, 100% { color: #06B6D4; text-shadow: 0 0 2px rgba(6,182,212,0.35); }
+        50% { color: #67E8F9; text-shadow: 0 0 4px rgba(103,232,249,0.55); }
       }
       .kcis-logo { will-change: opacity, filter; animation: kcisLogoPulse 4.5s ease-in-out infinite; }
       @keyframes kcisLogoPulse {
@@ -91,7 +89,7 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
         }
       }
       @media (prefers-reduced-motion: reduce) {
-        .kcis-brand span { animation: none; color: #2D3850; }
+        .kcis-brand span { animation: none; color: #06B6D4; }
         .kcis-logo { animation: none; }
       }
     `}</style>
