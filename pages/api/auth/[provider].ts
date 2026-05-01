@@ -5,7 +5,7 @@ const providerConfig = {
     authorizeUrl: 'https://kauth.kakao.com/oauth/authorize',
     clientId: process.env.KAKAO_CLIENT_ID,
     redirectUri: process.env.KAKAO_REDIRECT_URI,
-    scope: 'profile_nickname,account_email',
+    scope: 'profile_nickname',
   },
   google: {
     authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
