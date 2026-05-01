@@ -16,12 +16,13 @@ type HomeProps = {
   nickname: string | null;
   email: string | null;
   systemAdminHref: string | null;
+  menusEnabled: boolean;
 };
 
 const featureIcons = ['👥', '📅', '📖', '🌱', '🏛️', '🌏'];
 const featureKeys = [1, 2, 3, 4, 5, 6] as const;
 
-const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: HomeProps) => {
+const Home = ({ profileId, displayName, nickname, email, systemAdminHref, menusEnabled }: HomeProps) => {
   const { t } = useTranslation();
   const router = useRouter();
   const isMobile = useIsMobile();
@@ -210,7 +211,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
             </div>
           </section>
 
-          {/* 기능 메뉴 — 활성 링크 */}
+          {/* 기능 메뉴 — localhost에서만 활성, prod 비활성 */}
           <section style={{ marginTop: isMobile ? '2.25rem' : '3rem' }}>
             <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', WebkitOverflowScrolling: 'touch', justifyContent: isMobile ? 'flex-start' : 'center' }}>
               {[
@@ -219,10 +220,14 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref }: Home
                 { href: '/reading', label: t('landing.menuReading'), onClick: handleProtectedClick('/reading') },
                 { href: '/sunday-worship', label: t('landing.menuBulletin'), onClick: handleProtectedClick('/sunday-worship') },
                 { href: '/cell-teaching', label: t('landing.menuCellTeaching'), onClick: handleProtectedClick('/cell-teaching') },
-              ].map((m) => (
+              ].map((m) => menusEnabled ? (
                 <a key={m.href} href={m.href} onClick={m.onClick} style={{ flexShrink: 0, padding: '0.55rem 1rem', minHeight: 40, display: 'inline-flex', alignItems: 'center', borderRadius: 999, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)', color: 'rgba(255,255,255,0.88)', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none' }}>
                   {m.label}
                 </a>
+              ) : (
+                <span key={m.href} style={{ flexShrink: 0, padding: '0.55rem 1rem', minHeight: 40, display: 'inline-flex', alignItems: 'center', borderRadius: 999, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', fontWeight: 600, cursor: 'not-allowed' }} title="베타 준비 중">
+                  {m.label}
+                </span>
               ))}
             </div>
           </section>
@@ -310,7 +315,9 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async (context)
   }
 
   const systemAdminHref = await getSystemAdminHref(profileId, { nickname, email });
-  return { props: { profileId, displayName, nickname, email, systemAdminHref } };
+  // Vercel 환경(prod·preview)에선 메뉴 비활성. 로컬 dev에선 정상 활성.
+  const menusEnabled = !process.env.VERCEL;
+  return { props: { profileId, displayName, nickname, email, systemAdminHref, menusEnabled } };
 };
 
 export default Home;
