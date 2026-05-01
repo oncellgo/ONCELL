@@ -57,24 +57,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref, menusE
     refreshStatus(pid);
   }, [profileId]);
 
-  const handleReservationClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    if (!effectiveProfileId) {
-      window.location.href = '/auth/login';
-      return;
-    }
-    if (missingFields.length > 0) {
-      setShowRequiredModal(true);
-      return;
-    }
-    if (approvalStatus === 'pending') {
-      setShowPendingModal(true);
-      return;
-    }
-    router.push('/reservations/grid');
-  };
-
-  // 로그인 필요 메뉴(큐티·구역모임교안·문의)의 공통 가드
+  // 로그인 필요 메뉴(큐티·통독)의 공통 가드
   const handleProtectedClick = (href: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     if (!effectiveProfileId) {
@@ -215,11 +198,8 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref, menusE
           <section style={{ marginTop: isMobile ? '2.25rem' : '3rem' }}>
             <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', WebkitOverflowScrolling: 'touch', justifyContent: isMobile ? 'flex-start' : 'center' }}>
               {[
-                { href: '/reservations/grid', label: t('landing.menuReservation'), onClick: handleReservationClick },
                 { href: '/qt', label: t('landing.menuQT'), onClick: handleProtectedClick('/qt') },
                 { href: '/reading', label: t('landing.menuReading'), onClick: handleProtectedClick('/reading') },
-                { href: '/sunday-worship', label: t('landing.menuBulletin'), onClick: handleProtectedClick('/sunday-worship') },
-                { href: '/cell-teaching', label: t('landing.menuCellTeaching'), onClick: handleProtectedClick('/cell-teaching') },
               ].map((m) => menusEnabled ? (
                 <a key={m.href} href={m.href} onClick={m.onClick} style={{ flexShrink: 0, padding: '0.55rem 1rem', minHeight: 40, display: 'inline-flex', alignItems: 'center', borderRadius: 999, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)', color: 'rgba(255,255,255,0.88)', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none' }}>
                   {m.label}
