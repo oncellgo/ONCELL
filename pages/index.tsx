@@ -102,9 +102,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref, menusE
       </Head>
 
       <div className={styles.page}>
-        <div style={{ padding: isMobile ? '0.5rem 0.5rem 0' : '0.75rem 0.75rem 0', maxWidth: 1040, margin: '0 auto', width: '100%' }}>
           <TopNav profileId={profileId} displayName={displayName} nickname={nickname} email={email} systemAdminHref={systemAdminHref || undefined} />
-        </div>
 
         <main style={{ maxWidth: 1040, margin: '0 auto', padding: isMobile ? '1.25rem 1rem 2rem' : '3rem 1.5rem 4rem', color: '#fff' }}>
 
@@ -220,9 +218,6 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref, menusE
             <span style={{ margin: '0 0.5rem', color: 'rgba(255,255,255,0.3)' }}>|</span>
             <a href="/terms" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'underline', display: 'inline-block', minHeight: 24 }}>이용약관</a>
           </div>
-          <div>21 Gangsa Road Singapore 678973</div>
-          <div>TEL <a href="tel:+6564686694" style={{ color: 'rgba(255,255,255,0.6)', display: 'inline-block', minHeight: 28, lineHeight: '28px' }}>+65-6468-6694</a></div>
-          <div><a href="mailto:koreanchurch@live.com" style={{ color: 'rgba(255,255,255,0.6)', display: 'inline-block', minHeight: 28, lineHeight: '28px' }}>koreanchurch@live.com</a></div>
           <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center' }}>
             <span style={{
               padding: '0.3rem 0.75rem',

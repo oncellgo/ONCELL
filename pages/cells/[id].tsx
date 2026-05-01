@@ -179,9 +179,7 @@ export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickn
     <>
       <Head><title>{cell?.name || '셀'} · ONCELL</title></Head>
       <div style={{ minHeight: '100vh' }}>
-        <div style={{ padding: isMobile ? '0.5rem 0.5rem 0' : '0.75rem 0.75rem 0', maxWidth: 1040, margin: '0 auto' }}>
           <TopNav profileId={profileId} displayName={null} nickname={nickname} email={email} systemAdminHref={systemAdminHref || undefined} />
-        </div>
         <main style={{ maxWidth: 620, margin: '0 auto', padding: isMobile ? '1.25rem 0.85rem 4rem' : '2.5rem 1.5rem 5rem', color: '#fff' }}>
 
           <a href="/cells" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.85rem', minHeight: 36, borderRadius: 999, background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.78)', fontSize: '0.82rem', textDecoration: 'none', marginBottom: '1.25rem', fontWeight: 600 }}>

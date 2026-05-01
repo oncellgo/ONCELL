@@ -63,9 +63,7 @@ export default function CellsIndex({ profileId: ssrProfileId, nickname: ssrNickn
     <>
       <Head><title>내 셀 · ONCELL</title></Head>
       <div style={{ minHeight: '100vh' }}>
-        <div style={{ padding: isMobile ? '0.5rem 0.5rem 0' : '0.75rem 0.75rem 0', maxWidth: 1040, margin: '0 auto' }}>
           <TopNav profileId={profileId} displayName={null} nickname={nickname} email={email} systemAdminHref={systemAdminHref || undefined} />
-        </div>
         <main style={{ maxWidth: 720, margin: '0 auto', padding: isMobile ? '1.5rem 1rem 4rem' : '3rem 1.5rem 5rem', color: '#fff' }}>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>

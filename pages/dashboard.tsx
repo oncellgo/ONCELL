@@ -106,9 +106,7 @@ const Dashboard = ({ profileId: ssrProfileId, displayName, nickname, email, syst
       <Head><title>대시보드 · ONCELL</title></Head>
 
       <div style={{ minHeight: '100vh' }}>
-        <div style={{ padding: isMobile ? '0.5rem 0.5rem 0' : '0.75rem 0.75rem 0', maxWidth: 1040, margin: '0 auto', width: '100%' }}>
           <TopNav profileId={profileId} displayName={displayName} nickname={nickname} email={email} systemAdminHref={systemAdminHref || undefined} />
-        </div>
 
         <main style={{ maxWidth: 720, margin: '0 auto', padding: isMobile ? '1.5rem 1rem 4rem' : '3rem 1.5rem 5rem', color: '#fff' }}>
 
