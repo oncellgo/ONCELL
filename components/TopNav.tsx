@@ -215,8 +215,8 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 width: 22, height: 22, borderRadius: 999,
-                background: 'var(--color-primary-tint)', color: 'var(--color-primary-deep)',
-                border: 'none', padding: 0, cursor: 'pointer',
+                background: '#ffffff', color: 'var(--color-ink-2)',
+                border: '1px solid rgba(0,0,0,0.08)', padding: 0, cursor: 'pointer',
                 marginLeft: '0.1rem',
               }}
             >
