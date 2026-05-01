@@ -144,10 +144,10 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref, menusE
             <h2 style={{ fontSize: isMobile ? '1.15rem' : '1.4rem', fontWeight: 700, color: 'rgba(255,255,255,0.92)', textAlign: 'center', margin: '0 0 1.5rem' }}>이렇게 작동해요</h2>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '0.9rem' }}>
               {[
-                { ico: '📖', title: '비공개 묵상 노트', desc: '본인만 보이는 매일 한 줄 묵상. 체크 한 번으로 streak 누적.' },
-                { ico: '✓', title: '셀 친구 인증', desc: '카톡으로 초대한 친구 3-5명과 매일 ✓ 공유. 글·댓글·DM 0.' },
-                { ico: '🌍', title: '글로벌 익명 동행', desc: '"오늘 1,237명이 같은 본문 읽었어요" — 새벽에 혼자가 아닌 감각.' },
-                { ico: '✨', title: '오늘의 묵상 10', desc: 'AI가 가린 익명 묵상 중 매일 큐레이션. 같은 본문자에게만, 24시간 휘발.' },
+                { ico: '📖', title: '큐티셀', desc: '매일 본문 + 묵상 노트. 매일성경·생명의삶·직접 입력 중 선택.' },
+                { ico: '📜', title: '통독셀', desc: '1년 1독·2독, 신약/구약/전체, 시작일 자유. 친구와 진도 동행.' },
+                { ico: '✨', title: '암송셀', desc: '시스템 추천 또는 직접 선택. 빈칸·음성 등 즐거운 테스트.' },
+                { ico: '✓', title: '셀 친구 동행', desc: '친구 3-5명 초대 → 매일 ✓ 인증. "혼자가 아니다"를 매일 확인.' },
               ].map((it) => (
                 <div key={it.title} style={{ padding: isMobile ? '1rem 1rem' : '1.25rem 1.35rem', borderRadius: 16, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}>
                   <div style={{ fontSize: '1.4rem', marginBottom: '0.5rem' }}>{it.ico}</div>
@@ -163,9 +163,9 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref, menusE
             <h2 style={{ fontSize: isMobile ? '1.15rem' : '1.4rem', fontWeight: 700, color: 'rgba(255,255,255,0.92)', textAlign: 'center', margin: '0 0 1.5rem' }}>왜 ONCELL인가</h2>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '0.9rem' }}>
               {[
-                { tag: '카톡 단톡방', miss: '묵상·기도제목이 식당 메뉴에 묻힘. 답해야 할 사회적 압력. 휘발.' },
-                { tag: 'YouVersion', miss: '솔로 모드라 "혼자 아님" 신호가 없음. 친구가 오늘 했는지 모름.' },
-                { tag: 'ONCELL', miss: '구조화된 영적 그릇 + 친구 ✓ 동행 + 콘텐츠 0의 안전. 매일 5분에 최적화.', highlight: true },
+                { tag: '카톡 단톡방', miss: '묵상·기도제목이 일상 톡에 묻힘. 답해야 할 사회적 압력. 검색·기록 어려움.' },
+                { tag: '솔로 성경앱', miss: '혼자만 진도 쌓음. 친구가 오늘 했는지 모르고, 끊겨도 알아주는 사람 없음.' },
+                { tag: 'ONCELL', miss: '큐티·통독·암송을 한 셀에서 + 친구 ✓ 매일 동행 + 셀 콘텐츠는 멤버에게만. 운동 앱이 매일 뛰게 한 그 방식으로.', highlight: true },
               ].map((it) => (
                 <div key={it.tag} style={{ padding: isMobile ? '1rem' : '1.25rem 1.35rem', borderRadius: 16, background: it.highlight ? 'rgba(165,243,252,0.1)' : 'rgba(255,255,255,0.04)', border: `1px solid ${it.highlight ? 'rgba(165,243,252,0.32)' : 'rgba(255,255,255,0.1)'}` }}>
                   <div style={{ fontWeight: 700, color: it.highlight ? '#A5F3FC' : '#fff', fontSize: '0.95rem', marginBottom: '0.5rem' }}>{it.tag}</div>
@@ -182,9 +182,9 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref, menusE
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '0.7rem' }}>
               {[
                 { l: 'DM 없음', s: '사적 메시지 채널 0' },
-                { l: '콘텐츠 노출 없음', s: '인증 신호만 공유' },
-                { l: '친구 초대 기반', s: '모르는 사람 안 섞임' },
-                { l: '24시간 휘발', s: '아카이브·랭킹 없음' },
+                { l: '셀 콘텐츠 비공개', s: '관리자도 못 보고 멤버만' },
+                { l: '추측 불가 초대 URL', s: '친구가 보낸 링크로만 가입' },
+                { l: '폐쇄 그룹 흡수 차단', s: '모르는 공동체 자동 가입 0' },
               ].map((it) => (
                 <div key={it.l} style={{ padding: '0.85rem', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
                   <div style={{ fontWeight: 700, color: '#fff', fontSize: '0.88rem', marginBottom: '0.25rem' }}>{it.l}</div>
