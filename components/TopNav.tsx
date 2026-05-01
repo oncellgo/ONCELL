@@ -61,21 +61,39 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
   return (
     <div style={{ position: 'sticky', top: 0, zIndex: 20, display: 'grid', gap: '0.35rem' }}>
     <style>{`
-      .kcis-brand { display: inline-block; color: #0B3A2B; text-shadow: none; }
+      .kcis-brand { display: inline-flex; }
+      .kcis-brand span {
+        display: inline-block;
+        color: #2D3850;
+        animation: kcisBrandLight 2.6s ease-in-out infinite;
+      }
+      .kcis-brand span:nth-child(1) { animation-delay: 0s; }
+      .kcis-brand span:nth-child(2) { animation-delay: 0.16s; }
+      .kcis-brand span:nth-child(3) { animation-delay: 0.32s; }
+      .kcis-brand span:nth-child(4) { animation-delay: 0.48s; }
+      .kcis-brand span:nth-child(5) { animation-delay: 0.64s; }
+      .kcis-brand span:nth-child(6) { animation-delay: 0.80s; }
+      @keyframes kcisBrandLight {
+        0%, 100% { color: #2D3850; text-shadow: none; }
+        18% { color: #06B6D4; text-shadow: 0 0 6px rgba(6,182,212,0.55), 0 0 14px rgba(6,182,212,0.35); }
+        36% { color: #8B5CF6; text-shadow: 0 0 6px rgba(139,92,246,0.55), 0 0 14px rgba(139,92,246,0.35); }
+        54% { color: #EC4899; text-shadow: 0 0 6px rgba(236,72,153,0.55), 0 0 14px rgba(236,72,153,0.35); }
+        72% { color: #06B6D4; text-shadow: 0 0 6px rgba(6,182,212,0.55), 0 0 14px rgba(6,182,212,0.35); }
+      }
       .kcis-logo { will-change: opacity, filter; animation: kcisLogoPulse 4.5s ease-in-out infinite; }
       @keyframes kcisLogoPulse {
-        0%, 100% {
-          opacity: 0.78;
-        }
-        40% {
-          opacity: 0.92;
-        }
+        0%, 100% { opacity: 0.78; }
+        40% { opacity: 0.92; }
         75% {
           opacity: 1;
           filter: brightness(1.18)
             drop-shadow(0 0 4px rgba(255, 255, 255, 0.85))
             drop-shadow(0 0 12px rgba(255, 255, 255, 0.55));
         }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .kcis-brand span { animation: none; color: #2D3850; }
+        .kcis-logo { animation: none; }
       }
     `}</style>
     <section style={{
@@ -98,7 +116,14 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
             style={{ width: isMobile ? 24 : 28, height: isMobile ? 24 : 28, objectFit: 'contain', display: 'inline-block', borderRadius: 6 }}
           />
           <strong style={{ fontWeight: 800, letterSpacing: '0.02em', fontSize: isMobile ? '1rem' : '1.15rem' }}>
-            <span className="kcis-brand">ONCELL</span>
+            <span className="kcis-brand" aria-label="ONCELL">
+              <span aria-hidden>O</span>
+              <span aria-hidden>N</span>
+              <span aria-hidden>C</span>
+              <span aria-hidden>E</span>
+              <span aria-hidden>L</span>
+              <span aria-hidden>L</span>
+            </span>
           </strong>
         </a>
       </div>
