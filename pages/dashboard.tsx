@@ -50,13 +50,13 @@ const Dashboard = ({ profileId, displayName, nickname, email, systemAdminHref }:
             </a>
           </div>
 
-          <div style={{ padding: '1.5rem', borderRadius: 16, background: 'rgba(165,243,252,0.08)', border: '1px solid rgba(165,243,252,0.32)' }}>
+          <a href="/cells" style={{ display: 'block', padding: '1.5rem', borderRadius: 16, background: 'rgba(165,243,252,0.08)', border: '1px solid rgba(165,243,252,0.32)', textDecoration: 'none', color: 'inherit' }}>
             <div style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>✨</div>
-            <div style={{ fontWeight: 700, color: '#A5F3FC', marginBottom: '0.5rem' }}>셀 기능 준비 중</div>
+            <div style={{ fontWeight: 700, color: '#A5F3FC', marginBottom: '0.5rem' }}>내 셀</div>
             <div style={{ color: 'rgba(255,255,255,0.78)', fontSize: '0.9rem', lineHeight: 1.65 }}>
-              친구들과 함께하는 큐티셀 · 통독셀 · 암송셀 기능을 곧 만나보실 수 있어요.
+              친구들과 함께하는 큐티셀 · 통독셀 · 암송셀을 만들고 관리하세요.
             </div>
-          </div>
+          </a>
 
         </main>
       </div>
