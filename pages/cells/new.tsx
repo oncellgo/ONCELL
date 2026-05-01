@@ -40,6 +40,8 @@ export default function NewCell({ profileId: ssrProfileId, nickname: ssrNickname
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [enabledModes, setEnabledModes] = useState({ qt: true, reading: false, memorize: false, prayer: false });
+  const [qtSource, setQtSource] = useState<'maeil' | 'lifesoul' | 'qtin' | 'odb' | 'custom'>('maeil');
+  const [customRangeUnit, setCustomRangeUnit] = useState<'week' | 'month' | 'year'>('month');
   const [approvalMode, setApprovalMode] = useState<'auto' | 'manual'>('auto');
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -56,10 +58,16 @@ export default function NewCell({ profileId: ssrProfileId, nickname: ssrNickname
     setSubmitting(true);
     try {
       const communityId = typeof router.query.community === 'string' ? router.query.community : undefined;
+      const qtSettings = enabledModes.qt ? {
+        source: qtSource,
+        ...(qtSource === 'custom' ? { customRangeUnit } : {}),
+        showMeditationPoints: true,
+        showApplicationQuestions: true,
+      } : undefined;
       const r = await fetch('/api/cells', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ profileId, name, description, enabledModes, approvalMode, communityId }),
+        body: JSON.stringify({ profileId, name, description, enabledModes, approvalMode, communityId, qtSettings }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.errorReason || d.error || `${r.status}`);
@@ -116,6 +124,44 @@ export default function NewCell({ profileId: ssrProfileId, nickname: ssrNickname
                 ))}
               </div>
             </div>
+
+            {/* 큐티 source 선택 (큐티 모드 활성 시만) */}
+            {enabledModes.qt && (
+              <div style={{ display: 'grid', gap: '0.5rem', padding: '0.85rem', borderRadius: 12, background: 'rgba(165,243,252,0.06)', border: '1px solid rgba(165,243,252,0.25)' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>📖 큐티 본문 출처</span>
+                <div style={{ display: 'grid', gap: '0.4rem' }}>
+                  {([
+                    { v: 'maeil',    l: '매일성경',         ready: true },
+                    { v: 'lifesoul', l: '생명의 양식',      ready: false },
+                    { v: 'qtin',     l: '큐티인 (QTin)',    ready: false },
+                    { v: 'odb',      l: 'Our Daily Bread', ready: false },
+                    { v: 'custom',   l: '직접 입력',        ready: true },
+                  ] as const).map(({ v, l, ready }) => (
+                    <label key={v} style={{ padding: '0.65rem 0.85rem', borderRadius: 10, background: qtSource === v ? 'rgba(165,243,252,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${qtSource === v ? 'rgba(165,243,252,0.45)' : 'rgba(255,255,255,0.1)'}`, display: 'flex', alignItems: 'center', gap: '0.55rem', cursor: 'pointer', fontSize: '0.88rem' }}>
+                      <input type="radio" name="qtSource" checked={qtSource === v} onChange={() => setQtSource(v)} style={{ width: 16, height: 16 }} />
+                      <span style={{ flex: 1 }}>{l}</span>
+                      {!ready && <span style={{ fontSize: '0.68rem', padding: '0.1rem 0.45rem', borderRadius: 999, background: 'rgba(252,211,77,0.15)', color: '#FCD34D', fontWeight: 600 }}>준비 중</span>}
+                    </label>
+                  ))}
+                </div>
+                {qtSource === 'custom' && (
+                  <div style={{ display: 'grid', gap: '0.4rem', marginTop: '0.3rem' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)' }}>입력 단위</span>
+                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      {([{ v: 'week', l: '1주' }, { v: 'month', l: '1달' }, { v: 'year', l: '1년' }] as const).map(({ v, l }) => (
+                        <label key={v} style={{ flex: 1, padding: '0.55rem', textAlign: 'center', borderRadius: 8, background: customRangeUnit === v ? 'rgba(165,243,252,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${customRangeUnit === v ? 'rgba(165,243,252,0.45)' : 'rgba(255,255,255,0.1)'}`, fontSize: '0.82rem', cursor: 'pointer' }}>
+                          <input type="radio" name="customUnit" checked={customRangeUnit === v} onChange={() => setCustomRangeUnit(v)} style={{ display: 'none' }} />
+                          {l}
+                        </label>
+                      ))}
+                    </div>
+                    <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)' }}>
+                      ※ 셀 만든 후 셀 메인의 큐티 탭에서 본문을 입력할 수 있어요
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
 
             <label style={{ display: 'grid', gap: '0.4rem' }}>
               <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>셀 소개 (선택)</span>
