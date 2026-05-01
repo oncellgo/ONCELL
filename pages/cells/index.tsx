@@ -11,7 +11,7 @@ type Cell = {
   name: string;
   owner_profile_id: string;
   community_id: string | null;
-  enabled_modes: { qt?: boolean; reading?: boolean; memorize?: boolean };
+  enabled_modes: { qt?: boolean; reading?: boolean; memorize?: boolean; prayer?: boolean };
   member_count: number;
   description: string | null;
 };
@@ -101,6 +101,7 @@ export default function CellsIndex({ profileId: ssrProfileId, nickname: ssrNickn
                 if (c.enabled_modes?.qt) modes.push('큐티');
                 if (c.enabled_modes?.reading) modes.push('통독');
                 if (c.enabled_modes?.memorize) modes.push('암송');
+                if (c.enabled_modes?.prayer) modes.push('🙏 기도');
                 return (
                   <Link key={c.id} href={`/cells/${c.id}`} style={{ padding: '1.15rem', borderRadius: 16, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', textDecoration: 'none', color: '#fff', display: 'block' }}>
                     <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.35rem' }}>{c.name}</div>

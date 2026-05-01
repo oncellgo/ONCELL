@@ -21,7 +21,7 @@ type Cell = {
   name: string;
   owner_profile_id: string;
   community_id: string | null;
-  enabled_modes: { qt?: boolean; reading?: boolean; memorize?: boolean };
+  enabled_modes: { qt?: boolean; reading?: boolean; memorize?: boolean; prayer?: boolean };
   member_count: number;
 };
 
@@ -216,6 +216,7 @@ const CellRow = ({ cell, ownProfileId }: { cell: Cell; ownProfileId: string | nu
   if (cell.enabled_modes?.qt) modes.push('큐티');
   if (cell.enabled_modes?.reading) modes.push('통독');
   if (cell.enabled_modes?.memorize) modes.push('암송');
+  if (cell.enabled_modes?.prayer) modes.push('🙏 기도');
   return (
     <Link href={`/cells/${cell.id}`} style={{ padding: '0.85rem 1rem', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', textDecoration: 'none', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem' }}>
       <div style={{ minWidth: 0, flex: 1 }}>

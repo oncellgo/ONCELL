@@ -1,12 +1,13 @@
 import { db } from './db';
 import { generateCellId, generateInviteToken } from './invite';
 
-export type CellMode = 'qt' | 'reading' | 'memorize';
+export type CellMode = 'qt' | 'reading' | 'memorize' | 'prayer';
 
 export type EnabledModes = {
   qt?: boolean;
   reading?: boolean;
   memorize?: boolean;
+  prayer?: boolean;
 };
 
 export type CellRow = {
@@ -21,6 +22,7 @@ export type CellRow = {
   qt_settings: Record<string, unknown> | null;
   reading_settings: Record<string, unknown> | null;
   memorize_settings: Record<string, unknown> | null;
+  prayer_settings: Record<string, unknown> | null;
   description: string | null;
   invite_message: string | null;
   member_count: number;
@@ -39,6 +41,7 @@ export type CreateCellInput = {
   qtSettings?: Record<string, unknown>;
   readingSettings?: Record<string, unknown>;
   memorizeSettings?: Record<string, unknown>;
+  prayerSettings?: Record<string, unknown>;
 };
 
 export async function createCell(input: CreateCellInput): Promise<CellRow> {
@@ -56,6 +59,7 @@ export async function createCell(input: CreateCellInput): Promise<CellRow> {
     qt_settings: input.qtSettings || null,
     reading_settings: input.readingSettings || null,
     memorize_settings: input.memorizeSettings || null,
+    prayer_settings: input.prayerSettings || null,
     description: input.description?.trim().slice(0, 1000) || null,
     invite_message: input.inviteMessage?.trim().slice(0, 500) || null,
     member_count: 1,

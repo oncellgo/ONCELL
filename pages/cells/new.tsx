@@ -39,7 +39,7 @@ export default function NewCell({ profileId: ssrProfileId, nickname: ssrNickname
   }, [profileId]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [enabledModes, setEnabledModes] = useState({ qt: true, reading: false, memorize: false });
+  const [enabledModes, setEnabledModes] = useState({ qt: true, reading: false, memorize: false, prayer: false });
   const [approvalMode, setApprovalMode] = useState<'auto' | 'manual'>('auto');
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -51,7 +51,7 @@ export default function NewCell({ profileId: ssrProfileId, nickname: ssrNickname
     setErr(null);
     if (!profileId) { setErr('로그인 후 이용해주세요'); return; }
     if (!name.trim()) { setErr('셀 이름을 입력해주세요'); return; }
-    if (!enabledModes.qt && !enabledModes.reading && !enabledModes.memorize) { setErr('최소 한 가지 모드를 선택해주세요'); return; }
+    if (!enabledModes.qt && !enabledModes.reading && !enabledModes.memorize && !enabledModes.prayer) { setErr('최소 한 가지 모드를 선택해주세요'); return; }
 
     setSubmitting(true);
     try {
@@ -98,7 +98,12 @@ export default function NewCell({ profileId: ssrProfileId, nickname: ssrNickname
             <div style={{ display: 'grid', gap: '0.5rem' }}>
               <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>활성 모드 <span style={{ color: '#FCA5A5' }}>*</span></span>
               <div style={{ display: 'grid', gap: '0.5rem' }}>
-                {([{ k: 'qt', label: '📖 큐티 (매일 본문 + 묵상)' }, { k: 'reading', label: '📜 성경통독 (연간 계획)' }, { k: 'memorize', label: '✨ 암송 (구절 외우기)' }] as const).map(({ k, label }) => (
+                {([
+                  { k: 'qt', label: '📖 큐티 (매일 본문 + 묵상)' },
+                  { k: 'reading', label: '📜 성경통독 (연간 계획)' },
+                  { k: 'memorize', label: '✨ 암송 (구절 외우기)' },
+                  { k: 'prayer', label: '🙏 기도 나눔 (셀 안에서만)' },
+                ] as const).map(({ k, label }) => (
                   <label key={k} style={{ padding: '0.85rem 1rem', borderRadius: 12, background: enabledModes[k] ? 'rgba(165,243,252,0.12)' : 'rgba(255,255,255,0.04)', border: `1px solid ${enabledModes[k] ? 'rgba(165,243,252,0.4)' : 'rgba(255,255,255,0.12)'}`, display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer' }}>
                     <input type="checkbox" checked={enabledModes[k]} onChange={() => toggleMode(k)} style={{ width: 18, height: 18 }} />
                     <span style={{ fontSize: '0.92rem' }}>{label}</span>

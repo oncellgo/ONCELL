@@ -182,10 +182,11 @@ create table if not exists oncell_cells (
   approval_mode          text not null default 'auto',          -- 'auto' | 'manual'
   invite_token           text not null unique,                  -- 32+ 자 URL-safe 랜덤
   bundle_community_join  boolean default false,                 -- 공동체 셀일 때 가입 시 공동체 자동 동의 여부
-  enabled_modes          jsonb not null default '{"qt":false,"reading":false,"memorize":false}',
+  enabled_modes          jsonb not null default '{"qt":false,"reading":false,"memorize":false,"prayer":false}',
   qt_settings            jsonb,
   reading_settings       jsonb,
   memorize_settings      jsonb,
+  prayer_settings        jsonb,
   description            text,
   invite_message         text,
   member_count           integer default 0,

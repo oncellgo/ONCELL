@@ -13,7 +13,7 @@ type Cell = {
   community_id: string | null;
   approval_mode: 'auto' | 'manual';
   invite_token: string;
-  enabled_modes: { qt?: boolean; reading?: boolean; memorize?: boolean };
+  enabled_modes: { qt?: boolean; reading?: boolean; memorize?: boolean; prayer?: boolean };
   description: string | null;
   invite_message: string | null;
   member_count: number;
@@ -112,6 +112,7 @@ export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickn
                 {cell.enabled_modes?.qt && <span style={{ fontSize: '0.72rem', padding: '0.2rem 0.6rem', borderRadius: 999, background: 'rgba(165,243,252,0.15)', color: '#A5F3FC', fontWeight: 600 }}>큐티</span>}
                 {cell.enabled_modes?.reading && <span style={{ fontSize: '0.72rem', padding: '0.2rem 0.6rem', borderRadius: 999, background: 'rgba(167,139,250,0.15)', color: '#C4B5FD', fontWeight: 600 }}>통독</span>}
                 {cell.enabled_modes?.memorize && <span style={{ fontSize: '0.72rem', padding: '0.2rem 0.6rem', borderRadius: 999, background: 'rgba(252,211,77,0.15)', color: '#FCD34D', fontWeight: 600 }}>암송</span>}
+                {cell.enabled_modes?.prayer && <span style={{ fontSize: '0.72rem', padding: '0.2rem 0.6rem', borderRadius: 999, background: 'rgba(249,168,212,0.15)', color: '#F9A8D4', fontWeight: 600 }}>🙏 기도</span>}
                 <span style={{ fontSize: '0.72rem', padding: '0.2rem 0.6rem', borderRadius: 999, background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' }}>멤버 {cell.member_count}명</span>
                 {cell.owner_profile_id === profileId && <span style={{ fontSize: '0.72rem', padding: '0.2rem 0.6rem', borderRadius: 999, background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' }}>owner</span>}
               </div>

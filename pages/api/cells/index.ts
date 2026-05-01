@@ -30,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!name?.trim()) return res.status(400).json({ error: 'name required' });
 
   const modes: EnabledModes = enabledModes || {};
-  if (!modes.qt && !modes.reading && !modes.memorize) {
+  if (!modes.qt && !modes.reading && !modes.memorize && !modes.prayer) {
     return res.status(400).json({ error: 'at least one mode required' });
   }
 
