@@ -82,14 +82,14 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
         72%, 76% { color: #F9A8D4; text-shadow: 0 0 3px rgba(249,168,212,0.45); }
         85% { color: #67E8F9; text-shadow: 0 0 3px rgba(103,232,249,0.4); }
       }
-      /* 5프레임 시퀀스: 각 프레임 0.3s씩 (총 1.5s 주기) */
+      /* 5프레임 시퀀스: 각 프레임 0.5s씩 (총 2.5s 주기) */
       .logo-swap { position: relative; display: inline-block; flex-shrink: 0; }
-      .logo-swap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; animation: logoSeq 1.5s linear infinite; }
+      .logo-swap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; animation: logoSeq 2.5s linear infinite; }
       .logo-swap img:nth-child(1) { animation-delay: 0s; }
-      .logo-swap img:nth-child(2) { animation-delay: 0.3s; }
-      .logo-swap img:nth-child(3) { animation-delay: 0.6s; }
-      .logo-swap img:nth-child(4) { animation-delay: 0.9s; }
-      .logo-swap img:nth-child(5) { animation-delay: 1.2s; }
+      .logo-swap img:nth-child(2) { animation-delay: 0.5s; }
+      .logo-swap img:nth-child(3) { animation-delay: 1.0s; }
+      .logo-swap img:nth-child(4) { animation-delay: 1.5s; }
+      .logo-swap img:nth-child(5) { animation-delay: 2.0s; }
       @keyframes logoSeq { 0%, 20% { opacity: 1; } 20.01%, 100% { opacity: 0; } }
       @media (prefers-reduced-motion: reduce) {
         .kcis-brand span { animation: none; color: #06B6D4; }
