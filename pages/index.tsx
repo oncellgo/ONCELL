@@ -277,15 +277,15 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref, menusE
                     minHeight: 48,
                     padding: isMobile ? '0.8rem 1.75rem' : '0.9rem 2rem',
                     borderRadius: 999,
-                    background: 'var(--color-primary)',
-                    color: '#fff',
+                    background: '#fff',
+                    color: '#2D3850',
                     fontWeight: 800,
                     fontSize: isMobile ? '0.95rem' : '1rem',
                     textDecoration: 'none',
                     letterSpacing: '0.01em',
                     width: isMobile ? '100%' : 'auto',
                     maxWidth: isMobile ? 340 : 'none',
-                    boxShadow: '0 4px 24px rgba(32,205,141,0.28)',
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
                   }}
                 >
                   대시보드로 이동
