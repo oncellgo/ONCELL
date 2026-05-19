@@ -132,7 +132,7 @@ export default function NewCell({ profileId: ssrProfileId, nickname: ssrNickname
                 <div style={{ display: 'grid', gap: '0.4rem' }}>
                   {([
                     { v: 'maeil',    l: '매일성경',         ready: true },
-                    { v: 'lifesoul', l: '생명의 양식',      ready: false },
+                    { v: 'lifesoul', l: '생명의 삶',        ready: false },
                     { v: 'qtin',     l: '큐티인 (QTin)',    ready: false },
                     { v: 'odb',      l: 'Our Daily Bread', ready: false },
                     { v: 'custom',   l: '직접 입력',        ready: true },
