@@ -82,20 +82,16 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
         72%, 76% { color: #F9A8D4; text-shadow: 0 0 3px rgba(249,168,212,0.45); }
         85% { color: #67E8F9; text-shadow: 0 0 3px rgba(103,232,249,0.4); }
       }
-      .kcis-logo { will-change: opacity, filter; animation: kcisLogoPulse 4.5s ease-in-out infinite; }
-      @keyframes kcisLogoPulse {
-        0%, 100% { opacity: 0.78; }
-        40% { opacity: 0.92; }
-        75% {
-          opacity: 1;
-          filter: brightness(1.18)
-            drop-shadow(0 0 4px rgba(255, 255, 255, 0.85))
-            drop-shadow(0 0 12px rgba(255, 255, 255, 0.55));
-        }
-      }
+      .logo-swap { position: relative; display: inline-block; flex-shrink: 0; }
+      .logo-swap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+      .logo-swap img:nth-child(1) { animation: logoSwapA 7s ease-in-out infinite; }
+      .logo-swap img:nth-child(2) { animation: logoSwapB 7s ease-in-out infinite; }
+      @keyframes logoSwapA { 0%, 42% { opacity: 1; } 50%, 92% { opacity: 0; } 100% { opacity: 1; } }
+      @keyframes logoSwapB { 0%, 42% { opacity: 0; } 50%, 92% { opacity: 1; } 100% { opacity: 0; } }
       @media (prefers-reduced-motion: reduce) {
         .kcis-brand span { animation: none; color: #06B6D4; }
-        .kcis-logo { animation: none; }
+        .logo-swap img { animation: none; }
+        .logo-swap img:nth-child(2) { opacity: 0; }
       }
       .topnav-btn {
         display: inline-flex; align-items: center; gap: 0.25rem;
@@ -155,12 +151,10 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0, flex: 1 }}>
         <a href={homeHref} aria-label={t('brand.logoAlt')} title={t('brand.logoAlt')} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.55rem', textDecoration: 'none' }}>
-          <img
-            src="/images/icon-192.png"
-            alt="ONCELL 로고"
-            className="kcis-logo"
-            style={{ width: isMobile ? 24 : 28, height: isMobile ? 24 : 28, objectFit: 'contain', display: 'inline-block', borderRadius: 6 }}
-          />
+          <span className="logo-swap" style={{ width: isMobile ? 28 : 32, height: isMobile ? 28 : 32 }}>
+            <img src="/images/logo1.png" alt="ONCELL 로고" />
+            <img src="/images/logo2.png" alt="" aria-hidden="true" />
+          </span>
           <strong style={{ fontWeight: 800, letterSpacing: '0.02em', fontSize: isMobile ? '1rem' : '1.15rem' }}>
             <span className="kcis-brand" aria-label="ONCELL">
               <span aria-hidden>O</span>
