@@ -240,14 +240,14 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref, menusE
               lineHeight: 1.8,
               wordBreak: 'keep-all',
             }}>
-              운동 앱이 매일 뛰게 만든 그 방식으로<br />
-              큐티·성경통독·기도나눔·암송으로 우리의 영적세포를 깨워볼까요?<br />
+              모여라!{' '}
+              <span className="kcis-brand" aria-label="ONCELL" style={{ fontSize: 'inherit' }}>
+                <span aria-hidden>O</span><span aria-hidden>N</span><span aria-hidden>C</span>
+                <span aria-hidden>E</span><span aria-hidden>L</span><span aria-hidden>L</span>
+              </span>
+              하자!<br />
               <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: isMobile ? '0.9rem' : '1rem' }}>
-                <span className="kcis-brand" aria-label="ONCELL" style={{ fontSize: 'inherit' }}>
-                  <span aria-hidden>O</span><span aria-hidden>N</span><span aria-hidden>C</span>
-                  <span aria-hidden>E</span><span aria-hidden>L</span><span aria-hidden>L</span>
-                </span>
-                에서 함께 성장해요!
+                운동 앱이 매일 뛰게 만든 그 방식으로 큐티·성경통독·기도나눔·암송으로 영적세포를 깨워봐!
               </span>
             </p>
 
