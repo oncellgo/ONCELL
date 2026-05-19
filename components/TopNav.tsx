@@ -84,14 +84,14 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
       }
       /* 6프레임 시퀀스: 각 프레임 0.3s씩 (총 1.8s 주기) */
       .logo-swap { position: relative; display: inline-block; flex-shrink: 0; }
-      .logo-swap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; animation: logoSeq 1.8s steps(1, end) infinite; }
+      .logo-swap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; animation: logoSeq 1.8s linear infinite; }
       .logo-swap img:nth-child(1) { animation-delay: 0s; }
       .logo-swap img:nth-child(2) { animation-delay: 0.3s; }
       .logo-swap img:nth-child(3) { animation-delay: 0.6s; }
       .logo-swap img:nth-child(4) { animation-delay: 0.9s; }
       .logo-swap img:nth-child(5) { animation-delay: 1.2s; }
       .logo-swap img:nth-child(6) { animation-delay: 1.5s; }
-      @keyframes logoSeq { 0% { opacity: 1; } 16.66% { opacity: 0; } 100% { opacity: 0; } }
+      @keyframes logoSeq { 0%, 16.66% { opacity: 1; } 16.67%, 100% { opacity: 0; } }
       @media (prefers-reduced-motion: reduce) {
         .kcis-brand span { animation: none; color: #06B6D4; }
         .logo-swap img { animation: none; opacity: 0; }
