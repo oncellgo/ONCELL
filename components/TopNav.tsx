@@ -84,10 +84,11 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
       }
       .logo-swap { position: relative; display: inline-block; flex-shrink: 0; }
       .logo-swap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
-      .logo-swap img:nth-child(1) { animation: logoSwapA 7s ease-in-out infinite; }
-      .logo-swap img:nth-child(2) { animation: logoSwapB 7s ease-in-out infinite; }
-      @keyframes logoSwapA { 0%, 42% { opacity: 1; } 50%, 92% { opacity: 0; } 100% { opacity: 1; } }
-      @keyframes logoSwapB { 0%, 42% { opacity: 0; } 50%, 92% { opacity: 1; } 100% { opacity: 0; } }
+      /* 1.2s 주기: logo1 0.8s(0~66.67%), logo2 0.4s(66.67~100%) */
+      .logo-swap img:nth-child(1) { animation: logoSwapA 1.2s steps(1, end) infinite; }
+      .logo-swap img:nth-child(2) { animation: logoSwapB 1.2s steps(1, end) infinite; }
+      @keyframes logoSwapA { 0% { opacity: 1; } 66.67% { opacity: 0; } 100% { opacity: 0; } }
+      @keyframes logoSwapB { 0% { opacity: 0; } 66.67% { opacity: 1; } 100% { opacity: 1; } }
       @media (prefers-reduced-motion: reduce) {
         .kcis-brand span { animation: none; color: #06B6D4; }
         .logo-swap img { animation: none; }
