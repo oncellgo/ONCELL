@@ -258,7 +258,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref, menusE
               margin: '0 auto 2.25rem',
               letterSpacing: '0.01em',
             }}>
-              셀 친구 3~5명을 초대해, 매일 10분 영적 습관을 만들어보세요.
+              셀 친구들을 초대해, 매일매일 영적 습관을 쌓아보세요.
             </p>
 
             {/* CTA 버튼 */}
