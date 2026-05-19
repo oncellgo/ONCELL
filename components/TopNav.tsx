@@ -153,8 +153,8 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0, flex: 1 }}>
         <a href={homeHref} aria-label={t('brand.logoAlt')} title={t('brand.logoAlt')} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.55rem', textDecoration: 'none' }}>
           <span className="logo-swap" style={{ width: isMobile ? 56 : 64, height: isMobile ? 56 : 64 }}>
-            <img src="/images/logo1.png" alt="ONCELL 로고" />
-            <img src="/images/logo2.png" alt="" aria-hidden="true" />
+            <img src="/images/logo1.png?v=2" alt="ONCELL 로고" />
+            <img src="/images/logo2.png?v=2" alt="" aria-hidden="true" />
           </span>
           <strong style={{ fontWeight: 800, letterSpacing: '0.02em', fontSize: isMobile ? '1rem' : '1.15rem' }}>
             <span className="kcis-brand" aria-label="ONCELL">
