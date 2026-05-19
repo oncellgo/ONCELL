@@ -82,16 +82,17 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
         72%, 76% { color: #F9A8D4; text-shadow: 0 0 3px rgba(249,168,212,0.45); }
         85% { color: #67E8F9; text-shadow: 0 0 3px rgba(103,232,249,0.4); }
       }
-      /* 6프레임 시퀀스: 각 프레임 0.3s씩 (총 1.8s 주기) */
+      /* 7프레임 시퀀스: 각 프레임 0.3s씩 (총 2.1s 주기) */
       .logo-swap { position: relative; display: inline-block; flex-shrink: 0; }
-      .logo-swap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; animation: logoSeq 1.8s linear infinite; }
+      .logo-swap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; animation: logoSeq 2.1s linear infinite; }
       .logo-swap img:nth-child(1) { animation-delay: 0s; }
       .logo-swap img:nth-child(2) { animation-delay: 0.3s; }
       .logo-swap img:nth-child(3) { animation-delay: 0.6s; }
       .logo-swap img:nth-child(4) { animation-delay: 0.9s; }
       .logo-swap img:nth-child(5) { animation-delay: 1.2s; }
       .logo-swap img:nth-child(6) { animation-delay: 1.5s; }
-      @keyframes logoSeq { 0%, 16.66% { opacity: 1; } 16.67%, 100% { opacity: 0; } }
+      .logo-swap img:nth-child(7) { animation-delay: 1.8s; }
+      @keyframes logoSeq { 0%, 14.28% { opacity: 1; } 14.29%, 100% { opacity: 0; } }
       @media (prefers-reduced-motion: reduce) {
         .kcis-brand span { animation: none; color: #06B6D4; }
         .logo-swap img { animation: none; opacity: 0; }
@@ -156,7 +157,8 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0, flex: 1 }}>
         <a href={homeHref} aria-label={t('brand.logoAlt')} title={t('brand.logoAlt')} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.55rem', textDecoration: 'none' }}>
           <span className="logo-swap" style={{ width: isMobile ? 56 : 64, height: isMobile ? 56 : 64 }}>
-            <img src="/images/logo1_2.png" alt="ONCELL 로고" />
+            <img src="/images/logo1_1.png" alt="ONCELL 로고" />
+            <img src="/images/logo1_2.png" alt="" aria-hidden="true" />
             <img src="/images/logo1_3.png" alt="" aria-hidden="true" />
             <img src="/images/logo1_4.png" alt="" aria-hidden="true" />
             <img src="/images/logo1_5.png" alt="" aria-hidden="true" />
