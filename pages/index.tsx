@@ -247,7 +247,7 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref, menusE
               </span>
               하자!<br />
               <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: isMobile ? '0.9rem' : '1rem' }}>
-                운동 앱이 매일 뛰게 만든 그 방식으로 큐티·성경통독·기도나눔·암송으로 영적세포를 깨워봐!
+                운동 앱이 매일 뛰게 만든 그 방식으로 나의 영적세포를 깨워봐!
               </span>
             </p>
 
