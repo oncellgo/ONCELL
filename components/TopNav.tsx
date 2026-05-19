@@ -82,17 +82,16 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
         72%, 76% { color: #F9A8D4; text-shadow: 0 0 3px rgba(249,168,212,0.45); }
         85% { color: #67E8F9; text-shadow: 0 0 3px rgba(103,232,249,0.4); }
       }
-      /* 7프레임 시퀀스: 각 프레임 0.3s씩 (총 2.1s 주기) */
+      /* 6프레임 시퀀스: 각 프레임 0.3s씩 (총 1.8s 주기) */
       .logo-swap { position: relative; display: inline-block; flex-shrink: 0; }
-      .logo-swap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; animation: logoSeq 2.1s steps(1, end) infinite; }
+      .logo-swap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; animation: logoSeq 1.8s steps(1, end) infinite; }
       .logo-swap img:nth-child(1) { animation-delay: 0s; }
       .logo-swap img:nth-child(2) { animation-delay: 0.3s; }
       .logo-swap img:nth-child(3) { animation-delay: 0.6s; }
       .logo-swap img:nth-child(4) { animation-delay: 0.9s; }
       .logo-swap img:nth-child(5) { animation-delay: 1.2s; }
       .logo-swap img:nth-child(6) { animation-delay: 1.5s; }
-      .logo-swap img:nth-child(7) { animation-delay: 1.8s; }
-      @keyframes logoSeq { 0% { opacity: 1; } 14.28% { opacity: 0; } 100% { opacity: 0; } }
+      @keyframes logoSeq { 0% { opacity: 1; } 16.66% { opacity: 0; } 100% { opacity: 0; } }
       @media (prefers-reduced-motion: reduce) {
         .kcis-brand span { animation: none; color: #06B6D4; }
         .logo-swap img { animation: none; opacity: 0; }
@@ -163,7 +162,6 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
             <img src="/images/logo1_4.png" alt="" aria-hidden="true" />
             <img src="/images/logo1_5.png" alt="" aria-hidden="true" />
             <img src="/images/logo1_6.png" alt="" aria-hidden="true" />
-            <img src="/images/logo1_7.png" alt="" aria-hidden="true" />
           </span>
           <strong style={{ fontWeight: 800, letterSpacing: '0.02em', fontSize: isMobile ? '1rem' : '1.15rem' }}>
             <span className="kcis-brand" aria-label="ONCELL">
