@@ -34,8 +34,10 @@ const CompleteSignupPage = () => {
 
   const [privacyChecked, setPrivacyChecked] = useState(false);
   const [alias, setAlias] = useState('');
-  // OAuth 닉네임이 있으면 별칭 기본값으로 1회 채움(사용자 편집 우선).
-  useEffect(() => { if (pending?.nickname) setAlias((prev) => prev || pending.nickname); }, [pending?.nickname]);
+  // OAuth 닉네임이 진짜 이름일 때만 별칭 기본값으로 1회 채움. 이메일 형태(@ 포함)는 채우지 않음.
+  useEffect(() => {
+    if (pending?.nickname && !pending.nickname.includes('@')) setAlias((prev) => prev || pending.nickname);
+  }, [pending?.nickname]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

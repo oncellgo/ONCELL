@@ -40,7 +40,8 @@ const CallbackPage = () => {
           profileId = profileData?.id
             ? `${providerName}-${profileData.id}`
             : (profileData?.kakao_account?.email || profileData?.properties?.nickname || '');
-          nickname = profileData?.properties?.nickname || profileData?.kakao_account?.email || '';
+          // 별칭 오염 방지: 카카오가 닉네임을 안 주면 이메일로 채우지 않고 비워둠(완료 화면에서 별칭 직접 입력).
+          nickname = profileData?.properties?.nickname || '';
           email = profileData?.kakao_account?.email || '';
         }
 

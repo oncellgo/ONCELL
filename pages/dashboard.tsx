@@ -91,7 +91,10 @@ const Dashboard = ({ profileId: ssrProfileId, displayName, nickname, email, syst
     });
   }, [cells]);
 
-  const name = displayName || nickname || (email ? email.split('@')[0] : '');
+  // 별칭(nickname) 우선. 이메일 형태 값은 인사말에 쓰지 않음(없으면 '환영합니다').
+  const cleanNick = nickname && !nickname.includes('@') ? nickname : null;
+  const cleanReal = displayName && !displayName.includes('@') ? displayName : null;
+  const name = cleanNick || cleanReal || '';
   const independentCells = (cells || []).filter((c) => !c.community_id);
   const communityCellsByCid: Record<string, Cell[]> = {};
   for (const c of cells || []) {

@@ -23,7 +23,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(200).json({
       exists: !!a,
       privacyConsent: !!(a?.privacyConsent),
-      hasNickname: !!(a?.nickname && a.nickname.trim()),
+      // 이메일 형태 닉네임은 유효한 별칭으로 보지 않음 → 완료 화면에서 별칭 재입력 유도
+      hasNickname: !!(a?.nickname && a.nickname.trim() && !a.nickname.includes('@')),
       status: a?.status || null,
     });
   } catch (e: any) {

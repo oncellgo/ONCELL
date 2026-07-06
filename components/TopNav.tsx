@@ -36,7 +36,9 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
   const homeHref = '/';
   const dashboardHref = '/dashboard';
   const providerLabel = effProfileId?.startsWith('kakao-') ? '카카오 사용자' : effProfileId?.startsWith('google-') ? 'Google 사용자' : '사용자';
-  const userLabel = currentDisplayName || displayName || session.realName || effNickname || (effEmail ? effEmail.split('@')[0] : providerLabel);
+  // 별칭(nickname) 우선. 이메일 형태 값은 표시명으로 쓰지 않음.
+  const alias = effNickname && !effNickname.includes('@') ? effNickname : null;
+  const userLabel = alias || currentDisplayName || displayName || session.realName || (effEmail ? effEmail.split('@')[0] : providerLabel);
   return (
     <div style={{ padding: isMobile ? '0.5rem 0.5rem 0' : '0.75rem 0.75rem 0', maxWidth: 1040, margin: '0 auto', width: '100%' }}>
     <div style={{ position: 'sticky', top: 0, zIndex: 20, display: 'grid', gap: '0.35rem' }}>
