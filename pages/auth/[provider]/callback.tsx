@@ -58,6 +58,7 @@ const CallbackPage = () => {
         // 수집 없이 기존 상태만 조회 — 기존 가입자 + 이미 동의한 경우를 구분해 건너뛰기 위함.
         let exists = false;
         let privacyConsent = false;
+        let hasNickname = false;
         let status: 'pending' | 'approved' | 'rejected' | 'blocked' | null = null;
         try {
           const checkRes = await fetch(`/api/auth/check-status?profileId=${encodeURIComponent(profileId)}`);
@@ -65,6 +66,7 @@ const CallbackPage = () => {
             const d = await checkRes.json();
             exists = !!d?.exists;
             privacyConsent = !!d?.privacyConsent;
+            hasNickname = !!d?.hasNickname;
             status = (d?.status as typeof status) || null;
           }
         } catch {}
@@ -78,8 +80,8 @@ const CallbackPage = () => {
           return;
         }
 
-        // 기존 가입자 + 이미 동의 완료: 즉시 로그인 처리 (record-login 호출해 lastLoginAt 갱신).
-        if (exists && privacyConsent) {
+        // 기존 가입자 + 이미 동의 완료 + 별칭 있음: 즉시 로그인. 별칭 없으면 완료 화면에서 별칭 입력받음.
+        if (exists && privacyConsent && hasNickname) {
           try {
             await fetch('/api/auth/record-login', {
               method: 'POST',

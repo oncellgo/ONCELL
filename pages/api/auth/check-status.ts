@@ -18,11 +18,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const profileId = typeof req.query.profileId === 'string' ? req.query.profileId : '';
   if (!profileId) return res.status(400).json({ error: 'profileId required.' });
   try {
-    const list = ((await getSignupApprovals()) || []) as Array<{ profileId: string; privacyConsent?: boolean; status?: string }>;
+    const list = ((await getSignupApprovals()) || []) as Array<{ profileId: string; privacyConsent?: boolean; status?: string; nickname?: string }>;
     const a = list.find((x) => x.profileId === profileId);
     return res.status(200).json({
       exists: !!a,
       privacyConsent: !!(a?.privacyConsent),
+      hasNickname: !!(a?.nickname && a.nickname.trim()),
       status: a?.status || null,
     });
   } catch (e: any) {

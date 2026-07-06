@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getCellById, isCellMember, getCellMembers } from '../../../../lib/cells';
-import { getProfiles } from '../../../../lib/dataStore';
+import { getProfiles, getSignupApprovals } from '../../../../lib/dataStore';
 import { db } from '../../../../lib/db';
 import { requireSession } from '../../../../lib/session';
 
@@ -40,10 +40,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const memberRows = await getCellMembers(cellId);
     const memberIds = memberRows.map((m) => m.profile_id);
 
-    // displayName
-    const allProfiles = await getProfiles().catch(() => [] as any[]);
+    // displayName — 별칭(nickname) 우선. approval.nickname → profile.nickname → '셀 친구'.
+    const [allProfiles, approvals] = await Promise.all([
+      getProfiles().catch(() => [] as any[]),
+      getSignupApprovals().catch(() => [] as any[]),
+    ]);
     const nameMap = new Map<string, string>();
-    for (const p of allProfiles as Array<any>) nameMap.set(p.profileId, p.realName || p.nickname || (p.profileId || '').split('-').pop() || p.profileId);
+    for (const a of approvals as Array<any>) if (a.profileId && a.nickname) nameMap.set(a.profileId, a.nickname);
+    for (const p of allProfiles as Array<any>) {
+      if (!nameMap.get(p.profileId)) { const n = p.nickname || p.realName; if (n) nameMap.set(p.profileId, n); }
+    }
 
     // 완료(참여)
     const completedIds = new Set<string>();
@@ -95,7 +101,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const members = memberRows.map((m) => ({
       profileId: m.profile_id,
-      displayName: nameMap.get(m.profile_id) || m.profile_id,
+      displayName: nameMap.get(m.profile_id) || '셀 친구',
       isOwner: cell.owner_profile_id === m.profile_id,
       completed: completedIds.has(m.profile_id),
       shared: shareVis.has(m.profile_id),

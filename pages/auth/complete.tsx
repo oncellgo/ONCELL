@@ -33,13 +33,17 @@ const CompleteSignupPage = () => {
   const needPrivacy = true; // A 방안에선 이 화면 진입 자체가 동의 받기 위함. 항상 true.
 
   const [privacyChecked, setPrivacyChecked] = useState(false);
+  const [alias, setAlias] = useState('');
+  // OAuth 닉네임이 있으면 별칭 기본값으로 1회 채움(사용자 편집 우선).
+  useEffect(() => { if (pending?.nickname) setAlias((prev) => prev || pending.nickname); }, [pending?.nickname]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const submit = async () => {
     setError(null);
-    if (!privacyChecked) { setError('개인정보 수집 및 이용에 동의해주세요.'); return; }
     if (!pending) { setError('로그인 정보를 찾을 수 없습니다. 다시 로그인해주세요.'); return; }
+    if (!alias.trim()) { setError('별칭을 입력해주세요.'); return; }
+    if (!privacyChecked) { setError('개인정보 수집 및 이용에 동의해주세요.'); return; }
 
     setSubmitting(true);
     try {
@@ -50,7 +54,7 @@ const CompleteSignupPage = () => {
         body: JSON.stringify({
           profileId: pending.profileId,
           provider: pending.provider,
-          nickname: pending.nickname,
+          nickname: alias.trim(),
           email: pending.email,
           privacyConsent: true,
         }),
@@ -71,7 +75,7 @@ const CompleteSignupPage = () => {
 
       // 동의·저장 성공 시점에만 브라우저 로그인 플래그 기록.
       try {
-        if (pending.nickname) window.localStorage.setItem('kcisNickname', pending.nickname);
+        window.localStorage.setItem('kcisNickname', alias.trim());
         if (pending.email) window.localStorage.setItem('kcisEmail', pending.email);
         window.localStorage.setItem('kcisProfileId', pending.profileId);
         // 가입 완료 직후 대시보드에서 1회 환영 배너 노출 플래그
@@ -116,6 +120,25 @@ const CompleteSignupPage = () => {
           </div>
 
           <div style={{ padding: '1.25rem 1.5rem 1.5rem', display: 'grid', gap: '1rem' }}>
+
+          {/* 별칭 — 셀 친구에게 보일 이름. 필수. */}
+          <section style={{ display: 'grid', gap: '0.4rem' }}>
+            <label htmlFor="signup-alias" style={{ fontSize: '0.9rem', fontWeight: 800, color: '#365314' }}>
+              별칭 <span style={{ color: '#DC2626' }}>*</span>
+            </label>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: '#4B5563', lineHeight: 1.5 }}>
+              셀 친구에게 보일 이름이에요. 내 묵상·활동에 이 별칭이 표시됩니다. (실명 대신 자유롭게)
+            </p>
+            <input
+              id="signup-alias"
+              type="text"
+              value={alias}
+              onChange={(e) => setAlias(e.target.value.slice(0, 20))}
+              placeholder="예: 새벽이슬"
+              maxLength={20}
+              style={{ padding: '0.75rem 0.9rem', borderRadius: 10, border: '1px solid #D9F09E', fontSize: '1rem', minHeight: 48, background: '#fff', color: '#182527' }}
+            />
+          </section>
 
           {needPrivacy && (
             <section style={{ padding: '0.9rem 1rem', borderRadius: 10, background: '#F7FEE7', border: '1px solid #D9F09E', display: 'grid', gap: '0.65rem' }}>

@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getCellById, isCellMember, getCellMembers } from '../../../../lib/cells';
-import { getProfiles } from '../../../../lib/dataStore';
+import { getProfiles, getSignupApprovals } from '../../../../lib/dataStore';
 import { requireSession } from '../../../../lib/session';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -19,15 +19,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!member) return res.status(403).json({ error: 'not a member' });
 
     const members = await getCellMembers(cellId);
-    const profileIds = members.map((m) => m.profile_id);
-    const allProfiles = await getProfiles().catch(() => [] as any[]);
-    const profileMap = new Map<string, { realName?: string; nickname?: string }>();
+    // 표시명 — 별칭(nickname) 우선. approval.nickname → profile.nickname → '셀 친구'.
+    const [allProfiles, approvals] = await Promise.all([
+      getProfiles().catch(() => [] as any[]),
+      getSignupApprovals().catch(() => [] as any[]),
+    ]);
+    const nameMap = new Map<string, string>();
+    for (const a of approvals as Array<any>) if (a.profileId && a.nickname) nameMap.set(a.profileId, a.nickname);
     for (const p of allProfiles as Array<any>) {
-      profileMap.set(p.profileId, { realName: p.realName, nickname: p.nickname });
+      if (!nameMap.get(p.profileId)) { const n = p.nickname || p.realName; if (n) nameMap.set(p.profileId, n); }
     }
     const enriched = members.map((m) => {
-      const p = profileMap.get(m.profile_id) || {};
-      const display = p.realName || p.nickname || m.profile_id.split('-').pop() || m.profile_id;
+      const display = nameMap.get(m.profile_id) || '셀 친구';
       return {
         profileId: m.profile_id,
         displayName: display,

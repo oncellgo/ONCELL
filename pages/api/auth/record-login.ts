@@ -104,7 +104,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     list[idx].privacyConsent = true;
     list[idx].privacyConsentAt = now;
   }
-  if (nickname && !list[idx].nickname) list[idx].nickname = nickname;
+  // 별칭: 가입/동의 화면(privacyConsent=true)에서 명시 입력 시 확정 저장(수정 허용).
+  // 일반 로그인의 OAuth 닉네임으로는 기존 별칭을 덮어쓰지 않음.
+  if (nickname && (privacyConsent === true || !list[idx].nickname)) list[idx].nickname = nickname;
   if (email && !list[idx].email) list[idx].email = email;
   if (realName && !list[idx].realName) list[idx].realName = realName;
   await writeApprovals(list);
