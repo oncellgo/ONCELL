@@ -283,10 +283,6 @@ export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickn
       <div style={{ minHeight: '100vh' }}>
         <TopNav profileId={profileId} displayName={null} nickname={nickname} email={email} systemAdminHref={systemAdminHref || undefined} />
         <main style={{ maxWidth: 620, margin: '0 auto', padding: isMobile ? '1.25rem 0.85rem 4rem' : '2.5rem 1.5rem 5rem', color: '#fff' }}>
-          <a href="/cells" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.85rem', minHeight: 36, borderRadius: 999, background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.78)', fontSize: '0.82rem', textDecoration: 'none', marginBottom: '1.25rem', fontWeight: 600 }}>
-            ← 내 셀
-          </a>
-
           {loading && <div style={{ color: 'rgba(255,255,255,0.6)' }}>불러오는 중…</div>}
           {err && <div style={{ padding: '1rem', borderRadius: 12, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.32)', color: '#FCA5A5' }}>{err}</div>}
 
