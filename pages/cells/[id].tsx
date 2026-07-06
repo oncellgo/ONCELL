@@ -548,9 +548,8 @@ const FeedCard = ({ m, isMe, onReact }: { m: MemberToday; isMe: boolean; onReact
         <Avatar name={m.displayName} size={32} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{m.displayName}</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{isMe ? '나' : m.displayName}</span>
             {m.isOwner && <span style={{ fontSize: '0.62rem', padding: '0.06rem 0.35rem', borderRadius: 999, background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}>owner</span>}
-            {isMe && <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.5)' }}>(나)</span>}
             <span style={{ fontSize: '0.66rem', padding: '0.1rem 0.45rem', borderRadius: 999, background: `${c}26`, color: c, fontWeight: 600 }}>✓ 오늘 완료</span>
           </div>
           {m.shared && m.content?.reference && (

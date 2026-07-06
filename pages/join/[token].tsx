@@ -73,10 +73,11 @@ export default function JoinPage({ profileId: ssrProfileId, nickname: ssrNicknam
   const join = async () => {
     if (!cell) return;
     if (!profileId) {
-      // 로그인 후 이 초대로 자동 복귀·자동 가입. OAuth 왕복을 넘기 위해 sessionStorage 사용.
+      // 로그인 후 이 초대로 자동 복귀·자동 가입. 모바일 OAuth 왕복에서도 남도록 localStorage 사용(+시간 가드).
       try {
-        window.sessionStorage.setItem('oncellReturnTo', `/join/${token}`);
-        window.sessionStorage.setItem('oncellJoinIntent', token);
+        window.localStorage.setItem('oncellReturnTo', `/join/${token}`);
+        window.localStorage.setItem('oncellReturnToAt', String(Date.now()));
+        window.localStorage.setItem('oncellJoinIntent', token);
       } catch {}
       window.location.href = '/auth/login';
       return;
@@ -118,9 +119,9 @@ export default function JoinPage({ profileId: ssrProfileId, nickname: ssrNicknam
   useEffect(() => {
     if (!profileId || !cell) return;
     let intent: string | null = null;
-    try { intent = window.sessionStorage.getItem('oncellJoinIntent'); } catch {}
+    try { intent = window.localStorage.getItem('oncellJoinIntent'); } catch {}
     if (intent === token) {
-      try { window.sessionStorage.removeItem('oncellJoinIntent'); } catch {}
+      try { window.localStorage.removeItem('oncellJoinIntent'); } catch {}
       if (!cell.community_id) join();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -192,6 +193,9 @@ export default function JoinPage({ profileId: ssrProfileId, nickname: ssrNicknam
                 <div style={{ marginBottom: '1rem', padding: '0.7rem 0.85rem', borderRadius: 10, background: '#FEE2E2', color: '#991B1B', fontSize: '0.85rem' }}>{err}</div>
               )}
 
+              <div style={{ textAlign: 'center', fontSize: '0.95rem', fontWeight: 700, color: '#0891B2', marginBottom: '0.7rem' }}>
+                이 셀 초대에 응하시겠어요?
+              </div>
               <button
                 onClick={join}
                 disabled={submitting || (!!community && !agreeCommunity)}
@@ -202,7 +206,7 @@ export default function JoinPage({ profileId: ssrProfileId, nickname: ssrNicknam
                   cursor: submitting || (!!community && !agreeCommunity) ? 'not-allowed' : 'pointer',
                 }}
               >
-                {submitting ? '가입 중…' : profileId ? '가입하기' : '로그인 후 가입'}
+                {submitting ? '참여 중…' : profileId ? '네, 참여할게요' : '로그인하고 참여하기'}
               </button>
 
               <div style={{ marginTop: '0.75rem', textAlign: 'center', fontSize: '0.78rem', color: '#94A3B8' }}>
