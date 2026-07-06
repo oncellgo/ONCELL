@@ -311,16 +311,23 @@ export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickn
               <section style={{ marginBottom: '1.75rem' }}>
                 <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginBottom: '0.6rem', letterSpacing: '0.02em' }}>오늘의 활동</div>
 
-                <div style={{ display: 'flex', gap: '0.35rem', marginBottom: '0.85rem', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                {/* 책갈피 탭 — 운영자가 켠 모드가 노트 인덱스 탭처럼. 활성 탭이 아래 카드와 연결됨. */}
+                <div style={{ display: 'flex', gap: '0.3rem', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingLeft: '0.35rem', position: 'relative', zIndex: 2, marginBottom: -1 }}>
                   {enabledModes.map((m) => {
                     const active = activeMode === m;
+                    const mc = MODE_LABELS[m].color;
+                    const bar = active ? `${mc}40` : 'rgba(255,255,255,0.07)';
                     return (
                       <button key={m} onClick={() => setActiveMode(m)} style={{
-                        flexShrink: 0, padding: '0.5rem 0.95rem', minHeight: 38, borderRadius: 999,
-                        background: active ? `${MODE_LABELS[m].color}26` : 'rgba(255,255,255,0.04)',
-                        border: `1px solid ${active ? `${MODE_LABELS[m].color}66` : 'rgba(255,255,255,0.1)'}`,
-                        color: active ? MODE_LABELS[m].color : 'rgba(255,255,255,0.7)',
-                        fontSize: '0.84rem', fontWeight: 600, cursor: 'pointer',
+                        flexShrink: 0, padding: '0.55rem 1.05rem 0.7rem', minHeight: 40,
+                        borderRadius: '12px 12px 0 0',
+                        background: active ? `${mc}10` : 'rgba(255,255,255,0.02)',
+                        borderTop: `1px solid ${bar}`, borderLeft: `1px solid ${bar}`, borderRight: `1px solid ${bar}`, borderBottom: 'none',
+                        color: active ? mc : 'rgba(255,255,255,0.5)',
+                        fontSize: '0.84rem', fontWeight: active ? 800 : 600, cursor: 'pointer',
+                        transform: active ? 'translateY(0)' : 'translateY(3px)',
+                        boxShadow: active ? '0 -3px 8px rgba(0,0,0,0.12)' : 'none',
+                        transition: 'transform 0.12s ease, background 0.12s ease',
                       }}>
                         {MODE_LABELS[m].icon} {MODE_LABELS[m].ko}
                       </button>
