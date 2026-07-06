@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getCommunityTemplate, readCommunityTemplates, writeCommunityTemplates, seedCommunityTemplate } from '../../../../lib/communityTemplates';
 import { getCommunities } from '../../../../lib/dataStore';
+import { requireSession } from '../../../../lib/session';
 
 // NOTE: readCommunityTemplates / writeCommunityTemplates / seedCommunityTemplate
 // still touch data/community-bulletin-templates.json via lib/communityTemplates.ts.
@@ -43,8 +44,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     if (req.method === 'PATCH') {
-      const { profileId, design } = req.body as { profileId?: string; design?: any };
-      if (!profileId) return res.status(401).json({ error: 'profileId required.' });
+      const profileId = requireSession(req, res);
+      if (!profileId) return;
+      const { design } = req.body as { design?: any };
       const admin = await isAdmin(profileId, communityId);
       if (!admin) return res.status(403).json({ error: 'Community admin only.' });
       if (!design || typeof design !== 'object') return res.status(400).json({ error: 'design required.' });

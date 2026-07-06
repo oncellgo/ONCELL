@@ -5,7 +5,9 @@ import { Fragment, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import SubHeader from '../../components/SubHeader';
 import BiblePassageCard from '../../components/BiblePassageCard';
+import ShareToCellsModal from '../../components/ShareToCellsModal';
 import { getSystemAdminHref } from '../../lib/adminGuard';
+import { getSessionProfileId } from '../../lib/session';
 import { getProfiles, getUsers, getSettings } from '../../lib/dataStore';
 import { useIsMobile } from '../../lib/useIsMobile';
 import { useRequireLogin } from '../../lib/useRequireLogin';
@@ -131,6 +133,7 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
   const [noteLoading, setNoteLoading] = useState(false);
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteMsg, setNoteMsg] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false); // 저장 후 "어느 셀에 공개?" 셀렉터
 
   // 과거 묵상 보기 모달 — 읽기 전용
   const [viewNoteOpen, setViewNoteOpen] = useState(false);
@@ -249,8 +252,8 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
         if (hasNoteInput) next.add(todayKey); else next.delete(todayKey);
         return next;
       });
-      // 저장 성공 후 잠시 메시지 보여주고 창 닫기
-      setTimeout(() => { setNoteOpen(false); setNoteMsg(null); }, 600);
+      // 저장 성공 후 잠시 메시지 보여주고, 노트 닫으며 "어느 셀에 공개?" 셀렉터 오픈
+      setTimeout(() => { setNoteOpen(false); setNoteMsg(null); setShareOpen(true); }, 600);
     } catch {
       setNoteMsg('저장에 실패했습니다.');
     } finally {
@@ -706,6 +709,11 @@ const QtPage = ({ videos, videoFetchStatus, todayDow, weekStartISO, profileId, d
         </div>
       )}
 
+      {/* 저장 후 "어느 셀에 공개?" 셀렉터 */}
+      {shareOpen && resolvedProfileId && (
+        <ShareToCellsModal profileId={resolvedProfileId} date={todayKey} onClose={() => setShareOpen(false)} />
+      )}
+
       {/* 과거 묵상 보기 모달 — 읽기 전용 */}
       {viewNoteOpen && (
         <div
@@ -834,9 +842,9 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
     videos = Array.from(byDate.values()).sort((a, b) => a.dateKey.localeCompare(b.dateKey));
   }
 
-  const profileId = typeof ctx.query.profileId === 'string' ? ctx.query.profileId : null;
-  const nickname = typeof ctx.query.nickname === 'string' ? ctx.query.nickname : null;
-  const email = typeof ctx.query.email === 'string' ? ctx.query.email : null;
+  const profileId = getSessionProfileId(ctx.req);
+  const nickname = null;
+  const email = null;
 
   let displayName: string | null = nickname;
   if (profileId) {

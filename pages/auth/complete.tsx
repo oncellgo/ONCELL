@@ -81,7 +81,8 @@ const CompleteSignupPage = () => {
 
       if (approvalStatus === 'pending') { router.replace('/auth/pending'); return; }
       if (approvalStatus === 'rejected') { router.replace('/auth/rejected'); return; }
-      router.replace(`/dashboard?profileId=${encodeURIComponent(pending.profileId)}&nickname=${encodeURIComponent(pending.nickname)}&email=${encodeURIComponent(pending.email)}`);
+      // 세션 쿠키가 신원을 전달하므로 URL 에 profileId/email 미부착.
+      router.replace('/dashboard');
     } catch {
       setError('저장 실패. 다시 시도해주세요.');
       setSubmitting(false);
@@ -130,7 +131,7 @@ const CompleteSignupPage = () => {
                     <strong style={{ color: '#365314' }}>수집 항목:</strong> 이메일·닉네임 (카카오/구글 소셜 로그인 제공)
                   </p>
                   <p style={{ margin: '0.15rem 0 0' }}>
-                    <strong style={{ color: '#365314' }}>수집 목적:</strong> 교인 식별 및 본인 확인, 장소 예약 신청·관리 및 예약자 연락, 개인화 서비스(큐티·성경통독 기록) 제공
+                    <strong style={{ color: '#365314' }}>수집 목적:</strong> 회원 식별 및 본인 확인, 셀관리, 개인화 서비스(큐티·성경통독 기록) 제공
                   </p>
                 </div>
                 <div>

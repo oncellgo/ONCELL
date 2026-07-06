@@ -2,12 +2,14 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getCommunityById, getCommunityMemberCount, isCommunityMember, ensureAdminMembership } from '../../../../lib/community';
 import { db } from '../../../../lib/db';
 import { getProfiles } from '../../../../lib/dataStore';
+import { getSessionProfileId } from '../../../../lib/session';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'method not allowed' });
 
   const id = typeof req.query.id === 'string' ? req.query.id : '';
-  const profileId = typeof req.query.profileId === 'string' ? req.query.profileId : '';
+  // 준공개 GET — 세션 있으면 개인화(isMember/isAdmin), 없으면 익명 조회.
+  const profileId = getSessionProfileId(req) || '';
   if (!id) return res.status(400).json({ error: 'community id required' });
 
   try {

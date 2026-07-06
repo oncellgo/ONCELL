@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { seedCommunityTemplate } from '../../../lib/communityTemplates';
 import { getCommunities, setCommunities, getUsers, setUsers, getWorshipServices, setWorshipServices } from '../../../lib/dataStore';
+import { requireSession } from '../../../lib/session';
 
 const computeNextSundayAt11 = (): string => {
   const now = new Date();
@@ -48,10 +49,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(405).json({ error: 'Method not allowed.' });
   }
 
-  const { name, type, profileId, provider, nickname, email, joinApprovalMode, requireRealName, timezone } = req.body as {
+  const profileId = requireSession(req, res);
+  if (!profileId) return;
+  const { name, type, provider, nickname, email, joinApprovalMode, requireRealName, timezone } = req.body as {
     name?: string;
     type?: CommunityType;
-    profileId?: string;
     provider?: string;
     nickname?: string;
     email?: string;
@@ -62,9 +64,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   if (!name || !name.trim()) {
     return res.status(400).json({ error: '공동체 이름을 입력해주세요.' });
-  }
-  if (!profileId) {
-    return res.status(400).json({ error: '로그인이 필요합니다.' });
   }
 
   try {

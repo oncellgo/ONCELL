@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getCellByInviteToken, isCellMember } from '../../../../lib/cells';
 import { isCommunityMember, joinCommunity, getCommunityById } from '../../../../lib/community';
 import { db, kvGet } from '../../../../lib/db';
+import { requireSession } from '../../../../lib/session';
 
 const DEFAULT_INDEPENDENT_CELL_LIMIT = 3;
 const DEFAULT_COMMUNITY_LIMIT = 1;
@@ -38,9 +39,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' });
 
   const token = typeof req.query.token === 'string' ? req.query.token : '';
-  const { profileId, joinCommunity: agreeCommunity } = (req.body || {}) as { profileId?: string; joinCommunity?: boolean };
+  const profileId = requireSession(req, res);
+  if (!profileId) return;
+  const { joinCommunity: agreeCommunity } = (req.body || {}) as { joinCommunity?: boolean };
   if (!token) return res.status(400).json({ error: 'token required' });
-  if (!profileId) return res.status(401).json({ error: 'profileId required' });
 
   try {
     const cell = await getCellByInviteToken(token);

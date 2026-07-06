@@ -71,6 +71,15 @@ const TABLES = [
   'oncell_qt_plan',
   'oncell_reading_plans',
   'oncell_app_kv',
+  // 사용자 인증·가입
+  'oncell_signup_approvals',
+  'oncell_user_completions',
+  // 셀 시스템 (누락돼 있던 것 — 복원 시 유실 방지)
+  'oncell_cells',
+  'oncell_cell_members',
+  'oncell_community_members',
+  'oncell_cell_shares',
+  'oncell_share_reactions',
 ];
 
 const PAGE = 1000; // Supabase select 기본 상한

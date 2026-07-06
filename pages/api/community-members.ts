@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getCommunities, getUsers } from '../../lib/dataStore';
+import { requireSession } from '../../lib/session';
 
 type Community = { id: string; name: string; adminProfileId?: string };
 type UserEntry = {
@@ -18,8 +19,9 @@ type UserEntry = {
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const communityId = typeof req.query.communityId === 'string' ? req.query.communityId : null;
-  const profileId = typeof req.query.profileId === 'string' ? req.query.profileId : null;
-  if (!communityId || !profileId) return res.status(400).json({ error: 'communityId and profileId required.' });
+  const profileId = requireSession(req, res);
+  if (!profileId) return;
+  if (!communityId) return res.status(400).json({ error: 'communityId required.' });
 
   try {
     const [communities, users] = await Promise.all([

@@ -1,9 +1,9 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useRouter } from 'next/router';
 import LanguageSwitcher from './LanguageSwitcher';
 import ProfileModal from './ProfileModal';
 import { useIsMobile } from '../lib/useIsMobile';
+import { useSession } from '../lib/useSession';
 
 /**
  * 공통 상단 네비게이션. 모든 페이지(랜딩 포함)에서 동일한 디자인으로 사용됩니다.
@@ -24,42 +24,19 @@ export type TopNavProps = {
 const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdminHref, nickname, email, adminAccent }: TopNavProps) => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
-  const router = useRouter();
-  const [lsProfileId, setLsProfileId] = useState<string | null>(null);
-  const [lsNickname, setLsNickname] = useState<string | null>(null);
-  const [lsEmail, setLsEmail] = useState<string | null>(null);
-  useEffect(() => {
-    try {
-      if (!profileId) {
-        const p = window.localStorage.getItem('kcisProfileId');
-        if (p) setLsProfileId(p);
-      }
-      if (!nickname) {
-        const n = window.localStorage.getItem('kcisNickname');
-        if (n) setLsNickname(n);
-      }
-      if (!email) {
-        const e = window.localStorage.getItem('kcisEmail');
-        if (e) setLsEmail(e);
-      }
-    } catch {}
-  }, [profileId, nickname, email]);
-  const effProfileId = profileId || lsProfileId;
-  const effNickname = nickname || lsNickname;
-  const effEmail = email || lsEmail;
+  // 신원은 세션 쿠키(/api/auth/me)가 소스. props 는 SSR 첫 페인트용 폴백.
+  const session = useSession();
+  const effProfileId = session.profileId || profileId;
+  const effNickname = session.nickname || nickname;
+  const effEmail = session.email || email;
+  const effAdminHref = session.systemAdminHref || systemAdminHref;
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [currentDisplayName, setCurrentDisplayName] = useState<string | null>(displayName || null);
-  const authQs = effProfileId
-    ? new URLSearchParams({
-        profileId: effProfileId,
-        ...(effNickname ? { nickname: effNickname } : {}),
-        ...(effEmail ? { email: effEmail } : {}),
-      }).toString()
-    : '';
-  const homeHref = effProfileId ? `/?${authQs}` : '/';
-  const dashboardHref = effProfileId ? `/dashboard?${authQs}` : '/dashboard';
+  // 쿠키가 신원을 자동 전송하므로 링크에 profileId 를 붙이지 않는다.
+  const homeHref = '/';
+  const dashboardHref = '/dashboard';
   const providerLabel = effProfileId?.startsWith('kakao-') ? '카카오 사용자' : effProfileId?.startsWith('google-') ? 'Google 사용자' : '사용자';
-  const userLabel = currentDisplayName || displayName || effNickname || (effEmail ? effEmail.split('@')[0] : providerLabel);
+  const userLabel = currentDisplayName || displayName || session.realName || effNickname || (effEmail ? effEmail.split('@')[0] : providerLabel);
   return (
     <div style={{ padding: isMobile ? '0.5rem 0.5rem 0' : '0.75rem 0.75rem 0', maxWidth: 1040, margin: '0 auto', width: '100%' }}>
     <div style={{ position: 'sticky', top: 0, zIndex: 20, display: 'grid', gap: '0.35rem' }}>
@@ -190,9 +167,9 @@ const TopNav = ({ profileId, badge, brandExtras, displayName, isAdmin, systemAdm
           </a>
         )}
         {/* 시스템 관리자 전용 진입 버튼 — admin 이 자주 쓰는 액션이라 1-클릭 유지 */}
-        {effProfileId && systemAdminHref && (
+        {effProfileId && effAdminHref && (
           <a
-            href={systemAdminHref}
+            href={effAdminHref}
             title={t('nav.sysSettings')}
             className="topnav-btn topnav-admin-btn"
           >

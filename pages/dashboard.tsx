@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import TopNav from '../components/TopNav';
-import { getProfiles, getUsers } from '../lib/dataStore';
+import { getProfiles, getUsers, getSignupApprovals } from '../lib/dataStore';
 import { getSystemAdminHref } from '../lib/adminGuard';
+import { getSessionProfileId } from '../lib/session';
 import { useIsMobile } from '../lib/useIsMobile';
 
 type Props = {
@@ -241,19 +242,23 @@ const CellRow = ({ cell, ownProfileId }: { cell: Cell; ownProfileId: string | nu
 };
 
 export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
-  const profileId = typeof context.query.profileId === 'string' ? context.query.profileId : null;
-  const nickname = typeof context.query.nickname === 'string' ? context.query.nickname : null;
-  const email = typeof context.query.email === 'string' ? context.query.email : null;
-
-  let displayName: string | null = nickname;
+  // 신원은 세션 쿠키에서 (URL 쿼리 신뢰 제거)
+  const profileId = getSessionProfileId(context.req);
+  let displayName: string | null = null;
+  let nickname: string | null = null;
+  let email: string | null = null;
   if (profileId) {
     try {
-      const [profiles, users] = await Promise.all([
+      const [profiles, users, approvals] = await Promise.all([
         getProfiles().catch(() => [] as any[]),
         getUsers().catch(() => [] as any[]),
+        getSignupApprovals().catch(() => [] as any[]),
       ]);
       const p = (profiles as Array<any>).find((x) => x.profileId === profileId);
       const u = (users as Array<any>).find((x) => x.providerProfileId === profileId);
+      const a = (approvals as Array<any>).find((x) => x.profileId === profileId);
+      nickname = a?.nickname || p?.nickname || u?.nickname || null;
+      email = a?.email || p?.email || null;
       displayName = p?.realName || u?.realName || u?.nickname || nickname || null;
     } catch {}
   }

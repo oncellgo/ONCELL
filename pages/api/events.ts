@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { expandOccurrences, EventRow, RecurrenceRule } from '../../lib/recurrence';
 import { getEvents, setEvents, getCommunities, getSettings, getVenues } from '../../lib/dataStore';
+import { requireSession, getSessionProfileId } from '../../lib/session';
 
 type Community = {
   id: string;
@@ -47,7 +48,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     if (req.method === 'GET') {
       const communityId = typeof req.query.communityId === 'string' ? req.query.communityId : '';
-      const profileId = typeof req.query.profileId === 'string' ? req.query.profileId : '';
+      const profileId = getSessionProfileId(req) || ''; // 준공개 GET — 로그인 시 본인 예약 필터
       const typeFilter = typeof req.query.type === 'string' ? req.query.type : '';
       if (!communityId) return res.status(400).json({ error: 'communityId is required.' });
 
@@ -107,8 +108,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     if (req.method === 'POST') {
-      const { communityId, title, startAt, endAt, location, venueId, description, profileId, scope, shared, createdByName, recurrence, type, category } = req.body as any;
-      if (!communityId || !title || !startAt || !endAt || !profileId) {
+      const profileId = requireSession(req, res);
+      if (!profileId) return;
+      const { communityId, title, startAt, endAt, location, venueId, description, scope, shared, createdByName, recurrence, type, category } = req.body as any;
+      if (!communityId || !title || !startAt || !endAt) {
         return res.status(400).json({ error: '필수 값이 누락되었습니다.' });
       }
       const communities = (await getCommunities()) as Community[];
@@ -232,8 +235,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     if (req.method === 'PATCH') {
       // 특정 occurrence 수정: { seriesId, occurrenceDate, fields }
-      const { seriesId, occurrenceDate, fields, profileId } = req.body as any;
-      if (!seriesId || !occurrenceDate || !profileId) return res.status(400).json({ error: 'seriesId, occurrenceDate, profileId required' });
+      const profileId = requireSession(req, res);
+      if (!profileId) return;
+      const { seriesId, occurrenceDate, fields } = req.body as any;
+      if (!seriesId || !occurrenceDate) return res.status(400).json({ error: 'seriesId, occurrenceDate required' });
       const events = await readEvents();
       const idx = events.findIndex((e) => e.id === seriesId);
       if (idx === -1) return res.status(404).json({ error: '일정을 찾을 수 없습니다.' });
@@ -336,11 +341,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     if (req.method === 'DELETE') {
+      const profileId = requireSession(req, res);
+      if (!profileId) return;
       const id = typeof req.query.id === 'string' ? req.query.id : '';
-      const profileId = typeof req.query.profileId === 'string' ? req.query.profileId : '';
       const occurrenceDate = typeof req.query.occurrenceDate === 'string' ? req.query.occurrenceDate : '';
       const deleteScope = typeof req.query.scope === 'string' ? req.query.scope : 'all';
-      if (!id || !profileId) return res.status(400).json({ error: 'id, profileId가 필요합니다.' });
+      if (!id) return res.status(400).json({ error: 'id가 필요합니다.' });
 
       const events = await readEvents();
       const idx = events.findIndex((e) => e.id === id);

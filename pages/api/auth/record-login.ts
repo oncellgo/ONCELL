@@ -1,5 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSignupApprovals, setSignupApprovals, getSettings } from '../../../lib/dataStore';
+import { setSession, clearSession } from '../../../lib/session';
+
+// Phase 1: 세션 쿠키 발급은 비파괴로 도입 — SESSION_SECRET 미설정 등으로 실패해도
+// 기존 로그인 흐름을 막지 않도록 감싼다. Phase 2 에서 fail-closed 로 전환.
+const issueSession = (res: NextApiResponse, profileId: string) => {
+  try { setSession(res, profileId); } catch (e) { console.error('[record-login] setSession failed:', e); }
+};
 
 type Approval = {
   profileId: string;
@@ -61,6 +68,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   // 차단된 profileId 는 로그인/재가입 불가 — lastLoginAt 갱신도 안 함.
   if (idx >= 0 && list[idx].status === 'blocked') {
+    clearSession(res);
     return res.status(403).json({ error: 'blocked', approval: list[idx], approvalMode, requiredFields: required, missingFields: [] });
   }
   // 탈퇴 사용자는 approval row 가 이미 파기되어 idx === -1 → 아래 신규 가입 분기로 자연스럽게 이어짐.
@@ -84,6 +92,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
     list.push(entry);
     await writeApprovals(list);
+    issueSession(res, profileId);
     return res.status(200).json({ approval: entry, approvalMode, requiredFields: required, missingFields: computeMissingFields(entry, required) });
   }
 
@@ -99,6 +108,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (email && !list[idx].email) list[idx].email = email;
   if (realName && !list[idx].realName) list[idx].realName = realName;
   await writeApprovals(list);
+  issueSession(res, profileId);
   return res.status(200).json({ approval: list[idx], approvalMode, requiredFields: required, missingFields: computeMissingFields(list[idx], required) });
 };
 

@@ -1,14 +1,15 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getCellById, isCellMember, getCellMembers } from '../../../lib/cells';
-import { getProfiles } from '../../../lib/dataStore';
+import { getCellById, isCellMember, getCellMembers } from '../../../../lib/cells';
+import { getProfiles } from '../../../../lib/dataStore';
+import { requireSession } from '../../../../lib/session';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'method not allowed' });
 
   const cellId = typeof req.query.id === 'string' ? req.query.id : '';
-  const profileId = typeof req.query.profileId === 'string' ? req.query.profileId : '';
+  const profileId = requireSession(req, res);
+  if (!profileId) return;
   if (!cellId) return res.status(400).json({ error: 'cell id required' });
-  if (!profileId) return res.status(401).json({ error: 'profileId required' });
 
   try {
     const cell = await getCellById(cellId);

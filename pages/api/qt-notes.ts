@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getQtNotes, setQtNotes } from '../../lib/dataStore';
 import { db } from '../../lib/db';
 import { getSGTodayKey } from '../../lib/events';
+import { requireSession } from '../../lib/session';
 
 type QtNote = {
   profileId: string;
@@ -27,9 +28,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const notes = await readNotes();
 
     if (req.method === 'GET') {
-      const profileId = typeof req.query.profileId === 'string' ? req.query.profileId : undefined;
+      const profileId = requireSession(req, res);
+      if (!profileId) return;
       const date = typeof req.query.date === 'string' ? req.query.date : undefined;
-      if (!profileId) return res.status(400).json({ error: 'profileId is required.' });
       if (date) {
         const note = notes.find((n) => n.profileId === profileId && n.date === date) || null;
         return res.status(200).json({ note });
@@ -41,9 +42,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     if (req.method === 'POST') {
-      const { profileId, date, reference, feelings, decision, prayer } = (req.body || {}) as Partial<QtNote>;
-      if (!profileId || !date) {
-        return res.status(400).json({ error: 'profileId, date가 필요합니다.' });
+      const profileId = requireSession(req, res);
+      if (!profileId) return;
+      const { date, reference, feelings, decision, prayer } = (req.body || {}) as Partial<QtNote>;
+      if (!date) {
+        return res.status(400).json({ error: 'date가 필요합니다.' });
       }
       // 도메인 규칙(service-plan §7): 큐티 완료는 SG 기준 오늘만 가능.
       // 과거 소급 / 미래 선지급 금지. 클라이언트 UI 우회 시도도 서버에서 차단.
@@ -84,9 +87,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     if (req.method === 'DELETE') {
-      const profileId = typeof req.query.profileId === 'string' ? req.query.profileId : undefined;
+      const profileId = requireSession(req, res);
+      if (!profileId) return;
       const date = typeof req.query.date === 'string' ? req.query.date : undefined;
-      if (!profileId || !date) return res.status(400).json({ error: 'profileId와 date가 필요합니다.' });
+      if (!date) return res.status(400).json({ error: 'date가 필요합니다.' });
       const filtered = notes.filter((n) => !(n.profileId === profileId && n.date === date));
       await setQtNotes(filtered);
       try {

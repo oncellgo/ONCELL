@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { joinCommunity, getCommunityById } from '../../../../lib/community';
 import { db, kvGet } from '../../../../lib/db';
+import { requireSession } from '../../../../lib/session';
 
 const DEFAULT_COMMUNITY_LIMIT = 1;
 
@@ -8,9 +9,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' });
 
   const id = typeof req.query.id === 'string' ? req.query.id : '';
-  const { profileId } = (req.body || {}) as { profileId?: string };
+  const profileId = requireSession(req, res);
+  if (!profileId) return;
   if (!id) return res.status(400).json({ error: 'community id required' });
-  if (!profileId) return res.status(401).json({ error: 'profileId required' });
 
   try {
     const community = await getCommunityById(id);

@@ -3,6 +3,7 @@ import Head from 'next/head';
 import SubHeader from '../components/SubHeader';
 import ScheduleView, { Community, EventRow, WorshipService } from '../components/ScheduleView';
 import { getSystemAdminHref } from '../lib/adminGuard';
+import { getSessionProfileId } from '../lib/session';
 import { expandOccurrences, EventRow as RawEventRow } from '../lib/recurrence';
 import { getCommunities, getEvents, getWorshipServices, getProfiles, getUsers } from '../lib/dataStore';
 import { useIsMobile } from '../lib/useIsMobile';
@@ -103,9 +104,9 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
   const qId = typeof ctx.query.communityId === 'string' ? ctx.query.communityId : '';
   const defaultCommunityId = qId && communities.find((c) => c.id === qId) ? qId : (communities[0]?.id || '');
 
-  const profileId = typeof ctx.query.profileId === 'string' ? ctx.query.profileId : null;
-  const nickname = typeof ctx.query.nickname === 'string' ? ctx.query.nickname : null;
-  const email = typeof ctx.query.email === 'string' ? ctx.query.email : null;
+  const profileId = getSessionProfileId(ctx.req);
+  const nickname = null;
+  const email = null;
 
   let displayName: string | null = nickname;
   if (profileId) {

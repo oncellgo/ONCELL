@@ -6,6 +6,7 @@ import { useRouter } from 'next/router';
 import TopNav from '../../../components/TopNav';
 import { useIsMobile } from '../../../lib/useIsMobile';
 import { getSystemAdminHref } from '../../../lib/adminGuard';
+import { getSessionProfileId } from '../../../lib/session';
 
 type Community = {
   id: string;
@@ -195,9 +196,9 @@ export default function CommunityDetail({ profileId: ssrProfileId, nickname: ssr
 }
 
 export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
-  const profileId = typeof context.query.profileId === 'string' ? context.query.profileId : null;
-  const nickname = typeof context.query.nickname === 'string' ? context.query.nickname : null;
-  const email = typeof context.query.email === 'string' ? context.query.email : null;
+  const profileId = getSessionProfileId(context.req);
+  const nickname = null;
+  const email = null;
   const systemAdminHref = await getSystemAdminHref(profileId, { nickname, email });
   return { props: { profileId, nickname, email, systemAdminHref } };
 };

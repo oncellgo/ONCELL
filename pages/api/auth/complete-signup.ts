@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSignupApprovals, setSignupApprovals, getProfiles, setProfiles } from '../../../lib/dataStore';
+import { requireSession } from '../../../lib/session';
 
 type Approval = {
   profileId: string;
@@ -29,8 +30,9 @@ type Profile = {
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed.' });
 
-  const { profileId, realName, contact, privacyConsent } = req.body as { profileId?: string; realName?: string; contact?: string; privacyConsent?: boolean };
-  if (!profileId) return res.status(400).json({ error: 'profileId required.' });
+  const profileId = requireSession(req, res);
+  if (!profileId) return;
+  const { realName, contact, privacyConsent } = req.body as { realName?: string; contact?: string; privacyConsent?: boolean };
 
   let list: Approval[] = [];
   try { list = ((await getSignupApprovals()) || []) as Approval[]; } catch {}

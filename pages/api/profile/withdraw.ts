@@ -6,6 +6,7 @@ import {
   getEvents, setEvents,
 } from '../../../lib/dataStore';
 import { db, kvGet, kvSet } from '../../../lib/db';
+import { requireSession } from '../../../lib/session';
 
 /**
  * 회원 탈퇴 — 본인 요청. admin 인증 없이 profileId 본인이 호출.
@@ -32,8 +33,9 @@ const LOG_KEY = 'withdrawn_logs_v1';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed.' });
-  const { profileId, reason } = req.body as { profileId?: string; reason?: string };
-  if (!profileId) return res.status(400).json({ error: 'profileId required.' });
+  const profileId = requireSession(req, res);
+  if (!profileId) return;
+  const { reason } = req.body as { reason?: string };
 
   try {
     const [approvals, profiles, users, events] = await Promise.all([

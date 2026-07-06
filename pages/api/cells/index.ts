@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { createCell, countIndependentCellsForUser, EnabledModes } from '../../../lib/cells';
 import { isCommunityAdmin } from '../../../lib/community';
 import { kvGet } from '../../../lib/db';
+import { requireSession } from '../../../lib/session';
 
 const DEFAULT_INDEPENDENT_CELL_LIMIT = 3;
 
@@ -18,8 +19,9 @@ async function getIndependentCellLimit(): Promise<number> {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' });
 
-  const { profileId, name, enabledModes, description, inviteMessage, approvalMode, communityId } = (req.body || {}) as {
-    profileId?: string;
+  const profileId = requireSession(req, res);
+  if (!profileId) return;
+  const { name, enabledModes, description, inviteMessage, approvalMode, communityId } = (req.body || {}) as {
     name?: string;
     enabledModes?: EnabledModes;
     description?: string;
@@ -28,7 +30,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     communityId?: string;
   };
 
-  if (!profileId) return res.status(401).json({ error: 'profileId required' });
   if (!name?.trim()) return res.status(400).json({ error: 'name required' });
 
   const modes: EnabledModes = enabledModes || {};

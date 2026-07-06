@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '../lib/useIsMobile';
 
@@ -33,73 +32,13 @@ const ITEMS: Array<{ labelKey: string; href: string; hidden?: boolean }> = [
 
 const VISIBLE_ITEMS = ITEMS.filter((i) => !i.hidden);
 
-const MenuBar = ({ profileId, nickname, email }: Props) => {
+const MenuBar = (_props: Props) => {
   const { t } = useTranslation();
   const router = useRouter();
   const currentPath = router?.pathname || '';
   const isMobile = useIsMobile();
 
-  // SSR props 가 없을 때를 대비한 localStorage fallback (Hydration-safe)
-  const [lsProfileId, setLsProfileId] = useState<string | null>(null);
-  const [lsNickname, setLsNickname] = useState<string | null>(null);
-  const [lsEmail, setLsEmail] = useState<string | null>(null);
-  useEffect(() => {
-    try {
-      if (!profileId) {
-        const p = window.localStorage.getItem('kcisProfileId');
-        if (p) setLsProfileId(p);
-      }
-      if (!nickname) {
-        const n = window.localStorage.getItem('kcisNickname');
-        if (n) setLsNickname(n);
-      }
-      if (!email) {
-        const e = window.localStorage.getItem('kcisEmail');
-        if (e) setLsEmail(e);
-      }
-    } catch {}
-  }, [profileId, nickname, email]);
-
-  const effProfileId = profileId || lsProfileId;
-  const effNickname = nickname || lsNickname;
-  const effEmail = email || lsEmail;
-
-  const authQs = effProfileId
-    ? new URLSearchParams({
-        profileId: effProfileId,
-        ...(effNickname ? { nickname: effNickname } : {}),
-        ...(effEmail ? { email: effEmail } : {}),
-      }).toString()
-    : '';
-
-  const withAuth = (href: string) => {
-    if (!authQs || href === '#' || href.startsWith('http')) return href;
-    const sep = href.includes('?') ? '&' : '?';
-    return `${href}${sep}${authQs}`;
-  };
-
-  // 클릭 시점의 최신 localStorage 기반으로 href 재구성 (hydration race 방지).
-  // SSR/첫 렌더 중 링크가 auth 없이 이동되는 것을 막는다.
-  const handleNavClick = (href: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
-    let finalHref = href;
-    try {
-      const p = window.localStorage.getItem('kcisProfileId') || effProfileId || '';
-      const n = window.localStorage.getItem('kcisNickname') || effNickname || '';
-      const em = window.localStorage.getItem('kcisEmail') || effEmail || '';
-      if (p) {
-        const qs = new URLSearchParams({ profileId: p, ...(n ? { nickname: n } : {}), ...(em ? { email: em } : {}) }).toString();
-        if (!href.includes('profileId=')) {
-          const sep = href.includes('?') ? '&' : '?';
-          finalHref = `${href}${sep}${qs}`;
-        }
-      }
-    } catch {}
-    if (finalHref !== href) {
-      e.preventDefault();
-      window.location.href = finalHref;
-    }
-  };
-
+  // 쿠키가 신원을 자동 전송하므로 메뉴 링크는 순수 경로만 사용 (URL 에 profileId 미부착).
   const isActive = (href: string) => {
     if (href === '/') return currentPath === '/';
     return currentPath === href || currentPath.startsWith(`${href}/`);
@@ -140,8 +79,7 @@ const MenuBar = ({ profileId, nickname, email }: Props) => {
         return (
           <Link
             key={item.href}
-            href={withAuth(item.href)}
-            onClick={handleNavClick(item.href)}
+            href={item.href}
             data-compact
             style={{
               display: 'inline-flex',

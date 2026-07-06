@@ -44,7 +44,8 @@ const ProfileModal = ({ profileId, nickname, email, onClose }: Props) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // 로그아웃 — TopNav 에서 이전되어 이제 본 모달 primary 액션.
-  const doLogout = () => {
+  const doLogout = async () => {
+    try { await fetch('/api/auth/logout', { method: 'POST' }); } catch {}
     try {
       window.localStorage.removeItem('kcisProfileId');
       window.localStorage.removeItem('kcisNickname');
@@ -68,7 +69,8 @@ const ProfileModal = ({ profileId, nickname, email, onClose }: Props) => {
         setWithdrawMsg(d?.error === 'blocked' ? t('page.profile.withdrawBlocked') : (d?.error || t('page.profile.withdrawFail')));
         return;
       }
-      // 로컬 인증 정보 + 묵상 초안 제거 후 홈으로
+      // 서버 세션 종료 + 로컬 인증 정보 + 묵상 초안 제거 후 홈으로
+      try { await fetch('/api/auth/logout', { method: 'POST' }); } catch {}
       try {
         window.localStorage.removeItem('kcisProfileId');
         window.localStorage.removeItem('kcisNickname');

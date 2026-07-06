@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { db, T } from '../../lib/db';
+import { requireSession } from '../../lib/session';
 
 /**
  * 사용자 완료 기록 (큐티·통독 공용)
@@ -27,9 +28,10 @@ const todaySG = (): string => {
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     if (req.method === 'GET') {
-      const profileId = typeof req.query.profileId === 'string' ? req.query.profileId : '';
+      const profileId = requireSession(req, res);
+      if (!profileId) return;
       const type = typeof req.query.type === 'string' ? req.query.type : '';
-      if (!profileId || !VALID_TYPES.has(type)) return res.status(400).json({ error: 'profileId, type 필수' });
+      if (!VALID_TYPES.has(type)) return res.status(400).json({ error: 'type 필수' });
       let q = db.from(TABLE).select('date').eq('profile_id', profileId).eq('type', type);
       if (typeof req.query.from === 'string') q = q.gte('date', req.query.from);
       if (typeof req.query.to === 'string') q = q.lte('date', req.query.to);
@@ -39,8 +41,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     if (req.method === 'POST') {
-      const { profileId, type, date, allowPast } = req.body as { profileId?: string; type?: string; date?: string; allowPast?: boolean };
-      if (!profileId || !type || !date) return res.status(400).json({ error: 'profileId, type, date 필수' });
+      const profileId = requireSession(req, res);
+      if (!profileId) return;
+      const { type, date, allowPast } = req.body as { type?: string; date?: string; allowPast?: boolean };
+      if (!type || !date) return res.status(400).json({ error: 'type, date 필수' });
       if (!VALID_TYPES.has(type)) return res.status(400).json({ error: 'type invalid' });
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ error: 'date YYYY-MM-DD' });
       // 과거 소급 금지 — type=reading은 오늘만. type=qt는 노트 저장 시 내부 호출이므로 허용.
@@ -53,10 +57,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     if (req.method === 'DELETE') {
-      const profileId = typeof req.query.profileId === 'string' ? req.query.profileId : '';
+      const profileId = requireSession(req, res);
+      if (!profileId) return;
       const type = typeof req.query.type === 'string' ? req.query.type : '';
       const date = typeof req.query.date === 'string' ? req.query.date : '';
-      if (!profileId || !VALID_TYPES.has(type) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ error: 'profileId, type, date 필수' });
+      if (!VALID_TYPES.has(type) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ error: 'type, date 필수' });
       const { error } = await db.from(TABLE).delete().eq('profile_id', profileId).eq('type', type).eq('date', date);
       if (error) return res.status(500).json({ error: error.message });
       return res.status(200).json({ ok: true });

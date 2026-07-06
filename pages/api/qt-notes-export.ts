@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getQtNotes } from '../../lib/dataStore';
+import { requireSession } from '../../lib/session';
 
 // ---------------------------------------------------------------
 // GET /api/qt-notes-export?profileId=X&nickname=Y
@@ -48,10 +49,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
-  const profileId = typeof req.query.profileId === 'string' ? req.query.profileId.trim() : '';
-  if (!profileId) {
-    return res.status(400).json({ error: 'profileId required' });
-  }
+  const profileId = requireSession(req, res);
+  if (!profileId) return;
 
   try {
     const all = await getQtNotes();

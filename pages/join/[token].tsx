@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import TopNav from '../../components/TopNav';
 import { useIsMobile } from '../../lib/useIsMobile';
+import { getSessionProfileId } from '../../lib/session';
 
 type CellInfo = {
   id: string;
@@ -202,8 +203,8 @@ export default function JoinPage({ profileId: ssrProfileId, nickname: ssrNicknam
 }
 
 export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
-  const profileId = typeof context.query.profileId === 'string' ? context.query.profileId : null;
-  const nickname = typeof context.query.nickname === 'string' ? context.query.nickname : null;
-  const email = typeof context.query.email === 'string' ? context.query.email : null;
+  const profileId = getSessionProfileId(context.req);
+  const nickname = null;
+  const email = null;
   return { props: { profileId, nickname, email } };
 };

@@ -10,3 +10,6 @@ backups/
 full-dump.sql
 *-dump.sql
 renamed-dump.sql
+db-dump/
+.claude/scheduled_tasks.lock
+scripts/.bible-tts-progress.json

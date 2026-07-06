@@ -2,6 +2,7 @@ import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import SubHeader from '../components/SubHeader';
 import { getSystemAdminHref } from '../lib/adminGuard';
+import { getSessionProfileId } from '../lib/session';
 import { useIsMobile } from '../lib/useIsMobile';
 
 type Props = {
@@ -144,9 +145,9 @@ const TermsPage = ({ profileId, displayName, nickname, email, systemAdminHref }:
 };
 
 export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
-  const profileId = typeof ctx.query.profileId === 'string' ? ctx.query.profileId : null;
-  const nickname = typeof ctx.query.nickname === 'string' ? ctx.query.nickname : null;
-  const email = typeof ctx.query.email === 'string' ? ctx.query.email : null;
+  const profileId = getSessionProfileId(ctx.req);
+  const nickname = null;
+  const email = null;
   const systemAdminHref = await getSystemAdminHref(profileId, { nickname, email });
 
   return {

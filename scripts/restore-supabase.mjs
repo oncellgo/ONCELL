@@ -83,6 +83,12 @@ const TABLE_PK = {
   oncell_qt_notes:                      ['profile_id', 'date'],
   oncell_event_categories:              'name',
   oncell_app_kv:                        'key',
+  oncell_user_completions:              ['profile_id', 'type', 'date'],
+  oncell_cells:                         'id',
+  oncell_cell_members:                  ['cell_id', 'profile_id'],
+  oncell_community_members:             ['community_id', 'profile_id'],
+  oncell_cell_shares:                   ['cell_id', 'profile_id', 'mode', 'date'],
+  oncell_share_reactions:               ['cell_id', 'author_profile_id', 'mode', 'date', 'reactor_profile_id', 'reaction'],
 };
 
 // --- 유틸 ---

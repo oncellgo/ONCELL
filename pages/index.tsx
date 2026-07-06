@@ -8,6 +8,7 @@ import TopNav from '../components/TopNav';
 import RequiredInfoModal from '../components/RequiredInfoModal';
 import { getSystemAdminHref } from '../lib/adminGuard';
 import { getProfiles, getUsers } from '../lib/dataStore';
+import { getSessionProfileId } from '../lib/session';
 import { useIsMobile } from '../lib/useIsMobile';
 
 type HomeProps = {
@@ -694,9 +695,9 @@ const Home = ({ profileId, displayName, nickname, email, systemAdminHref, menusE
 };
 
 export const getServerSideProps: GetServerSideProps<HomeProps> = async (context) => {
-  const profileId = typeof context.query.profileId === 'string' ? context.query.profileId : null;
-  const nickname = typeof context.query.nickname === 'string' ? context.query.nickname : null;
-  const email = typeof context.query.email === 'string' ? context.query.email : null;
+  const profileId = getSessionProfileId(context.req);
+  const nickname = null;
+  const email = null;
 
   let displayName: string | null = nickname;
   if (profileId) {

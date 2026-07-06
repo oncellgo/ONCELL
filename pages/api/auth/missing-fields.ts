@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSignupApprovals, getSettings } from '../../../lib/dataStore';
+import { getSessionProfileId } from '../../../lib/session';
 
 type Approval = {
   profileId: string;
@@ -14,7 +15,7 @@ type SignupField = 'realName' | 'contact' | 'privacyConsent';
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed.' });
 
-  const profileId = typeof req.query.profileId === 'string' ? req.query.profileId : '';
+  const profileId = getSessionProfileId(req);
   if (!profileId) return res.status(200).json({ missingFields: [], requiredFields: [] });
 
   let approvals: Approval[] = [];

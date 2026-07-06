@@ -1,10 +1,11 @@
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import TopNav from '../../components/TopNav';
 import { useIsMobile } from '../../lib/useIsMobile';
 import { getSystemAdminHref } from '../../lib/adminGuard';
+import { getSessionProfileId } from '../../lib/session';
 
 type Cell = {
   id: string;
@@ -19,11 +20,24 @@ type Cell = {
   member_count: number;
 };
 
-type Member = {
+type Member = { profileId: string; displayName: string; joinedAt: string; isOwner: boolean };
+
+type MemberToday = {
   profileId: string;
   displayName: string;
-  joinedAt: string;
   isOwner: boolean;
+  completed: boolean;
+  shared: boolean;
+  visibility: string | null;
+  content: { reference: string | null; feelings: string; decision: string; prayer: string } | null;
+  reactions: { like: number; amen: number; pray: number };
+  myReactions: string[];
+};
+type TodayData = {
+  date: string;
+  members: MemberToday[];
+  me: { hasNote: boolean; completed: boolean; shared: boolean; visibility: string | null };
+  counts: { completed: number; total: number };
 };
 
 type Props = {
@@ -40,6 +54,13 @@ const MODE_LABELS: Record<ModeKey, { ko: string; icon: string; color: string }> 
   memorize: { ko: '암송',     icon: '✨', color: '#FCD34D' },
   prayer:   { ko: '기도 나눔', icon: '🙏', color: '#F9A8D4' },
 };
+const SUPPORTED_MODES: ModeKey[] = ['qt'];
+
+const REACTION_META: Array<{ key: 'like' | 'amen' | 'pray'; emoji: string; label: string }> = [
+  { key: 'like', emoji: '❤️', label: '좋아요' },
+  { key: 'amen', emoji: '🙏', label: '아멘' },
+  { key: 'pray', emoji: '🤲', label: '기도' },
+];
 
 const initial = (s: string) => (s || '?').trim().charAt(0).toUpperCase();
 const colorFromName = (s: string) => {
@@ -47,7 +68,6 @@ const colorFromName = (s: string) => {
   for (let i = 0; i < (s || '').length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
   return h;
 };
-
 const Avatar = ({ name, size = 36, ring = false }: { name: string; size?: number; ring?: boolean }) => {
   const hue = colorFromName(name);
   return (
@@ -55,8 +75,7 @@ const Avatar = ({ name, size = 36, ring = false }: { name: string; size?: number
       width: size, height: size, borderRadius: '50%',
       background: `hsl(${hue} 60% 55% / 0.55)`,
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      color: '#fff', fontWeight: 700, fontSize: size * 0.42,
-      flexShrink: 0,
+      color: '#fff', fontWeight: 700, fontSize: size * 0.42, flexShrink: 0,
       ...(ring ? { boxShadow: `0 0 0 2px rgba(165,243,252,0.7)`, outline: '2px solid #2D3850', outlineOffset: -4 } : {}),
     }}>
       {initial(name)}
@@ -64,36 +83,17 @@ const Avatar = ({ name, size = 36, ring = false }: { name: string; size?: number
   );
 };
 
-// 시간 ago 표기
-const timeAgo = (iso: string): string => {
-  const diff = Date.now() - new Date(iso).getTime();
-  const min = Math.floor(diff / 60_000);
-  if (min < 1) return '방금';
-  if (min < 60) return `${min}분 전`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}시간 전`;
-  const day = Math.floor(hr / 24);
-  if (day < 7) return `${day}일 전`;
-  return new Date(iso).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' });
+// SG(UTC+8) 당일 — 서버 getSGTodayKey 와 동일 규칙
+const todaySG = (): string => {
+  const now = new Date();
+  const sg = new Date(now.getTime() + (8 * 60 + now.getTimezoneOffset()) * 60 * 1000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${sg.getFullYear()}-${pad(sg.getMonth() + 1)}-${pad(sg.getDate())}`;
 };
-
-// === Placeholder 데이터 (Phase 2에서 실제 데이터 연결) ===
-type ActivityItem = {
-  id: string;
-  profileName: string;
-  mode: ModeKey;
-  text: string;
-  meta: string;
-  isoAt: string;
-  prayerCount: number;
+const previewText = (s: string, max = 90): string => {
+  const t = (s || '').replace(/\s+/g, ' ').trim();
+  return t.length > max ? `${t.slice(0, max)}…` : t;
 };
-const MOCK_ACTIVITY: ActivityItem[] = [
-  { id: 'a1', profileName: '한밤별', mode: 'qt',       text: '"심령이 가난한 자는 복이 있나니"가 오늘은 다르게 읽혔다', meta: '마태 5:3-12', isoAt: new Date(Date.now() - 60 * 60_000).toISOString(),       prayerCount: 12 },
-  { id: 'a2', profileName: '새벽이슬', mode: 'reading',  text: '오늘 사도행전 5장 완료',                                meta: '237/365일', isoAt: new Date(Date.now() - 3 * 3600_000).toISOString(),   prayerCount: 5 },
-  { id: 'a3', profileName: '빛여울',   mode: 'memorize', text: '빌립보서 4:6-7 외움 (95%)',                              meta: '7일 streak', isoAt: new Date(Date.now() - 6 * 3600_000).toISOString(),   prayerCount: 3 },
-  { id: 'a4', profileName: '모래알',   mode: 'prayer',   text: '딸의 진로 결정. 기도 부탁드려요',                          meta: '셀 안에서만', isoAt: new Date(Date.now() - 12 * 3600_000).toISOString(),  prayerCount: 8 },
-  { id: 'a5', profileName: '한밤별',   mode: 'reading',  text: '오늘 사도행전 6장 완료',                                meta: '142/365일', isoAt: new Date(Date.now() - 22 * 3600_000).toISOString(),  prayerCount: 2 },
-];
 
 export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickname, email: ssrEmail, systemAdminHref }: Props) {
   const router = useRouter();
@@ -121,8 +121,14 @@ export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickn
   const [err, setErr] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  // 본인 오늘 인증 상태 (placeholder — 추후 실제 데이터)
-  const [doneToday, setDoneToday] = useState<Record<ModeKey, boolean>>({ qt: false, reading: false, memorize: false, prayer: false });
+  const todayStr = useMemo(() => todaySG(), []);
+
+  const [qt, setQt] = useState<{ reference: string | null; passageText: string | null; error?: string } | null>(null);
+  const [qtLoading, setQtLoading] = useState(false);
+
+  const [today, setToday] = useState<TodayData | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const [visChoice, setVisChoice] = useState<'full' | 'feelings'>('full');
 
   useEffect(() => {
     if (!profileId || !cellId) return;
@@ -151,37 +157,99 @@ export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickn
     return list;
   }, [cell]);
 
+  useEffect(() => {
+    if (!enabledModes.includes('qt')) return;
+    setQtLoading(true);
+    fetch('/api/qt')
+      .then((r) => r.json())
+      .then((d) => setQt({ reference: d.reference ?? null, passageText: d.passageText ?? null, error: d.error }))
+      .catch(() => setQt({ reference: null, passageText: null, error: '본문을 불러오지 못했어요' }))
+      .finally(() => setQtLoading(false));
+  }, [enabledModes]);
+
+  const loadToday = useCallback(async () => {
+    if (!profileId || !cellId) return;
+    try {
+      const r = await fetch(`/api/cells/${encodeURIComponent(cellId)}/today?profileId=${encodeURIComponent(profileId)}&date=${todayStr}`);
+      const d = await r.json();
+      if (r.ok) setToday(d);
+    } catch {}
+  }, [profileId, cellId, todayStr]);
+  useEffect(() => { loadToday(); }, [loadToday]);
+
+  // 현재 공개 상태에 맞춰 visibility 선택 초기화
+  useEffect(() => { if (today?.me.visibility === 'feelings' || today?.me.visibility === 'full') setVisChoice(today.me.visibility); }, [today?.me.visibility]);
+
   const [activeMode, setActiveMode] = useState<ModeKey>('qt');
   useEffect(() => {
-    if (enabledModes.length > 0 && !enabledModes.includes(activeMode)) {
-      setActiveMode(enabledModes[0]);
-    }
+    if (enabledModes.length > 0 && !enabledModes.includes(activeMode)) setActiveMode(enabledModes[0]);
   }, [enabledModes, activeMode]);
 
   const inviteUrl = cell ? `${typeof window !== 'undefined' ? window.location.origin : 'https://oncell.org'}/join/${cell.invite_token}` : '';
-
   const copyUrl = async () => {
     try { await navigator.clipboard.writeText(inviteUrl); showToast('초대 링크 복사됨'); } catch { showToast('복사 실패'); }
   };
-  const shareUrl = async () => {
+  const shareInvite = async () => {
     if (typeof navigator !== 'undefined' && (navigator as any).share) {
       try { await (navigator as any).share({ title: `${cell?.name} 초대`, text: cell?.invite_message || `${cell?.name}에 초대합니다`, url: inviteUrl }); return; } catch {}
     }
     copyUrl();
   };
 
-  const toggleDone = (m: ModeKey) => {
-    setDoneToday((p) => ({ ...p, [m]: !p[m] }));
-    if (!doneToday[m]) showToast(`✓ ${MODE_LABELS[m].ko} 인증되었어요`);
+  // 이 셀에 공개 토글 (완료=노트 작성이 선행되어야 함)
+  const toggleShare = async () => {
+    if (!profileId || sharing || !cell) return;
+    if (!today?.me.hasNote) { showToast('먼저 오늘 큐티를 작성해주세요'); router.push('/qt'); return; }
+    const currentlyShared = !!today.me.shared;
+    setSharing(true);
+    try {
+      if (currentlyShared) {
+        const r = await fetch(`/api/cell-shares?profileId=${encodeURIComponent(profileId)}&cellId=${encodeURIComponent(cellId)}&mode=qt&date=${todayStr}`, { method: 'DELETE' });
+        if (!r.ok) throw new Error();
+        showToast('공개를 내렸어요');
+      } else {
+        const r = await fetch('/api/cell-shares', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profileId, cellId, mode: 'qt', date: todayStr, visibility: visChoice }),
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) { showToast(d.errorReason || '공개 실패'); setSharing(false); return; }
+        showToast('이 셀에 공개했어요');
+      }
+      await loadToday();
+    } catch {
+      showToast('실패. 다시 시도해주세요');
+    } finally {
+      setSharing(false);
+    }
   };
+
+  const react = async (authorProfileId: string, reaction: 'like' | 'amen' | 'pray', active: boolean) => {
+    if (!profileId || !cell) return;
+    try {
+      if (active) {
+        await fetch(`/api/share-reactions?profileId=${encodeURIComponent(profileId)}&cellId=${encodeURIComponent(cellId)}&authorProfileId=${encodeURIComponent(authorProfileId)}&mode=qt&date=${todayStr}&reaction=${reaction}`, { method: 'DELETE' });
+      } else {
+        await fetch('/api/share-reactions', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profileId, cellId, authorProfileId, mode: 'qt', date: todayStr, reaction }),
+        });
+      }
+      await loadToday();
+    } catch {}
+  };
+
+  const completedMembers = (today?.members || []).filter((m) => m.completed);
+  // 피드: 공유(내용)한 사람 먼저, 그다음 비공개 참여자
+  const feed = [...completedMembers].sort((a, b) => (Number(b.shared) - Number(a.shared)) || a.displayName.localeCompare(b.displayName));
+  const completedSet = new Set(completedMembers.map((m) => m.profileId));
 
   return (
     <>
       <Head><title>{cell?.name || '셀'} · ONCELL</title></Head>
       <div style={{ minHeight: '100vh' }}>
-          <TopNav profileId={profileId} displayName={null} nickname={nickname} email={email} systemAdminHref={systemAdminHref || undefined} />
+        <TopNav profileId={profileId} displayName={null} nickname={nickname} email={email} systemAdminHref={systemAdminHref || undefined} />
         <main style={{ maxWidth: 620, margin: '0 auto', padding: isMobile ? '1.25rem 0.85rem 4rem' : '2.5rem 1.5rem 5rem', color: '#fff' }}>
-
           <a href="/cells" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.85rem', minHeight: 36, borderRadius: 999, background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.78)', fontSize: '0.82rem', textDecoration: 'none', marginBottom: '1.25rem', fontWeight: 600 }}>
             ← 내 셀
           </a>
@@ -191,7 +259,6 @@ export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickn
 
           {cell && (
             <>
-              {/* === 헤더 === */}
               <header style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <h1 style={{ fontSize: isMobile ? '1.45rem' : '1.85rem', fontWeight: 800, margin: '0 0 0.4rem' }}>{cell.name}</h1>
@@ -213,7 +280,6 @@ export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickn
               <section style={{ marginBottom: '1.75rem' }}>
                 <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginBottom: '0.6rem', letterSpacing: '0.02em' }}>오늘의 활동</div>
 
-                {/* Mode tabs */}
                 <div style={{ display: 'flex', gap: '0.35rem', marginBottom: '0.85rem', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
                   {enabledModes.map((m) => {
                     const active = activeMode === m;
@@ -231,28 +297,40 @@ export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickn
                   })}
                 </div>
 
-                {/* Active mode card */}
                 <TodayCard
                   mode={activeMode}
-                  done={doneToday[activeMode]}
-                  onToggle={() => toggleDone(activeMode)}
-                  members={members}
+                  supported={SUPPORTED_MODES.includes(activeMode)}
+                  qt={qt}
+                  qtLoading={qtLoading}
+                  me={today?.me}
+                  counts={today?.counts}
+                  completedMembers={completedMembers}
                   ownProfileId={profileId}
+                  sharing={sharing}
+                  visChoice={visChoice}
+                  setVisChoice={setVisChoice}
+                  onShare={toggleShare}
+                  onWrite={() => router.push('/qt')}
                 />
               </section>
 
-              {/* === 2. 최근 활동 피드 === */}
-              <section style={{ marginBottom: '1.75rem' }}>
-                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginBottom: '0.6rem', letterSpacing: '0.02em' }}>최근 24시간 활동</div>
-                <div style={{ display: 'grid', gap: '0.6rem' }}>
-                  {MOCK_ACTIVITY.filter((a) => enabledModes.includes(a.mode)).slice(0, 5).map((a) => (
-                    <ActivityCard key={a.id} item={a} />
-                  ))}
-                </div>
-                <p style={{ marginTop: '0.6rem', textAlign: 'center', fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>
-                  ※ 위 활동은 디자인 시안. 실제 데이터는 다음 단계에서 연결됩니다.
-                </p>
-              </section>
+              {/* === 2. 오늘 함께한 셀 친구 (실제 피드) === */}
+              {activeMode === 'qt' && (
+                <section style={{ marginBottom: '1.75rem' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginBottom: '0.6rem', letterSpacing: '0.02em' }}>오늘 함께한 셀 친구</div>
+                  {feed.length === 0 ? (
+                    <div style={{ padding: '1rem', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)' }}>
+                      아직 오늘 큐티한 셀 친구가 없어요. 첫 번째가 되어보세요.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gap: '0.6rem' }}>
+                      {feed.map((m) => (
+                        <FeedCard key={m.profileId} m={m} isMe={m.profileId === profileId} onReact={react} />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
 
               {/* === 3. 멤버 === */}
               <section style={{ marginBottom: '1.5rem' }}>
@@ -268,22 +346,21 @@ export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickn
                           {m.profileId === profileId && <span style={{ marginLeft: '0.3rem', fontSize: '0.66rem', color: 'rgba(255,255,255,0.5)' }}>(나)</span>}
                         </div>
                       </div>
-                      {/* placeholder: 오늘 인증 여부 */}
-                      <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)' }}>
-                        {m.profileId === profileId && doneToday[activeMode] ? '✓ 오늘' : '—'}
+                      <span style={{ fontSize: '0.72rem', color: completedSet.has(m.profileId) ? '#A5F3FC' : 'rgba(255,255,255,0.45)' }}>
+                        {completedSet.has(m.profileId) ? '✓ 오늘' : '—'}
                       </span>
                     </div>
                   ))}
                 </div>
               </section>
 
-              {/* === 4. 초대 (compact, 하단) === */}
+              {/* === 4. 초대 === */}
               <section style={{ padding: '1rem', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginBottom: '0.5rem' }}>친구 초대</div>
                 <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                   <div style={{ flex: 1, fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'monospace', padding: '0.5rem 0.65rem', borderRadius: 8, background: 'rgba(0,0,0,0.2)' }}>{inviteUrl}</div>
                   <button onClick={copyUrl} style={{ padding: '0.5rem 0.85rem', minHeight: 40, borderRadius: 8, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.18)', color: '#fff', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}>복사</button>
-                  <button onClick={shareUrl} style={{ padding: '0.5rem 0.85rem', minHeight: 40, borderRadius: 8, background: '#A5F3FC', border: 'none', color: '#2D3850', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>공유</button>
+                  <button onClick={shareInvite} style={{ padding: '0.5rem 0.85rem', minHeight: 40, borderRadius: 8, background: '#A5F3FC', border: 'none', color: '#2D3850', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>공유</button>
                 </div>
                 {cell.approval_mode === 'manual' && <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.45)', marginTop: '0.5rem' }}>* 수동승인 모드: owner 승인 필요</div>}
               </section>
@@ -295,95 +372,169 @@ export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickn
               {toast}
             </div>
           )}
-
         </main>
       </div>
     </>
   );
 }
 
-// === Today's mode card ===
-const TodayCard = ({ mode, done, onToggle, members, ownProfileId }: { mode: ModeKey; done: boolean; onToggle: () => void; members: Member[]; ownProfileId: string | null }) => {
+// === 오늘의 활동 카드 ===
+const TodayCard = ({ mode, supported, qt, qtLoading, me, counts, completedMembers, ownProfileId, sharing, visChoice, setVisChoice, onShare, onWrite }: {
+  mode: ModeKey;
+  supported: boolean;
+  qt: { reference: string | null; passageText: string | null; error?: string } | null;
+  qtLoading: boolean;
+  me: TodayData['me'] | undefined;
+  counts: { completed: number; total: number } | undefined;
+  completedMembers: MemberToday[];
+  ownProfileId: string | null;
+  sharing: boolean;
+  visChoice: 'full' | 'feelings';
+  setVisChoice: (v: 'full' | 'feelings') => void;
+  onShare: () => void;
+  onWrite: () => void;
+}) => {
   const c = MODE_LABELS[mode].color;
-  // placeholder — 실제 데이터는 mode별 API에서 가져올 예정
-  const prompt = mode === 'qt' ? { ref: '마태복음 5:3-12', body: '"심령이 가난한 자는 복이 있나니..."' }
-              : mode === 'reading' ? { ref: '오늘 분량', body: '사도행전 5-7장 (1년 1독)' }
-              : mode === 'memorize' ? { ref: '이번 주 구절', body: '빌립보서 4:6-7' }
-              : { ref: '기도 나눔', body: '셀 멤버만 보이는 기도제목 공간' };
 
-  // placeholder: 셀 친구 ✓ 현황 (멤버 카운트의 60%가 했다고 가정)
-  const doneCount = Math.max(0, Math.floor(members.length * 0.6)) + (done ? 1 : 0);
-  const total = members.length + (done && !members.find((m) => m.profileId === ownProfileId) ? 1 : 0) || members.length;
+  if (mode !== 'qt') {
+    return (
+      <div style={{ padding: '1.25rem', borderRadius: 16, background: `${c}10`, border: `1px solid ${c}40` }}>
+        <div style={{ fontSize: '0.78rem', color: c, fontWeight: 700, marginBottom: '0.4rem' }}>{MODE_LABELS[mode].ko}</div>
+        <div style={{ padding: '0.7rem 0.9rem', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.18)', fontSize: '0.78rem', color: 'rgba(255,255,255,0.55)' }}>
+          {MODE_LABELS[mode].ko}은 다음 업데이트에서 제공됩니다.
+        </div>
+      </div>
+    );
+  }
+
+  const ref = qt?.reference || (qtLoading ? '본문 불러오는 중…' : '오늘의 큐티');
+  const body = qt?.passageText ? previewText(qt.passageText) : (qt?.error || (qtLoading ? '' : '오늘 본문을 준비 중입니다.'));
+  const total = counts?.total ?? 0;
+  const doneCount = counts?.completed ?? 0;
 
   return (
     <div style={{ padding: '1.25rem', borderRadius: 16, background: `${c}10`, border: `1px solid ${c}40` }}>
-      <div style={{ fontSize: '0.78rem', color: c, fontWeight: 700, marginBottom: '0.4rem' }}>{prompt.ref}</div>
-      <div style={{ fontSize: '0.95rem', color: '#fff', lineHeight: 1.6, marginBottom: '1.25rem' }}>{prompt.body}</div>
+      <div style={{ fontSize: '0.78rem', color: c, fontWeight: 700, marginBottom: '0.4rem' }}>{ref}</div>
+      <div style={{ fontSize: '0.95rem', color: '#fff', lineHeight: 1.6, marginBottom: '1rem' }}>{body}</div>
+      <a href="/qt" style={{ display: 'inline-block', fontSize: '0.78rem', color: c, textDecoration: 'none', fontWeight: 600, marginBottom: '1rem' }}>큐티 전체 보기 →</a>
 
-      <button
-        onClick={onToggle}
-        style={{
-          width: '100%', padding: '0.85rem', minHeight: 50, borderRadius: 12,
-          background: done ? c : 'rgba(255,255,255,0.06)',
-          border: `1px solid ${done ? c : 'rgba(255,255,255,0.12)'}`,
-          color: done ? '#2D3850' : '#fff',
-          fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer',
-          marginBottom: '0.85rem',
-        }}>
-        {done ? '✓ 오늘 했어요' : '오늘 인증하기'}
-      </button>
+      {!me?.hasNote ? (
+        <button onClick={onWrite} style={{ width: '100%', padding: '0.85rem', minHeight: 50, borderRadius: 12, background: c, border: 'none', color: '#2D3850', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', marginBottom: '0.85rem' }}>
+          오늘 큐티 쓰러 가기
+        </button>
+      ) : (
+        <div style={{ display: 'grid', gap: '0.55rem', marginBottom: '0.85rem' }}>
+          <div style={{ fontSize: '0.82rem', color: c, fontWeight: 700 }}>✓ 오늘 큐티 완료 · 이 셀에 참여 중</div>
+          {!me.shared && (
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              {(['full', 'feelings'] as const).map((v) => (
+                <button key={v} onClick={() => setVisChoice(v)} style={{
+                  flex: 1, padding: '0.5rem', minHeight: 38, borderRadius: 8, cursor: 'pointer',
+                  background: visChoice === v ? `${c}26` : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${visChoice === v ? `${c}66` : 'rgba(255,255,255,0.1)'}`,
+                  color: visChoice === v ? c : 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 700,
+                }}>
+                  {v === 'full' ? '묵상 전문' : '느낀점만'}
+                </button>
+              ))}
+            </div>
+          )}
+          <button onClick={onShare} disabled={sharing} style={{
+            width: '100%', padding: '0.8rem', minHeight: 48, borderRadius: 12, cursor: sharing ? 'wait' : 'pointer',
+            background: me.shared ? 'rgba(255,255,255,0.06)' : c,
+            border: `1px solid ${me.shared ? 'rgba(255,255,255,0.18)' : c}`,
+            color: me.shared ? '#fff' : '#2D3850', fontSize: '0.9rem', fontWeight: 800, opacity: sharing ? 0.7 : 1,
+          }}>
+            {sharing ? '처리 중…' : me.shared ? `이 셀에 공개됨 (${me.visibility === 'feelings' ? '느낀점' : '전문'}) · 내리기` : '이 셀에 공개하기'}
+          </button>
+        </div>
+      )}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', gap: '-4px' }}>
-          {members.slice(0, 5).map((m, i) => (
+        <div style={{ display: 'flex' }}>
+          {completedMembers.slice(0, 5).map((m, i) => (
             <div key={m.profileId} style={{ marginLeft: i === 0 ? 0 : -8 }}>
-              <Avatar name={m.displayName} size={24} ring={m.profileId === ownProfileId && done} />
+              <Avatar name={m.displayName} size={24} ring={m.profileId === ownProfileId} />
             </div>
           ))}
         </div>
-        <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.65)' }}>
-          {doneCount}/{total} 명이 오늘 함께
-        </span>
+        <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.65)' }}>{doneCount}/{total} 명이 오늘 함께</span>
       </div>
     </div>
   );
 };
 
-// === Activity card (Threads style) ===
-const ActivityCard = ({ item }: { item: ActivityItem }) => {
-  const c = MODE_LABELS[item.mode].color;
+// === 피드 카드 (완료자 · 공유자 내용 + 반응) ===
+const FeedCard = ({ m, isMe, onReact }: { m: MemberToday; isMe: boolean; onReact: (author: string, r: 'like' | 'amen' | 'pray', active: boolean) => void }) => {
+  const c = MODE_LABELS.qt.color;
   return (
     <div style={{ padding: '0.95rem 1rem', borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.55rem' }}>
-        <Avatar name={item.profileName} size={32} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: m.shared ? '0.55rem' : 0 }}>
+        <Avatar name={m.displayName} size={32} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{item.profileName}</span>
-            <span style={{ fontSize: '0.66rem', padding: '0.1rem 0.45rem', borderRadius: 999, background: `${c}26`, color: c, fontWeight: 600 }}>
-              {MODE_LABELS[item.mode].icon} {MODE_LABELS[item.mode].ko}
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{m.displayName}</span>
+            {m.isOwner && <span style={{ fontSize: '0.62rem', padding: '0.06rem 0.35rem', borderRadius: 999, background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}>owner</span>}
+            {isMe && <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.5)' }}>(나)</span>}
+            <span style={{ fontSize: '0.66rem', padding: '0.1rem 0.45rem', borderRadius: 999, background: `${c}26`, color: c, fontWeight: 600 }}>✓ 오늘 완료</span>
           </div>
-          <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.1rem' }}>
-            {timeAgo(item.isoAt)} · {item.meta}
-          </div>
+          {m.shared && m.content?.reference && (
+            <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.1rem' }}>{m.content.reference}</div>
+          )}
         </div>
       </div>
-      <div style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, marginBottom: '0.55rem' }}>
-        {item.text}
-      </div>
-      <div style={{ display: 'flex', gap: '0.4rem' }}>
-        <button style={{ padding: '0.35rem 0.7rem', minHeight: 32, borderRadius: 999, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.78)', fontSize: '0.76rem', fontWeight: 600, cursor: 'pointer' }}>
-          🙏 {item.prayerCount}
-        </button>
-      </div>
+
+      {!m.shared ? (
+        <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.45)', paddingLeft: '2.6rem' }}>내용 비공개</div>
+      ) : (
+        <>
+          <div style={{ display: 'grid', gap: '0.4rem', marginBottom: '0.6rem' }}>
+            {m.content?.feelings && <FeedField label="느낀 점" text={m.content.feelings} />}
+            {m.content?.decision && <FeedField label="나의 결단" text={m.content.decision} />}
+            {m.content?.prayer && <FeedField label="기도 제목" text={m.content.prayer} />}
+            {!m.content?.feelings && !m.content?.decision && !m.content?.prayer && (
+              <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.5)' }}>공개된 묵상 내용이 없습니다.</div>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+            {REACTION_META.map((r) => {
+              const active = m.myReactions.includes(r.key);
+              const count = m.reactions[r.key] || 0;
+              return (
+                <button
+                  key={r.key}
+                  onClick={() => !isMe && onReact(m.profileId, r.key, active)}
+                  disabled={isMe}
+                  title={isMe ? '내 묵상엔 반응할 수 없어요' : r.label}
+                  style={{
+                    padding: '0.35rem 0.7rem', minHeight: 32, borderRadius: 999,
+                    background: active ? `${c}26` : 'rgba(255,255,255,0.06)',
+                    border: `1px solid ${active ? `${c}66` : 'rgba(255,255,255,0.1)'}`,
+                    color: active ? c : 'rgba(255,255,255,0.78)',
+                    fontSize: '0.76rem', fontWeight: 600, cursor: isMe ? 'default' : 'pointer', opacity: isMe ? 0.5 : 1,
+                  }}
+                >
+                  {r.emoji} {count > 0 ? count : ''}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 };
 
+const FeedField = ({ label, text }: { label: string; text: string }) => (
+  <div style={{ display: 'grid', gap: '0.1rem' }}>
+    <span style={{ fontSize: '0.66rem', fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>{label}</span>
+    <p style={{ margin: 0, fontSize: '0.85rem', color: 'rgba(255,255,255,0.88)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{text}</p>
+  </div>
+);
+
 export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
-  const profileId = typeof context.query.profileId === 'string' ? context.query.profileId : null;
-  const nickname = typeof context.query.nickname === 'string' ? context.query.nickname : null;
-  const email = typeof context.query.email === 'string' ? context.query.email : null;
-  const systemAdminHref = await getSystemAdminHref(profileId, { nickname, email });
-  return { props: { profileId, nickname, email, systemAdminHref } };
+  // 신원은 세션 쿠키에서 (URL 쿼리 신뢰 제거). 표시용 nickname/email 은 클라이언트 useSession 이 채움.
+  const profileId = getSessionProfileId(context.req);
+  const systemAdminHref = await getSystemAdminHref(profileId, {});
+  return { props: { profileId, nickname: null, email: null, systemAdminHref } };
 };

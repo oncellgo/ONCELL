@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getProfiles, setProfiles, getSignupApprovals } from '../../lib/dataStore';
+import { requireSession } from '../../lib/session';
 
 type Profile = {
   profileId: string;
@@ -24,8 +25,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const profiles = await readProfiles();
 
     if (req.method === 'GET') {
-      const profileId = typeof req.query.profileId === 'string' ? req.query.profileId : undefined;
-      if (!profileId) return res.status(400).json({ error: 'profileId is required.' });
+      const profileId = requireSession(req, res);
+      if (!profileId) return;
       const profile = profiles.find((p) => p.profileId === profileId) || null;
       // 가입일자 (signup_approvals.firstLoginAt) 조회
       let firstLoginAt: string | null = null;
@@ -38,8 +39,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     if (req.method === 'POST') {
-      const { profileId, provider, nickname, realName, contact, email } = req.body as Partial<Profile>;
-      if (!profileId || !provider || !realName || !contact) {
+      const profileId = requireSession(req, res);
+      if (!profileId) return;
+      const { provider, nickname, realName, contact, email } = req.body as Partial<Profile>;
+      if (!provider || !realName || !contact) {
         return res.status(400).json({ error: '필수 정보가 누락되었습니다.' });
       }
 

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import SubHeader from '../components/SubHeader';
 import BiblePassageCard from '../components/BiblePassageCard';
 import { getSystemAdminHref } from '../lib/adminGuard';
+import { getSessionProfileId } from '../lib/session';
 import { getProfiles, getUsers } from '../lib/dataStore';
 import { useIsMobile } from '../lib/useIsMobile';
 import { useRequireLogin } from '../lib/useRequireLogin';
@@ -753,9 +754,9 @@ const ReadingPage = ({ todayISO, profileId, displayName, nickname, email, system
 };
 
 export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
-  const profileId = typeof ctx.query.profileId === 'string' ? ctx.query.profileId : null;
-  const nickname = typeof ctx.query.nickname === 'string' ? ctx.query.nickname : null;
-  const email = typeof ctx.query.email === 'string' ? ctx.query.email : null;
+  const profileId = getSessionProfileId(ctx.req);
+  const nickname = null;
+  const email = null;
 
   let displayName: string | null = nickname;
   if (profileId) {

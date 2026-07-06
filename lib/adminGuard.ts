@@ -1,7 +1,16 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import type { GetServerSidePropsContext, GetServerSidePropsResult } from 'next';
-import { getSystemAdmins, getCommunities } from './dataStore';
+import { getSystemAdmins, getCommunities, getSignupApprovals } from './dataStore';
 import { kvGet, kvSet } from './db';
+import { getSessionProfileId } from './session';
+
+// 세션 pid 로 email 조회 (matchAdmin 의 email 보조 매칭용)
+const emailForProfile = async (profileId: string): Promise<string | null> => {
+  try {
+    const approvals = ((await getSignupApprovals()) || []) as Array<{ profileId: string; email?: string }>;
+    return approvals.find((a) => a.profileId === profileId)?.email || null;
+  } catch { return null; }
+};
 
 /**
  * 시스템 관리자 엔티티(가입자 단위).
@@ -143,9 +152,11 @@ export const checkSystemAdmin = async (
 };
 
 export const requireSystemAdminSSR = async (ctx: GetServerSidePropsContext) => {
-  const result = await checkSystemAdmin(ctx.query.profileId, ctx.query.k, ctx.query.email);
-  if (!result.ok) return { notFound: true as const };
-  return { ok: true as const, profileId: result.profileId };
+  const profileId = getSessionProfileId(ctx.req);
+  if (!profileId) return { notFound: true as const };
+  const admins = await loadAdmins();
+  if (!isAdminByEither(admins, profileId, await emailForProfile(profileId))) return { notFound: true as const };
+  return { ok: true as const, profileId };
 };
 
 export const getSystemAdminHref = async (
@@ -153,14 +164,10 @@ export const getSystemAdminHref = async (
   extras?: { nickname?: string | null; email?: string | null },
 ): Promise<string | null> => {
   if (!profileId) return null;
-  const token = await getActiveAdminToken();
-  if (!token) return null;
   const admins = await loadAdmins();
   if (!isAdminByEither(admins, profileId, extras?.email || null)) return null;
-  const qs = new URLSearchParams({ profileId, k: token });
-  if (extras?.nickname) qs.set('nickname', extras.nickname);
-  if (extras?.email) qs.set('email', extras.email);
-  return `/admin/system?${qs.toString()}`;
+  // 세션 쿠키가 /admin/system SSR 가드를 통과시키므로 URL 에 profileId/token 을 싣지 않는다.
+  return '/admin/system';
 };
 
 /**
@@ -181,13 +188,17 @@ export const requireAdminAccessSSR = async (
   | { redirect: { destination: string; permanent: false } }
   | { ok: true; profileId: string; email: string | null; nickname: string | null; isSystemAdmin: boolean; adminCommunityIds: string[] }
 > => {
-  const profileId = typeof ctx.query.profileId === 'string' ? ctx.query.profileId : null;
-  const email = typeof ctx.query.email === 'string' ? ctx.query.email : null;
-  const nickname = typeof ctx.query.nickname === 'string' ? ctx.query.nickname : null;
-
+  const profileId = getSessionProfileId(ctx.req);
   if (!profileId) {
     return { redirect: { destination: '/', permanent: false } };
   }
+  let email: string | null = null;
+  let nickname: string | null = null;
+  try {
+    const a = ((await getSignupApprovals()) || []).find((x: any) => x.profileId === profileId) as any;
+    email = a?.email || null;
+    nickname = a?.nickname || null;
+  } catch {}
 
   // 시스템 관리자 체크 (토큰 없이도 판별 — 토큰 기반은 /admin/system 전용)
   const admins = await loadAdmins();
@@ -215,13 +226,14 @@ export const requireSystemAdminApi = async (
   req: NextApiRequest,
   res: NextApiResponse,
 ): Promise<string | null> => {
-  const profileId = req.headers['x-profile-id'] ?? (req.query.profileId as string | undefined) ?? (req.body?.profileId as string | undefined);
-  const email = req.headers['x-email'] ?? (req.query.email as string | undefined) ?? (req.body?.email as string | undefined);
-  const token = req.headers['x-admin-token'] ?? (req.query.k as string | undefined) ?? (req.body?.k as string | undefined);
-  const result = await checkSystemAdmin(profileId, token, email);
-  if (!result.ok) {
+  // actor 는 세션 쿠키에서만 도출 (헤더/query/body 신뢰 제거 — impersonation 차단).
+  // 세션 신원이 system_admins 에 있으면 통과. 별도 토큰(k) 불필요.
+  const profileId = getSessionProfileId(req);
+  if (!profileId) { res.status(404).end(); return null; }
+  const admins = await loadAdmins();
+  if (!isAdminByEither(admins, profileId, await emailForProfile(profileId))) {
     res.status(404).end();
     return null;
   }
-  return result.profileId;
+  return profileId;
 };

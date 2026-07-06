@@ -218,6 +218,39 @@ create table if not exists oncell_community_members (
 );
 create index if not exists idx_oncell_community_members_profile on oncell_community_members(profile_id);
 
+-- 13g. 셀 공유 (내용 공개 대상)
+--   참여(카운트·이름·✓)는 oncell_user_completions(완료) 기준 — 내 모든 셀에 자동 반영.
+--   이 테이블은 "묵상 내용을 어느 셀에 공개할지"만 담는다. 행이 없으면 = 비공개 참여(이름·✓·카운트는 되고 내용만 숨김).
+--   qt의 "당일" 기준은 Asia/Singapore(getSGTodayKey) — 오늘 노트만 공유 가능(서버 강제).
+create table if not exists oncell_cell_shares (
+  cell_id    text not null references oncell_cells(id) on delete cascade,
+  profile_id text not null,
+  mode       text not null,                             -- 'qt' | 'reading' | 'memorize' | 'prayer'
+  date       date not null,
+  visibility text not null default 'full',              -- 'full'(전문) | 'feelings'(느낀점만)
+  created_at timestamptz not null default now(),
+  primary key (cell_id, profile_id, mode, date)
+);
+create index if not exists idx_oncell_cell_shares_feed on oncell_cell_shares(cell_id, mode, date);
+create index if not exists idx_oncell_cell_shares_mine on oncell_cell_shares(profile_id, date);
+
+-- 13h. 공유된 묵상에 대한 셀원 반응 (좋아요 등)
+--   공유(oncell_cell_shares)된 항목에만 가능. 셀 멤버만 반응·조회(앱/서버 강제).
+--   작성자가 공유를 내리면 복합 FK cascade 로 반응도 함께 삭제.
+create table if not exists oncell_share_reactions (
+  cell_id            text not null,
+  author_profile_id  text not null,                     -- 묵상 작성자(공유자)
+  mode               text not null,
+  date               date not null,
+  reactor_profile_id text not null,                     -- 반응한 셀원
+  reaction           text not null default 'like',      -- 'like' | 'amen' | 'pray'
+  created_at         timestamptz not null default now(),
+  primary key (cell_id, author_profile_id, mode, date, reactor_profile_id, reaction),
+  foreign key (cell_id, author_profile_id, mode, date)
+    references oncell_cell_shares(cell_id, profile_id, mode, date) on delete cascade
+);
+create index if not exists idx_oncell_share_reactions_item on oncell_share_reactions(cell_id, author_profile_id, mode, date);
+
 -- 13f. 공동체 (cell_join_limit 컬럼 추가 — 공동체별 멤버 셀 가입 한도)
 -- 기존 oncell_communities 테이블에 컬럼 추가 (이미 있으면 무시)
 alter table oncell_communities add column if not exists cell_join_limit integer default 3;

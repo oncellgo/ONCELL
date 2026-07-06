@@ -96,7 +96,8 @@ const CallbackPage = () => {
 
           if (status === 'pending') { router.replace('/auth/pending'); return; }
           if (status === 'rejected') { router.replace('/auth/rejected'); return; }
-          router.replace(`/dashboard?profileId=${encodeURIComponent(profileId)}&nickname=${encodeURIComponent(nickname)}&email=${encodeURIComponent(email)}`);
+          // 세션 쿠키가 신원을 전달하므로 URL 에 profileId/email 미부착.
+          router.replace('/dashboard');
           return;
         }
 
