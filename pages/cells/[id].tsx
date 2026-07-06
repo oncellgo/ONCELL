@@ -134,6 +134,7 @@ export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickn
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [showFullPassage, setShowFullPassage] = useState(false);
+  const [qtEditorOpen, setQtEditorOpen] = useState(false); // 완료 후 본문·에디터 접기/펼치기
 
   useEffect(() => {
     if (!profileId || !cellId) return;
@@ -354,6 +355,8 @@ export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickn
                   savingNote={savingNote}
                   showFullPassage={showFullPassage}
                   setShowFullPassage={setShowFullPassage}
+                  editorOpen={!(today?.me.hasNote) || qtEditorOpen}
+                  onToggleEditor={() => setQtEditorOpen((v) => !v)}
                 />
               </section>
 
@@ -422,7 +425,7 @@ export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickn
 }
 
 // === 오늘의 활동 카드 ===
-const TodayCard = ({ mode, supported, qt, qtLoading, me, counts, completedMembers, ownProfileId, sharing, visChoice, setVisChoice, onShare, noteText, setNoteText, onSaveNote, savingNote, showFullPassage, setShowFullPassage }: {
+const TodayCard = ({ mode, supported, qt, qtLoading, me, counts, completedMembers, ownProfileId, sharing, visChoice, setVisChoice, onShare, noteText, setNoteText, onSaveNote, savingNote, showFullPassage, setShowFullPassage, editorOpen, onToggleEditor }: {
   mode: ModeKey;
   supported: boolean;
   qt: { reference: string | null; passageText: string | null; error?: string } | null;
@@ -441,6 +444,8 @@ const TodayCard = ({ mode, supported, qt, qtLoading, me, counts, completedMember
   savingNote: boolean;
   showFullPassage: boolean;
   setShowFullPassage: (v: boolean) => void;
+  editorOpen: boolean;
+  onToggleEditor: () => void;
 }) => {
   const c = MODE_LABELS[mode].color;
 
@@ -463,6 +468,17 @@ const TodayCard = ({ mode, supported, qt, qtLoading, me, counts, completedMember
 
   return (
     <div style={{ padding: '1.25rem', borderRadius: 16, background: `${c}10`, border: `1px solid ${c}40` }}>
+      {/* 완료했으면 접힌 완료 헤더 + 펼치기 토글 */}
+      {done && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: editorOpen ? '0.7rem' : '0.85rem' }}>
+          <span style={{ fontSize: '0.88rem', color: c, fontWeight: 800 }}>✓ 오늘 큐티 완료</span>
+          <button onClick={onToggleEditor} style={{ background: 'none', border: 'none', color: c, fontSize: '0.76rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
+            {editorOpen ? '접기 ▲' : '본문·내 묵상 ▼'}
+          </button>
+        </div>
+      )}
+
+      {editorOpen && (<>
       <div style={{ fontSize: '0.78rem', color: c, fontWeight: 700, marginBottom: '0.5rem' }}>{ref}</div>
 
       {/* 본문 — 인라인 읽기 (펼치기) */}
@@ -494,6 +510,7 @@ const TodayCard = ({ mode, supported, qt, qtLoading, me, counts, completedMember
           {savingNote ? '저장 중…' : done ? '묵상 수정 저장' : '묵상 저장 (오늘 완료)'}
         </button>
       </div>
+      </>)}
 
       {/* 완료 시 이 셀에 공개 */}
       {done && (
