@@ -73,9 +73,12 @@ export default function JoinPage({ profileId: ssrProfileId, nickname: ssrNicknam
   const join = async () => {
     if (!cell) return;
     if (!profileId) {
-      // SSO 로그인 후 이 URL로 돌아오게
-      const ret = encodeURIComponent(`/join/${token}`);
-      window.location.href = `/auth/login?return=${ret}`;
+      // 로그인 후 이 초대로 자동 복귀·자동 가입. OAuth 왕복을 넘기 위해 sessionStorage 사용.
+      try {
+        window.sessionStorage.setItem('oncellReturnTo', `/join/${token}`);
+        window.sessionStorage.setItem('oncellJoinIntent', token);
+      } catch {}
+      window.location.href = '/auth/login';
       return;
     }
     if (cell.community_id && !agreeCommunity) {
@@ -110,6 +113,18 @@ export default function JoinPage({ profileId: ssrProfileId, nickname: ssrNicknam
       setSubmitting(false);
     }
   };
+
+  // 로그인 후 초대로 복귀했을 때 자동 가입 (공동체 셀은 동의가 필요해 자동가입 제외 — 사용자가 체크 후 가입).
+  useEffect(() => {
+    if (!profileId || !cell) return;
+    let intent: string | null = null;
+    try { intent = window.sessionStorage.getItem('oncellJoinIntent'); } catch {}
+    if (intent === token) {
+      try { window.sessionStorage.removeItem('oncellJoinIntent'); } catch {}
+      if (!cell.community_id) join();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileId, cell, token]);
 
   return (
     <>

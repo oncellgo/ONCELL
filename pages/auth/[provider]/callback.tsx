@@ -100,7 +100,10 @@ const CallbackPage = () => {
           if (status === 'pending') { router.replace('/auth/pending'); return; }
           if (status === 'rejected') { router.replace('/auth/rejected'); return; }
           // 세션 쿠키가 신원을 전달하므로 URL 에 profileId/email 미부착.
-          router.replace('/dashboard');
+          // 초대 링크에서 왔으면 그 초대(returnTo)로 복귀 → 자동 가입.
+          let dest = '/dashboard';
+          try { const rt = window.sessionStorage.getItem('oncellReturnTo'); if (rt) { window.sessionStorage.removeItem('oncellReturnTo'); dest = rt; } } catch {}
+          router.replace(dest);
           return;
         }
 

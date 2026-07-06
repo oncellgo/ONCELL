@@ -1,6 +1,7 @@
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import TopNav from '../components/TopNav';
@@ -49,6 +50,26 @@ const Dashboard = ({ profileId: ssrProfileId, displayName, nickname, email, syst
 
   const [cells, setCells] = useState<Cell[] | null>(null);
   const [communityEvents, setCommunityEvents] = useState<Record<string, CommunityEvent[]>>({});
+
+  const router = useRouter();
+  const [inviteInput, setInviteInput] = useState('');
+  const [showWelcome, setShowWelcome] = useState(false);
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem('kcisShowWelcome') === '1') {
+        setShowWelcome(true);
+        window.localStorage.removeItem('kcisShowWelcome');
+      }
+    } catch {}
+  }, []);
+  // 초대 링크(oncell.org/join/TOKEN) 전체 또는 코드만 붙여넣어도 토큰 추출
+  const goJoin = () => {
+    const raw = inviteInput.trim();
+    if (!raw) return;
+    const m = raw.match(/\/join\/([^/?#\s]+)/);
+    const token = (m ? m[1] : raw.replace(/^.*\//, '')).trim();
+    if (token) router.push(`/join/${encodeURIComponent(token)}`);
+  };
 
   useEffect(() => {
     if (!profileId) { setCells([]); return; }
@@ -176,26 +197,41 @@ const Dashboard = ({ profileId: ssrProfileId, displayName, nickname, email, syst
             </section>
           )}
 
-          {/* 셀 0개일 때 CTA */}
+          {/* 셀 0개일 때 온보딩 — 2갈래(초대 참여 / 직접 만들기) */}
           {cells !== null && !hasCells && (
-            <section style={{ marginBottom: '1.75rem', padding: '1.75rem 1.5rem', borderRadius: 16, background: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '0.6rem' }}>✨</div>
-              <div style={{ fontWeight: 700, color: '#0891B2', marginBottom: '0.5rem', fontSize: '1.05rem' }}>아직 가입한 셀이 없어요</div>
-              <div style={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.65, marginBottom: '1.25rem' }}>
-                친구들과 매일 5분 영적 동행을 시작해보세요.
+            <section style={{ marginBottom: '1.75rem', display: 'grid', gap: '1rem' }}>
+              {showWelcome && (
+                <div style={{ padding: '1rem 1.25rem', borderRadius: 14, background: 'rgba(165,243,252,0.12)', border: '1px solid rgba(165,243,252,0.3)' }}>
+                  <div style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '0.2rem' }}>환영합니다{name ? `, ${name}님` : ''} 🎉</div>
+                  <div style={{ fontSize: '0.86rem', color: 'rgba(255,255,255,0.7)' }}>아래에서 시작 방법을 골라보세요.</div>
+                </div>
+              )}
+              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'rgba(255,255,255,0.6)' }}>이렇게 시작해요</div>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '0.85rem' }}>
+                {/* ① 초대받아 참여 */}
+                <div style={{ padding: '1.25rem', borderRadius: 16, background: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', color: '#182527', display: 'grid', gap: '0.55rem', alignContent: 'start' }}>
+                  <div style={{ fontSize: '1.5rem' }}>🔗</div>
+                  <div style={{ fontWeight: 700 }}>초대받아 참여</div>
+                  <div style={{ fontSize: '0.82rem', color: '#64748B', lineHeight: 1.5 }}>받은 초대 링크나 코드를 붙여넣으세요.</div>
+                  <input
+                    value={inviteInput}
+                    onChange={(e) => setInviteInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') goJoin(); }}
+                    placeholder="초대 링크 또는 코드"
+                    style={{ padding: '0.6rem 0.75rem', borderRadius: 10, border: '1px solid #D9E2EC', fontSize: '0.88rem', minHeight: 44, color: '#182527' }}
+                  />
+                  <button onClick={goJoin} disabled={!inviteInput.trim()} style={{ minHeight: 44, borderRadius: 10, border: 'none', background: inviteInput.trim() ? '#0891B2' : '#CBD5E1', color: '#fff', fontWeight: 700, fontSize: '0.88rem', cursor: inviteInput.trim() ? 'pointer' : 'default' }}>참여하기</button>
+                </div>
+                {/* ② 직접 셀 만들기 */}
+                <Link href="/cells/new" style={{ padding: '1.25rem', borderRadius: 16, background: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', textDecoration: 'none', color: '#182527', display: 'grid', gap: '0.55rem', alignContent: 'start' }}>
+                  <div style={{ fontSize: '1.5rem' }}>✨</div>
+                  <div style={{ fontWeight: 700 }}>직접 셀 만들기</div>
+                  <div style={{ fontSize: '0.82rem', color: '#64748B', lineHeight: 1.5 }}>내 셀을 만들고 친구를 초대해 함께 시작해요.</div>
+                  <span style={{ marginTop: '0.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 44, borderRadius: 10, background: '#A5F3FC', color: '#2D3850', fontWeight: 700, fontSize: '0.88rem' }}>+ 셀 만들기</span>
+                </Link>
               </div>
-              <Link href="/cells/new" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 46, padding: '0.7rem 1.4rem', borderRadius: 12, background: '#A5F3FC', color: '#2D3850', fontWeight: 700, fontSize: '0.92rem', textDecoration: 'none' }}>
-                + 내 셀 만들기
-              </Link>
             </section>
           )}
-
-          {/* 공동체 찾기 (작은 진입점) */}
-          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-            <Link href="/communities" style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.55)', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-              공동체 찾아보기 →
-            </Link>
-          </div>
 
           {/* 개인 도구 — 큐티 / 통독 */}
           <section>
