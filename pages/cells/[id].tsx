@@ -204,7 +204,8 @@ export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickn
       });
       if (!r.ok) { const d = await r.json().catch(() => ({})); showToast(d.error || '저장 실패'); setSavingNote(false); return; }
       showToast('묵상 저장됨 ✓');
-      await loadToday(); // hasNote/완료 갱신 → 공개 토글 노출
+      await loadToday(); // hasNote/완료 갱신
+      setQtEditorOpen(true); // 저장 직후엔 펼친 채로 두어 공개 링크가 바로 보이게
     } catch { showToast('저장 실패'); }
     finally { setSavingNote(false); }
   };
@@ -510,26 +511,21 @@ const TodayCard = ({ mode, supported, qt, qtLoading, me, counts, completedMember
           {savingNote ? '저장 중…' : done ? '묵상 수정 저장' : '묵상 저장 (오늘 완료)'}
         </button>
       </div>
-      </>)}
 
-      {/* 완료 시 이 셀에 공개 */}
+      {/* 공개/내리기 — 내 글 보기(펼침) 안에서 작은 링크로 */}
       {done && (
-        <div style={{ display: 'grid', gap: '0.55rem', marginBottom: '0.85rem', paddingTop: '0.35rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ fontSize: '0.82rem', color: c, fontWeight: 700 }}>✓ 오늘 완료 · 이 셀에 참여 중</div>
-          {!me?.shared && (
-            <div style={{ display: 'flex', gap: '0.4rem' }}>
-              {(['full', 'feelings'] as const).map((v) => (
-                <button key={v} onClick={() => setVisChoice(v)} style={{ flex: 1, padding: '0.5rem', minHeight: 38, borderRadius: 8, cursor: 'pointer', background: visChoice === v ? `${c}26` : 'rgba(255,255,255,0.04)', border: `1px solid ${visChoice === v ? `${c}66` : 'rgba(255,255,255,0.1)'}`, color: visChoice === v ? c : 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 700 }}>
-                  {v === 'full' ? '묵상 전문' : '느낀점만'}
-                </button>
-              ))}
-            </div>
-          )}
-          <button onClick={onShare} disabled={sharing} style={{ width: '100%', padding: '0.75rem', minHeight: 46, borderRadius: 12, cursor: sharing ? 'wait' : 'pointer', background: me?.shared ? 'rgba(255,255,255,0.06)' : c, border: `1px solid ${me?.shared ? 'rgba(255,255,255,0.18)' : c}`, color: me?.shared ? '#fff' : '#2D3850', fontSize: '0.88rem', fontWeight: 800, opacity: sharing ? 0.7 : 1 }}>
+        <div style={{ marginTop: '0.1rem', marginBottom: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {!me?.shared && (['full', 'feelings'] as const).map((v) => (
+            <button key={v} onClick={() => setVisChoice(v)} style={{ padding: '0.22rem 0.55rem', borderRadius: 6, fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', background: visChoice === v ? `${c}26` : 'transparent', border: `1px solid ${visChoice === v ? `${c}66` : 'rgba(255,255,255,0.15)'}`, color: visChoice === v ? c : 'rgba(255,255,255,0.55)' }}>
+              {v === 'full' ? '전문' : '느낀점'}
+            </button>
+          ))}
+          <button onClick={onShare} disabled={sharing} style={{ background: 'none', border: 'none', color: me?.shared ? 'rgba(255,255,255,0.6)' : c, fontSize: '0.8rem', fontWeight: 700, cursor: sharing ? 'wait' : 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}>
             {sharing ? '처리 중…' : me?.shared ? `이 셀에 공개됨 (${me.visibility === 'feelings' ? '느낀점' : '전문'}) · 내리기` : '이 셀에 공개하기'}
           </button>
         </div>
       )}
+      </>)}
 
       {/* 참여 현황 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
