@@ -130,6 +130,11 @@ export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickn
   const [sharing, setSharing] = useState(false);
   const [visChoice, setVisChoice] = useState<'full' | 'feelings'>('full');
 
+  // 셀 홈 인라인 큐티 — 본문 읽고 묵상 바로 작성
+  const [noteText, setNoteText] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+  const [showFullPassage, setShowFullPassage] = useState(false);
+
   useEffect(() => {
     if (!profileId || !cellId) return;
     (async () => {
@@ -176,6 +181,32 @@ export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickn
     } catch {}
   }, [profileId, cellId, todayStr]);
   useEffect(() => { loadToday(); }, [loadToday]);
+
+  // 오늘 내 묵상 노트 로드 → 에디터에 채움
+  useEffect(() => {
+    if (!profileId || !enabledModes.includes('qt')) return;
+    fetch(`/api/qt-notes?date=${todayStr}`)
+      .then((r) => r.json())
+      .then((d) => setNoteText(d?.note?.feelings || ''))
+      .catch(() => {});
+  }, [profileId, enabledModes, todayStr]);
+
+  const saveNote = async () => {
+    if (!profileId || savingNote) return;
+    const text = noteText.trim();
+    if (!text) { showToast('묵상을 입력해주세요'); return; }
+    setSavingNote(true);
+    try {
+      const r = await fetch('/api/qt-notes', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: todayStr, reference: qt?.reference || null, feelings: text }),
+      });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); showToast(d.error || '저장 실패'); setSavingNote(false); return; }
+      showToast('묵상 저장됨 ✓');
+      await loadToday(); // hasNote/완료 갱신 → 공개 토글 노출
+    } catch { showToast('저장 실패'); }
+    finally { setSavingNote(false); }
+  };
 
   // 현재 공개 상태에 맞춰 visibility 선택 초기화
   useEffect(() => { if (today?.me.visibility === 'feelings' || today?.me.visibility === 'full') setVisChoice(today.me.visibility); }, [today?.me.visibility]);
@@ -310,7 +341,12 @@ export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickn
                   visChoice={visChoice}
                   setVisChoice={setVisChoice}
                   onShare={toggleShare}
-                  onWrite={() => router.push('/qt')}
+                  noteText={noteText}
+                  setNoteText={setNoteText}
+                  onSaveNote={saveNote}
+                  savingNote={savingNote}
+                  showFullPassage={showFullPassage}
+                  setShowFullPassage={setShowFullPassage}
                 />
               </section>
 
@@ -379,7 +415,7 @@ export default function CellDetail({ profileId: ssrProfileId, nickname: ssrNickn
 }
 
 // === 오늘의 활동 카드 ===
-const TodayCard = ({ mode, supported, qt, qtLoading, me, counts, completedMembers, ownProfileId, sharing, visChoice, setVisChoice, onShare, onWrite }: {
+const TodayCard = ({ mode, supported, qt, qtLoading, me, counts, completedMembers, ownProfileId, sharing, visChoice, setVisChoice, onShare, noteText, setNoteText, onSaveNote, savingNote, showFullPassage, setShowFullPassage }: {
   mode: ModeKey;
   supported: boolean;
   qt: { reference: string | null; passageText: string | null; error?: string } | null;
@@ -392,7 +428,12 @@ const TodayCard = ({ mode, supported, qt, qtLoading, me, counts, completedMember
   visChoice: 'full' | 'feelings';
   setVisChoice: (v: 'full' | 'feelings') => void;
   onShare: () => void;
-  onWrite: () => void;
+  noteText: string;
+  setNoteText: (v: string) => void;
+  onSaveNote: () => void;
+  savingNote: boolean;
+  showFullPassage: boolean;
+  setShowFullPassage: (v: boolean) => void;
 }) => {
   const c = MODE_LABELS[mode].color;
 
@@ -408,48 +449,65 @@ const TodayCard = ({ mode, supported, qt, qtLoading, me, counts, completedMember
   }
 
   const ref = qt?.reference || (qtLoading ? '본문 불러오는 중…' : '오늘의 큐티');
-  const body = qt?.passageText ? previewText(qt.passageText) : (qt?.error || (qtLoading ? '' : '오늘 본문을 준비 중입니다.'));
+  const passage = qt?.passageText || '';
   const total = counts?.total ?? 0;
   const doneCount = counts?.completed ?? 0;
+  const done = !!me?.hasNote;
 
   return (
     <div style={{ padding: '1.25rem', borderRadius: 16, background: `${c}10`, border: `1px solid ${c}40` }}>
-      <div style={{ fontSize: '0.78rem', color: c, fontWeight: 700, marginBottom: '0.4rem' }}>{ref}</div>
-      <div style={{ fontSize: '0.95rem', color: '#fff', lineHeight: 1.6, marginBottom: '1rem' }}>{body}</div>
-      <a href="/qt" style={{ display: 'inline-block', fontSize: '0.78rem', color: c, textDecoration: 'none', fontWeight: 600, marginBottom: '1rem' }}>큐티 전체 보기 →</a>
+      <div style={{ fontSize: '0.78rem', color: c, fontWeight: 700, marginBottom: '0.5rem' }}>{ref}</div>
 
-      {!me?.hasNote ? (
-        <button onClick={onWrite} style={{ width: '100%', padding: '0.85rem', minHeight: 50, borderRadius: 12, background: c, border: 'none', color: '#2D3850', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', marginBottom: '0.85rem' }}>
-          오늘 큐티 쓰러 가기
-        </button>
+      {/* 본문 — 인라인 읽기 (펼치기) */}
+      {passage ? (
+        <div style={{ marginBottom: '0.85rem' }}>
+          <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.9)', lineHeight: 1.7, whiteSpace: 'pre-wrap', maxHeight: showFullPassage ? 'none' : 96, overflow: 'hidden', position: 'relative' }}>
+            {passage}
+            {!showFullPassage && <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 40, background: 'linear-gradient(rgba(45,56,80,0), rgba(45,56,80,0.95))' }} />}
+          </div>
+          <button onClick={() => setShowFullPassage(!showFullPassage)} style={{ background: 'none', border: 'none', color: c, fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', padding: '0.3rem 0' }}>
+            {showFullPassage ? '접기 ▲' : '본문 전체 보기 ▼'}
+          </button>
+        </div>
       ) : (
-        <div style={{ display: 'grid', gap: '0.55rem', marginBottom: '0.85rem' }}>
-          <div style={{ fontSize: '0.82rem', color: c, fontWeight: 700 }}>✓ 오늘 큐티 완료 · 이 셀에 참여 중</div>
-          {!me.shared && (
+        <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)', marginBottom: '0.85rem' }}>{qt?.error || (qtLoading ? '본문 불러오는 중…' : '오늘 본문을 준비 중입니다.')}</div>
+      )}
+
+      {/* 인라인 묵상 작성 */}
+      <div style={{ display: 'grid', gap: '0.5rem', marginBottom: '0.85rem' }}>
+        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)' }}>오늘의 묵상</div>
+        <textarea
+          value={noteText}
+          onChange={(e) => setNoteText(e.target.value)}
+          placeholder="이 본문에서 받은 은혜를 적어보세요."
+          rows={4}
+          style={{ padding: '0.7rem 0.8rem', borderRadius: 10, border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(0,0,0,0.2)', color: '#fff', fontSize: '0.9rem', lineHeight: 1.6, resize: 'vertical', fontFamily: 'inherit', outline: 'none' }}
+        />
+        <button onClick={onSaveNote} disabled={savingNote} style={{ width: '100%', padding: '0.75rem', minHeight: 46, borderRadius: 12, border: 'none', background: savingNote ? 'rgba(255,255,255,0.2)' : c, color: '#2D3850', fontSize: '0.92rem', fontWeight: 800, cursor: savingNote ? 'wait' : 'pointer' }}>
+          {savingNote ? '저장 중…' : done ? '묵상 수정 저장' : '묵상 저장 (오늘 완료)'}
+        </button>
+      </div>
+
+      {/* 완료 시 이 셀에 공개 */}
+      {done && (
+        <div style={{ display: 'grid', gap: '0.55rem', marginBottom: '0.85rem', paddingTop: '0.35rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ fontSize: '0.82rem', color: c, fontWeight: 700 }}>✓ 오늘 완료 · 이 셀에 참여 중</div>
+          {!me?.shared && (
             <div style={{ display: 'flex', gap: '0.4rem' }}>
               {(['full', 'feelings'] as const).map((v) => (
-                <button key={v} onClick={() => setVisChoice(v)} style={{
-                  flex: 1, padding: '0.5rem', minHeight: 38, borderRadius: 8, cursor: 'pointer',
-                  background: visChoice === v ? `${c}26` : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${visChoice === v ? `${c}66` : 'rgba(255,255,255,0.1)'}`,
-                  color: visChoice === v ? c : 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 700,
-                }}>
+                <button key={v} onClick={() => setVisChoice(v)} style={{ flex: 1, padding: '0.5rem', minHeight: 38, borderRadius: 8, cursor: 'pointer', background: visChoice === v ? `${c}26` : 'rgba(255,255,255,0.04)', border: `1px solid ${visChoice === v ? `${c}66` : 'rgba(255,255,255,0.1)'}`, color: visChoice === v ? c : 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 700 }}>
                   {v === 'full' ? '묵상 전문' : '느낀점만'}
                 </button>
               ))}
             </div>
           )}
-          <button onClick={onShare} disabled={sharing} style={{
-            width: '100%', padding: '0.8rem', minHeight: 48, borderRadius: 12, cursor: sharing ? 'wait' : 'pointer',
-            background: me.shared ? 'rgba(255,255,255,0.06)' : c,
-            border: `1px solid ${me.shared ? 'rgba(255,255,255,0.18)' : c}`,
-            color: me.shared ? '#fff' : '#2D3850', fontSize: '0.9rem', fontWeight: 800, opacity: sharing ? 0.7 : 1,
-          }}>
-            {sharing ? '처리 중…' : me.shared ? `이 셀에 공개됨 (${me.visibility === 'feelings' ? '느낀점' : '전문'}) · 내리기` : '이 셀에 공개하기'}
+          <button onClick={onShare} disabled={sharing} style={{ width: '100%', padding: '0.75rem', minHeight: 46, borderRadius: 12, cursor: sharing ? 'wait' : 'pointer', background: me?.shared ? 'rgba(255,255,255,0.06)' : c, border: `1px solid ${me?.shared ? 'rgba(255,255,255,0.18)' : c}`, color: me?.shared ? '#fff' : '#2D3850', fontSize: '0.88rem', fontWeight: 800, opacity: sharing ? 0.7 : 1 }}>
+            {sharing ? '처리 중…' : me?.shared ? `이 셀에 공개됨 (${me.visibility === 'feelings' ? '느낀점' : '전문'}) · 내리기` : '이 셀에 공개하기'}
           </button>
         </div>
       )}
 
+      {/* 참여 현황 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex' }}>
           {completedMembers.slice(0, 5).map((m, i) => (
@@ -460,6 +518,7 @@ const TodayCard = ({ mode, supported, qt, qtLoading, me, counts, completedMember
         </div>
         <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.65)' }}>{doneCount}/{total} 명이 오늘 함께</span>
       </div>
+      <a href="/qt" style={{ display: 'inline-block', fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', textDecoration: 'none', marginTop: '0.6rem' }}>큐티 페이지에서 지난 묵상 보기 →</a>
     </div>
   );
 };
